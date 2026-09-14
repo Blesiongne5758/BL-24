@@ -1,11 +1,11 @@
 /**
- * Circulink Store & State Management (100% Bahasa Indonesia)
+ * BURSA LIMBAH Store & State Management (100% Bahasa Indonesia)
  * Versi 3: 3-Tier Berlangganan Pembeli, Gated Access Publik, Kontrol Admin Rentang Harga & Chat Interaktif
  */
 
-const STORAGE_KEY = "circulink_state_v3";
+const STORAGE_KEY = "BURSA LIMBAH_state_v3";
 
-class CirculinkStore {
+class BURSA LIMBAHStore {
   constructor() {
     this.initStore();
   }
@@ -61,8 +61,8 @@ class CirculinkStore {
 
   resetData() {
     localStorage.removeItem(STORAGE_KEY);
-    localStorage.removeItem("circulink_state_v1");
-    localStorage.removeItem("circulink_state_v2");
+    localStorage.removeItem("BURSA LIMBAH_state_v1");
+    localStorage.removeItem("BURSA LIMBAH_state_v2");
     this.initStore();
   }
 
@@ -163,9 +163,9 @@ class CirculinkStore {
 
     const newUser = {
       id: newId,
-      name: name || "Pembeli Baru Circulink",
+      name: name || "Pembeli Baru BURSA LIMBAH",
       role: "buyer",
-      email: email || `buyer_${Date.now()}@circulink.id`,
+      email: email || `buyer_${Date.now()}@BURSA LIMBAH.id`,
       phone: phone || "+62 812-0000-0000",
       company: company || "Perusahaan Pembeli",
       location: "Indonesia",
@@ -374,7 +374,7 @@ class CirculinkStore {
       if (status === "approved") {
         const now = new Date();
         prod.verifiedAt = now.toISOString().replace("T", " ").substring(0, 16);
-        prod.verifiedBy = "Tim Kurasi Mutu Circulink";
+        prod.verifiedBy = "Tim Kurasi Mutu BURSA LIMBAH";
       }
       if (adminNotes) {
         prod.adminNotes = adminNotes;
@@ -494,7 +494,7 @@ class CirculinkStore {
     const downPaymentAmount = Math.round(totalPrice * (dpPercent / 100));
     const handlingFee = settings.handlingFeePerTransaction || 10000;
     const appFee = settings.appFeePerTransaction || 5000;
-    const isDelivery = shippingMethod === 'circulink_delivery';
+    const isDelivery = shippingMethod === 'BURSA LIMBAH_delivery';
     const finalShippingFee = isDelivery ? (Number(shippingFee) || settings.shippingFlatFee || 250000) : 0;
     const totalPaidNow = downPaymentAmount + handlingFee + appFee + finalShippingFee;
     const remainingPayment = totalPrice - downPaymentAmount;
@@ -503,7 +503,7 @@ class CirculinkStore {
     const escrowBankInfo = {
       bankName: settings.escrowBankName || "Bank Central Asia (BCA)",
       accountNumber: settings.escrowAccountNumber || "8271-9920-1122",
-      accountHolder: settings.escrowAccountHolder || "PT Circulink Transaksi Sirkular (Rekening Bersama Escrow)",
+      accountHolder: settings.escrowAccountHolder || "PT BURSA LIMBAH Transaksi Sirkular (Rekening Bersama Escrow)",
       branch: settings.escrowBankBranch || "KCP Sentra Bisnis Pulogadung, Jakarta"
     };
 
@@ -529,7 +529,7 @@ class CirculinkStore {
       downPaymentAmount,
       handlingFee,
       appFee,
-      shippingMethod: isDelivery ? 'Jasa Pengiriman Mitra Circulink' : 'Armada Mandiri Pembeli',
+      shippingMethod: isDelivery ? 'Jasa Pengiriman Mitra BURSA LIMBAH' : 'Armada Mandiri Pembeli',
       shippingFee: finalShippingFee,
       totalPaidNow,
       remainingPayment,
@@ -539,7 +539,7 @@ class CirculinkStore {
       pickupDate: pickupDate || new Date(Date.now() + 3 * 86400000).toISOString().split("T")[0],
       createdAt: now,
       qrCodeTrace: `CIR-TRACE-${bookingCode}-${product.code}`,
-      notes: notes || "Booking terkonfirmasi via Rekening Bersama (Escrow) Circulink."
+      notes: notes || "Booking terkonfirmasi via Rekening Bersama (Escrow) BURSA LIMBAH."
     };
 
     product.status = "booked";
@@ -653,4 +653,4 @@ class CirculinkStore {
 }
 
 // Inisialisasi store global
-window.circulinkStore = new CirculinkStore();
+window.BURSA LIMBAHStore = new BURSA LIMBAHStore();

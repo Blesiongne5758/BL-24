@@ -1,11 +1,11 @@
 /**
- * Circulink Application Logic (100% Bahasa Indonesia)
+ * BURSA LIMBAH Application Logic (100% Bahasa Indonesia)
  * Versi 3: 3-Tier Berlangganan Pembeli, Gated Access Publik, Kontrol Admin Rentang Harga & Fitur Layar Chat Interaktif
  */
 
-class CirculinkApp {
+class BURSA LIMBAHApp {
   constructor() {
-    this.store = window.circulinkStore;
+    this.store = window.BURSA LIMBAHStore;
     this.activeModalMap = null;
     this.currentBuyerTab = 'market';
     this.currentAdminTab = 'verification';
@@ -163,7 +163,7 @@ class CirculinkApp {
         `;
       } else if (role === 'admin') {
         roleIcon.innerHTML = '<i class="fa-solid fa-user-shield text-amber-300"></i>';
-        roleTitle.textContent = 'Peran Pengelola: Pusat Kontrol Circulink';
+        roleTitle.textContent = 'Peran Pengelola: Pusat Kontrol BURSA LIMBAH';
         roleDesc.textContent = 'Otoritas: Kurasi Mutu, Audit Escrow DP, & Atur Batas Rentang Nilai Jual 3-Tier';
         roleActions.innerHTML = `
           <button onclick="app.resetDemoData()" class="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium">
@@ -962,7 +962,7 @@ class CirculinkApp {
               ${access.canViewWhatsapp ? `
                 <div class="flex items-center justify-between bg-slate-800 p-2 rounded-xl">
                   <span class="font-mono text-emerald-300 font-bold">${p.sellerPhone || '+62 813-8822-1100'}</span>
-                  <a href="https://wa.me/${p.sellerWhatsapp || '6281388221100'}?text=Halo%20penjual%20Circulink,%20saya%20tertarik%20dengan%20${encodeURIComponent(p.title)}" target="_blank" class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-[11px] font-bold">
+                  <a href="https://wa.me/${p.sellerWhatsapp || '6281388221100'}?text=Halo%20penjual%20BURSA LIMBAH,%20saya%20tertarik%20dengan%20${encodeURIComponent(p.title)}" target="_blank" class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-[11px] font-bold">
                     Chat WA Langsung
                   </a>
                 </div>
@@ -1161,7 +1161,7 @@ class CirculinkApp {
     setTimeout(() => {
       const replies = [
         "Terima kasih atas pesannya! Pasokan limbah ini masih tersedia dan siap muat.",
-        "Kadar mutu sudah sesuai eviden tera digital yang terverifikasi tim Circulink.",
+        "Kadar mutu sudah sesuai eviden tera digital yang terverifikasi tim BURSA LIMBAH.",
         "Armada Anda dapat dijadwalkan datang sesuai kesepakatan setelah pembayaran DP 30% di rekening bersama masuk.",
         "Baik, kami siapkan dokumen jalan dan sampel uji sebelum armada tiba di gudang."
       ];
@@ -1475,7 +1475,7 @@ class CirculinkApp {
       <div class="p-6 border-b border-slate-100 flex items-center justify-between">
         <div>
           <h3 class="text-lg font-bold text-slate-900">Pemesanan Pasokan Limbah (DP 30%)</h3>
-          <p class="text-xs text-slate-500">Rekening bersama Circulink mengunci pasokan hingga armada Anda tiba.</p>
+          <p class="text-xs text-slate-500">Rekening bersama BURSA LIMBAH mengunci pasokan hingga armada Anda tiba.</p>
         </div>
         <button onclick="app.closeModals()" class="text-slate-400 hover:text-slate-600 p-2 rounded-xl hover:bg-slate-100">
           <i class="fa-solid fa-xmark text-lg"></i>
@@ -1521,7 +1521,7 @@ class CirculinkApp {
 
         <div class="p-3 bg-emerald-50 rounded-xl border border-emerald-200 text-[11px] text-emerald-800 flex items-start space-x-2">
           <i class="fa-solid fa-shield-halved text-emerald-600 mt-0.5"></i>
-          <span>Dana tersimpan di Rekening Bersama Escrow Circulink. Tiket timbang digital diterbitkan otomatis.</span>
+          <span>Dana tersimpan di Rekening Bersama Escrow BURSA LIMBAH. Tiket timbang digital diterbitkan otomatis.</span>
         </div>
 
         <div class="flex justify-end space-x-3 pt-2">
@@ -1631,7 +1631,7 @@ class CirculinkApp {
 
     container.innerHTML = `
       <div class="text-center pb-4 border-b border-slate-200">
-        <span class="text-2xl font-extrabold text-slate-900 font-mono tracking-wider">CIRCULINK</span>
+        <span class="text-2xl font-extrabold text-slate-900 font-mono tracking-wider">BURSA LIMBAH</span>
         <div class="text-xs text-slate-500">SURAT JALAN & RESI REKENING BERSAMA DIGITAL</div>
         <div class="text-xs font-mono font-bold text-brand-700 mt-1">${o.bookingCode}</div>
       </div>
@@ -2036,8 +2036,8 @@ class CirculinkApp {
   }
 }
 
-// Inisialisasi Aplikasi Circulink Saat DOM Siap
+// Inisialisasi Aplikasi BURSA LIMBAH Saat DOM Siap
 document.addEventListener('DOMContentLoaded', () => {
-  window.app = new CirculinkApp();
+  window.app = new BURSA LIMBAHApp();
   window.app.init();
 });

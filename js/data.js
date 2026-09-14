@@ -1,5 +1,5 @@
 /**
- * Circulink Data Seed & Initial Store (100% Bahasa Indonesia)
+ * BURSA LIMBAH Data Seed & Initial Store (100% Bahasa Indonesia)
  * Versi 3: 3-Tier Berlangganan Pembeli, Gated Access Publik, Kontak WA, Postingan Pembeli & Chat Interaktif
  */
 
@@ -199,22 +199,22 @@ const INITIAL_SUBSCRIPTION_TIERS = [
 ];
 
 const INITIAL_SETTINGS = {
-  appName: "Circulink",
+  appName: "BURSA LIMBAH",
   tagline: "Limbah Terverifikasi. Transaksi Tepercaya.",
   // Data Rekening Bank Pengelola (Escrow DP 30%)
   escrowBankName: "Bank Central Asia (BCA)",
   escrowAccountNumber: "8271-9920-1122",
-  escrowAccountHolder: "PT Circulink Transaksi Sirkular (Rekening Bersama Escrow)",
+  escrowAccountHolder: "PT BURSA LIMBAH Transaksi Sirkular (Rekening Bersama Escrow)",
   escrowBankBranch: "KCP Sentra Bisnis Pulogadung, Jakarta",
   // Struktur Biaya & Jasa Logistik
   downPaymentPercent: 30, // 30% DP
   handlingFeePerTransaction: 10000, // Biaya Penanganan
   appFeePerTransaction: 5000, // Fee Aplikasi
   shippingServiceEnabled: true, // Jasa Pengiriman
-  shippingFlatFee: 250000, // Tarif Jasa Pengiriman Flat Mitra Circulink
-  contactEmail: "kemitraan@circulink.com",
+  shippingFlatFee: 250000, // Tarif Jasa Pengiriman Flat Mitra BURSA LIMBAH
+  contactEmail: "kemitraan@BURSA LIMBAH.com",
   contactPhone: "+62 812-3456-7890",
-  address: "Sentra Inovasi Hijau Circulink Lt. 5, Kawasan Industri Pulogadung, Jakarta Timur",
+  address: "Sentra Inovasi Hijau BURSA LIMBAH Lt. 5, Kawasan Industri Pulogadung, Jakarta Timur",
   subscriptionTiers: [...INITIAL_SUBSCRIPTION_TIERS]
 };
 
@@ -260,9 +260,9 @@ const INITIAL_USERS = [
   },
   {
     id: "user_admin_1",
-    name: "Pengelola Utama Circulink",
+    name: "Pengelola Utama BURSA LIMBAH",
     role: "admin",
-    email: "admin@circulink.com",
+    email: "admin@BURSA LIMBAH.com",
     phone: "+62 811-1234-5678",
     accessLevel: "Administrator Utama"
   }
@@ -317,7 +317,7 @@ const INITIAL_PRODUCTS = [
     },
     createdAt: "2026-09-08 14:30",
     verifiedAt: "2026-09-08 16:15",
-    verifiedBy: "Tim Verifikasi Circulink"
+    verifiedBy: "Tim Verifikasi BURSA LIMBAH"
   },
   {
     id: "PRD-2026-002",
@@ -367,7 +367,7 @@ const INITIAL_PRODUCTS = [
     },
     createdAt: "2026-09-09 09:20",
     verifiedAt: "2026-09-09 11:00",
-    verifiedBy: "Tim Verifikasi Circulink"
+    verifiedBy: "Tim Verifikasi BURSA LIMBAH"
   },
   {
     id: "PRD-2026-003",
@@ -417,7 +417,7 @@ const INITIAL_PRODUCTS = [
     },
     createdAt: "2026-09-09 15:45",
     verifiedAt: "2026-09-09 17:00",
-    verifiedBy: "Tim Verifikasi Circulink"
+    verifiedBy: "Tim Verifikasi BURSA LIMBAH"
   },
   {
     id: "PRD-2026-004",
@@ -454,9 +454,9 @@ const INITIAL_PRODUCTS = [
         notes: "OCC brown kraft liner tebal dua gelombang"
       },
       {
-        type: "Segel Batch Circulink",
+        type: "Segel Batch BURSA LIMBAH",
         url: "https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=800&q=80",
-        notes: "Stiker barcode muat Circulink terverifikasi"
+        notes: "Stiker barcode muat BURSA LIMBAH terverifikasi"
       }
     ],
     qualitySpecs: {
@@ -466,7 +466,7 @@ const INITIAL_PRODUCTS = [
     },
     createdAt: "2026-09-07 10:00",
     verifiedAt: "2026-09-07 11:30",
-    verifiedBy: "Tim Verifikasi Circulink"
+    verifiedBy: "Tim Verifikasi BURSA LIMBAH"
   },
   {
     id: "PRD-2026-005",
@@ -516,7 +516,7 @@ const INITIAL_PRODUCTS = [
     },
     createdAt: "2026-09-11 08:30",
     verifiedAt: "2026-09-11 10:00",
-    verifiedBy: "Tim Verifikasi Circulink"
+    verifiedBy: "Tim Verifikasi BURSA LIMBAH"
   },
   {
     id: "PRD-2026-006",
@@ -566,7 +566,7 @@ const INITIAL_PRODUCTS = [
     },
     createdAt: "2026-09-10 11:15",
     verifiedAt: "2026-09-10 13:40",
-    verifiedBy: "Tim Verifikasi Circulink"
+    verifiedBy: "Tim Verifikasi BURSA LIMBAH"
   }
 ];
 
