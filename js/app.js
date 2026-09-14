@@ -48,6 +48,15 @@ class BursaLimbahApp {
     }).format(amount || 0);
   }
 
+  getCity(item) {
+    if (!item) return "-";
+    if (item.city) return item.city;
+    if (this.store && this.store.extractCity) {
+      return this.store.extractCity(item.address || item.origin);
+    }
+    return item.origin || "Indonesia";
+  }
+
   showToast(message, type = 'success') {
     const container = [REDACTED]'toast-container');
     if (!container) return;
@@ -708,6 +717,7 @@ class BursaLimbahApp {
         ? (item.volume > 0 ? `${item.volume.toLocaleString('id-ID')} Liter` : `${item.weight.toLocaleString('id-ID')} Kg`)
         : `${item.volume.toLocaleString('id-ID')} ${item.unit}`;
       const partnerName = isSupply ? item.sellerName : item.buyerCompany;
+      const itemCity = this.getCity(item);
 
       return `
         <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-md transition flex flex-col justify-between">
@@ -732,7 +742,7 @@ class BursaLimbahApp {
               </div>
 
               <div class="absolute bottom-2 left-2 right-2 bg-slate-900/85 backdrop-blur-md px-2.5 py-1.5 rounded-xl text-[11px] text-white flex items-center justify-between">
-                <span class="truncate"><i class="fa-solid fa-recycle text-emerald-400 mr-1"></i>${item.categoryName}</span>
+                <span class="truncate"><i class="fa-solid fa-location-dot text-emerald-400 mr-1"></i>Kota: ${itemCity}</span>
                 <span class="shrink-0 text-amber-300 font-mono text-[10px]">Akses Publik</span>
               </div>
             </div>
@@ -760,13 +770,13 @@ class BursaLimbahApp {
                   </span>
                 </div>
 
-                <!-- 2. Kriteria Alamat Presisi Disembunyikan -->
+                <!-- 2. Kriteria Alamat Presisi Disembunyikan: HANYA TAMPIL NAMA KOTA SAJA -->
                 <div class="flex items-center justify-between">
                   <span class="text-slate-500 flex items-center">
-                    <i class="fa-solid fa-location-dot text-amber-600 mr-1.5 text-[11px]"></i>Alamat:
+                    <i class="fa-solid fa-location-dot text-emerald-600 mr-1.5 text-[11px]"></i>Kota:
                   </span>
-                  <span class="text-slate-600 font-medium text-[11px] flex items-center">
-                    <i class="fa-solid fa-lock mr-1 text-slate-400 text-[10px]"></i>Terproteksi (Area Umum)
+                  <span class="font-bold text-slate-900 text-[11px] flex items-center bg-white px-2 py-0.5 rounded border border-slate-200 shadow-2xs">
+                    <i class="fa-solid fa-city mr-1.5 text-emerald-600 text-[10px]"></i>${itemCity}
                   </span>
                 </div>
 
@@ -1069,7 +1079,7 @@ class BursaLimbahApp {
               </div>
 
               <div class="absolute bottom-2 left-2 right-2 bg-slate-900/85 backdrop-blur-md px-2.5 py-1.5 rounded-xl text-[11px] text-white flex items-center justify-between">
-                <span class="truncate"><i class="fa-solid fa-location-dot text-emerald-400 mr-1"></i>${p.origin}</span>
+                <span class="truncate"><i class="fa-solid fa-location-dot text-emerald-400 mr-1"></i>Kota: ${this.getCity(p)}</span>
                 <span class="shrink-0 text-emerald-300 font-mono text-[10px]">3 Eviden OK</span>
               </div>
             </div>
@@ -1082,6 +1092,8 @@ class BursaLimbahApp {
                   <span><i class="fa-solid fa-truck-ramp-box mr-1"></i>${p.containerType}</span>
                   <span>•</span>
                   <span class="font-semibold text-slate-700">${qtyDisplay}</span>
+                  <span>•</span>
+                  <span class="text-emerald-700 font-semibold flex items-center"><i class="fa-solid fa-city mr-1 text-[10px]"></i>${this.getCity(p)}</span>
                 </div>
               </div>
 
@@ -1119,7 +1131,7 @@ class BursaLimbahApp {
 
               <!-- Info Penjual & Kontak -->
               <div class="flex items-center justify-between text-xs text-slate-500 pt-1">
-                <span class="truncate"><i class="fa-solid fa-store mr-1 text-slate-400"></i>${p.sellerName}</span>
+                <span class="truncate"><i class="fa-solid fa-store mr-1 text-slate-400"></i>${p.sellerName} (${this.getCity(p)})</span>
                 <span class="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 shrink-0 font-medium">${p.sellerType}</span>
               </div>
             </div>
@@ -1242,8 +1254,11 @@ class BursaLimbahApp {
 
           <div class="text-xs text-slate-600 bg-slate-50 p-3.5 rounded-xl border border-slate-200 flex items-center justify-between">
             <div>
-              <span class="font-bold text-slate-800">Alamat Gudang:</span>
-              ${access.canViewFullAddress ? (p.address || p.origin) : `${p.origin} (Alamat detail terkunci)`}
+              <span class="font-bold text-slate-800">Kota & Lokasi:</span>
+              ${access.canViewFullAddress 
+                ? `<span class="text-slate-900 font-semibold">${p.address || this.getCity(p)}</span>` 
+                : `<span class="text-slate-900 font-bold bg-white px-2 py-0.5 rounded border border-slate-200 inline-flex items-center"><i class="fa-solid fa-city mr-1 text-emerald-600 text-[10px]"></i>${this.getCity(p)}</span> <span class="text-slate-400 text-[11px] ml-1">(Alamat detail jalan terkunci)</span>`
+              }
             </div>
             ${access.canViewGpsMap ? `
               <a href="https://www.google.com/maps?q=${p.lat},${p.lng}" target="_blank" class="text-brand-600 hover:text-brand-700 font-bold shrink-0 ml-2 text-xs">
@@ -2136,6 +2151,7 @@ class BursaLimbahApp {
     const unit = [REDACTED]'up-unit').value;
     const price = Number([REDACTED]'up-price').value);
     const origin = [REDACTED]'up-origin').value;
+    const city = [REDACTED]'up-city') ? [REDACTED]'up-city').value.trim() : '';
     const address = [REDACTED]'up-address').value;
     const coords = [REDACTED]'up-coords').value.split(',');
 
@@ -2157,6 +2173,7 @@ class BursaLimbahApp {
       volume: unit === 'Liter' ? qty : 0,
       unit,
       origin,
+      city: city || this.store.extractCity(address || origin),
       address,
       lat: coords[0] ? parseFloat(coords[0].trim()) : -6.2088,
       lng: coords[1] ? parseFloat(coords[1].trim()) : 106.8456,
@@ -2332,7 +2349,7 @@ class BursaLimbahApp {
                 <span class="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-brand-600/90 backdrop-blur-sm text-white">${p.categoryName}</span>
               </div>
               <div class="absolute bottom-2 left-2 right-2 bg-slate-900/85 backdrop-blur-md px-2.5 py-1.5 rounded-xl text-[11px] text-white flex items-center justify-between">
-                <span class="truncate"><i class="fa-solid fa-location-dot text-emerald-400 mr-1"></i>${p.origin}</span>
+                <span class="truncate"><i class="fa-solid fa-location-dot text-emerald-400 mr-1"></i>Kota: ${this.getCity(p)}</span>
                 <span class="shrink-0 text-emerald-300 font-mono text-[10px]">3 Eviden OK</span>
               </div>
             </div>
@@ -2344,6 +2361,8 @@ class BursaLimbahApp {
                   <span><i class="fa-solid fa-truck-ramp-box mr-1"></i>${p.containerType}</span>
                   <span>•</span>
                   <span class="font-semibold text-slate-700">${qtyDisplay}</span>
+                  <span>•</span>
+                  <span class="text-emerald-700 font-semibold flex items-center"><i class="fa-solid fa-city mr-1 text-[10px]"></i>${this.getCity(p)}</span>
                 </div>
               </div>
 
@@ -2367,7 +2386,7 @@ class BursaLimbahApp {
               </div>
 
               <div class="flex items-center justify-between text-xs text-slate-500 pt-1">
-                <span class="truncate"><i class="fa-solid fa-store mr-1 text-slate-400"></i>${p.sellerName}</span>
+                <span class="truncate"><i class="fa-solid fa-store mr-1 text-slate-400"></i>${p.sellerName} (${this.getCity(p)})</span>
                 <span class="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 shrink-0 font-medium">${p.sellerType}</span>
               </div>
             </div>

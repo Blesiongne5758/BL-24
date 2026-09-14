@@ -47,12 +47,49 @@ class BursaLimbahStore {
         if (!this.state.chats || this.state.chats.length === 0) {
           this.state.chats = [...INITIAL_CHATS];
         }
+
+        // Sinkronisasi dan pastikan properti 'city' terisi pada seluruh produk & permintaan
+        if (this.state.products && this.state.products.length > 0) {
+          this.state.products.forEach(p => {
+            if (!p.city) {
+              const seed = INITIAL_PRODUCTS.find(ip => ip.id === p.id);
+              p.city = (seed && seed.city) ? seed.city : this.extractCity(p.address || p.origin);
+            }
+          });
+        }
+        if (this.state.buyerRequests && this.state.buyerRequests.length > 0) {
+          this.state.buyerRequests.forEach(r => {
+            if (!r.city) {
+              const seed = INITIAL_BUYER_REQUESTS.find(ir => ir.id === r.id);
+              r.city = (seed && seed.city) ? seed.city : this.extractCity(r.address);
+            }
+          });
+        }
       } catch (e) {
         console.error("Error parsing local state, resetting to seed data", e);
         localStorage.removeItem(STORAGE_KEY);
         this.initStore();
       }
     }
+  }
+
+  extractCity(addressText = "") {
+    if (!addressText) return "Indonesia";
+    const knownCities = [
+      "Jakarta Selatan", "Jakarta Timur", "Jakarta Barat", "Jakarta Pusat", "Jakarta Utara",
+      "Karawang Barat", "Karawang Timur", "Karawang",
+      "Kota Tangerang", "Tangerang Selatan", "Tangerang",
+      "Cikarang Pusat", "Cikarang Barat", "Cikarang Timur", "Cikarang",
+      "Bekasi", "Cilegon", "Surabaya", "Bandung", "Semarang", "Medan", "Bogor", "Depok", "Gresik", "Sidoarjo"
+    ];
+    for (const c of knownCities) {
+      if (addressText.toLowerCase().includes(c.toLowerCase())) return c;
+    }
+    const parts = addressText.split(",");
+    if (parts.length > 1) {
+      return parts[parts.length - 1].trim();
+    }
+    return addressText.trim() || "Indonesia";
   }
 
   save() {
@@ -397,6 +434,7 @@ class BursaLimbahStore {
         p.title.toLowerCase().includes(q) ||
         p.categoryName.toLowerCase().includes(q) ||
         p.origin.toLowerCase().includes(q) ||
+        (p.city && p.city.toLowerCase().includes(q)) ||
         (p.address && p.address.toLowerCase().includes(q)) ||
         p.code.toLowerCase().includes(q)
       );
@@ -436,6 +474,7 @@ class BursaLimbahStore {
       volume: Number(productData.volume) || 0,
       unit: productData.unit || "Kg",
       origin: productData.origin,
+      city: productData.city || this.extractCity(productData.address || productData.origin),
       address: productData.address,
       lat: Number(productData.lat) || -6.2088,
       lng: Number(productData.lng) || 106.8456,
