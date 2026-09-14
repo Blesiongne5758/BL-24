@@ -71,111 +71,90 @@
     </div>
   </div>
 
-  <!-- ================= BILAH NAVIGASI & PENGALIH PERAN (ROLE SWITCHER) ================= -->
-  <header class="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-sm transition-all">
+  <!-- ================= NAVBAR ================= -->
+  <header class="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-sm">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="flex items-center justify-between h-20">
-        
-        <!-- Logo & Tagline BURSA LIMBAH -->
-        <div class="flex items-center space-x-3 cursor-pointer" onclick="app.setRole('public')">
-          <div class="w-11 h-11 rounded-xl bg-gradient-to-tr from-brand-700 to-emerald-400 flex items-center justify-center text-white shadow-md shadow-brand-500/20">
-            <i class="fa-solid fa-recycle text-xl"></i>
-          </div>
-          <div>
-            <div class="flex items-center space-x-1.5">
-              <span class="text-2xl font-extrabold tracking-tight text-slate-900 font-mono">BURSA LIMBAH</span>
-              <span class="px-1.5 py-0.5 text-[10px] font-bold bg-brand-100 text-brand-800 rounded tracking-wider uppercase">RESMI</span>
-            </div>
-            <p class="text-[11px] font-medium text-slate-500 tracking-wide">Limbah Terverifikasi. Transaksi Tepercaya.</p>
-          </div>
+      <div class="flex items-center justify-between h-16">
+
+        <!-- Logo -->
+        <div class="flex items-center cursor-pointer shrink-0" onclick="app.setRole('public')">
+          <img src="assets/logo.jpg" alt="Bursa Limbah" class="h-12 w-auto object-contain" />
         </div>
 
-        <!-- Tautan Navigasi (Tampilan Publik) -->
-        <nav id="nav-links-public" class="hidden md:flex items-center space-x-1 text-sm font-medium text-slate-600">
-          <button onclick="app.navigateToSection('hero')" class="px-3 py-2 rounded-lg hover:text-brand-600 hover:bg-brand-50 transition">Beranda</button>
-          <button onclick="app.navigateToSection('postingan-publik')" class="px-3 py-2 rounded-lg hover:text-brand-600 hover:bg-brand-50 transition flex items-center space-x-1">
-            <span>Bursa Terbuka</span>
-            <span class="px-1.5 py-0.2 text-[10px] font-bold bg-amber-100 text-amber-800 rounded-full">Gated</span>
+        <!-- Nav Links (Desktop) -->
+        <nav id="nav-links-public" class="hidden lg:flex items-center space-x-0.5 text-xs font-semibold text-slate-600">
+          <button onclick="app.navigateToSection('hero')" class="px-3 py-2 rounded-lg hover:text-emerald-700 hover:bg-emerald-50 transition">Beranda</button>
+          <button onclick="app.navigateToSection('postingan-publik')" class="px-3 py-2 rounded-lg hover:text-emerald-700 hover:bg-emerald-50 transition flex items-center gap-1.5">
+            Bursa Terbuka
+            <span class="px-1.5 py-0.5 text-[9px] font-bold bg-amber-100 text-amber-700 rounded-full leading-none">GATED</span>
           </button>
-          <button onclick="app.navigateToSection('kategori')" class="px-3 py-2 rounded-lg hover:text-brand-600 hover:bg-brand-50 transition">10 Komoditas</button>
-          <button onclick="app.navigateToSection('ketertelusuran')" class="px-3 py-2 rounded-lg hover:text-brand-600 hover:bg-brand-50 transition">Ketertelusuran</button>
-          <button onclick="app.navigateToSection('kalkulator')" class="px-3 py-2 rounded-lg hover:text-brand-600 hover:bg-brand-50 transition">Kalkulator Limbah</button>
-          <button onclick="app.navigateToSection('tarif')" class="px-3 py-2 rounded-lg hover:text-brand-600 hover:bg-brand-50 transition text-brand-700 font-bold">3 Paket Langganan</button>
+          <button onclick="app.navigateToSection('kategori')" class="px-3 py-2 rounded-lg hover:text-emerald-700 hover:bg-emerald-50 transition">Komoditas</button>
+          <button onclick="app.navigateToSection('kalkulator')" class="px-3 py-2 rounded-lg hover:text-emerald-700 hover:bg-emerald-50 transition">Kalkulator</button>
+          <button onclick="app.navigateToSection('tarif')" class="px-3 py-2 rounded-lg text-emerald-700 hover:bg-emerald-50 transition font-bold flex items-center gap-1">
+            <i class="fa-solid fa-star text-amber-400 text-[10px]"></i> Paket Langganan
+          </button>
         </nav>
 
-        <!-- Sisi Kanan: Pengalih Peran & Tombol Pendaftaran 3-Tier -->
-        <div class="flex items-center space-x-3">
-          
-          <!-- Tombol Simulasi Cepat Peran -->
-          <div class="relative bg-slate-100 p-1 rounded-xl border border-slate-200 hidden sm:flex items-center space-x-1">
-            <span class="text-[11px] font-bold uppercase tracking-wider text-slate-600 px-2 flex items-center">
-              <i class="fa-solid fa-users mr-1.5 text-brand-600"></i> Mode:
-            </span>
-            <button id="role-btn-public" onclick="app.setRole('public')" class="px-2.5 py-1 text-xs font-semibold rounded-lg transition shadow-sm bg-white text-brand-700">
-              Publik
-            </button>
-            <button id="role-btn-buyer" onclick="app.setRole('buyer')" class="px-2.5 py-1 text-xs font-semibold rounded-lg transition text-slate-600 hover:text-slate-900">
-              Pembeli
-            </button>
-            <button id="role-btn-seller" onclick="app.setRole('seller')" class="px-2.5 py-1 text-xs font-semibold rounded-lg transition text-slate-600 hover:text-slate-900">
-              Penjual
-            </button>
-            <button id="role-btn-admin" onclick="app.setRole('admin')" class="px-2.5 py-1 text-xs font-semibold rounded-lg transition text-slate-600 hover:text-slate-900 flex items-center">
+        <!-- Kanan: Mode switcher + Aksi -->
+        <div class="flex items-center gap-2">
+
+          <!-- Mode Switcher (Desktop) -->
+          <div class="hidden sm:flex items-center bg-slate-100 rounded-xl p-0.5 border border-slate-200 text-xs font-semibold gap-0.5">
+            <button id="role-btn-public"   onclick="app.setRole('public')"   class="px-2.5 py-1.5 rounded-lg transition bg-white text-emerald-700 shadow-sm">Publik</button>
+            <button id="role-btn-buyer"    onclick="app.setRole('buyer')"    class="px-2.5 py-1.5 rounded-lg transition text-slate-600 hover:text-slate-900">Pembeli</button>
+            <button id="role-btn-seller"   onclick="app.setRole('seller')"   class="px-2.5 py-1.5 rounded-lg transition text-slate-600 hover:text-slate-900">Penjual</button>
+            <button id="role-btn-admin"    onclick="app.setRole('admin')"    class="px-2.5 py-1.5 rounded-lg transition text-slate-600 hover:text-slate-900 flex items-center gap-1">
               Pengelola
-              <span id="admin-pending-pill" class="ml-1 px-1 bg-amber-500 text-white text-[10px] rounded-full hidden">0</span>
+              <span id="admin-pending-pill" class="px-1.5 bg-amber-500 text-white text-[9px] rounded-full hidden">0</span>
             </button>
           </div>
 
-          <!-- Tombol Aksi Utama: Masuk & Daftar -->
-          <div id="nav-action-container" class="flex items-center space-x-2">
-            <button onclick="app.showLoginPage()" class="px-3.5 py-2 text-xs font-bold rounded-xl border border-slate-300 hover:border-brand-500 hover:text-brand-700 bg-white text-slate-700 shadow-sm transition flex items-center space-x-1.5">
-              <i class="fa-solid fa-right-to-bracket text-brand-600"></i>
-              <span>Masuk</span>
+          <!-- Divider -->
+          <div class="hidden sm:block w-px h-6 bg-slate-200"></div>
+
+          <!-- Tombol Aksi -->
+          <div id="nav-action-container" class="flex items-center gap-2">
+            <button onclick="app.showLoginPage()" class="hidden sm:flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold rounded-xl border border-slate-300 hover:border-emerald-400 hover:text-emerald-700 bg-white text-slate-700 shadow-sm transition">
+              <i class="fa-solid fa-right-to-bracket text-emerald-600"></i>
+              Masuk
             </button>
-            <button onclick="app.showRegisterOptions()" class="px-3.5 py-2 text-xs font-bold rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white shadow-sm transition flex items-center space-x-1.5">
-              <i class="fa-solid fa-user-plus text-amber-300"></i>
-              <span>Daftar</span>
+            <button onclick="app.showRegisterOptions()" class="flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm transition">
+              <i class="fa-solid fa-user-plus"></i>
+              Daftar
             </button>
           </div>
 
-          <!-- Menu Hamburger Mobile -->
-          <div class="sm:hidden flex items-center">
-            <button id="mobile-menu-btn" onclick="app.toggleMobileMenu()" class="p-2 text-slate-600 hover:text-slate-900 rounded-lg hover:bg-slate-100">
-              <i class="fa-solid fa-bars text-xl"></i>
-            </button>
-          </div>
+          <!-- Hamburger Mobile -->
+          <button id="mobile-menu-btn" onclick="app.toggleMobileMenu()" class="lg:hidden p-2 text-slate-600 hover:text-slate-900 rounded-lg hover:bg-slate-100 transition">
+            <i class="fa-solid fa-bars text-lg"></i>
+          </button>
 
         </div>
-
       </div>
     </div>
 
     <!-- Panel Menu Mobile -->
     <div id="mobile-drawer" class="hidden sm:hidden border-t border-slate-200 bg-white p-4 space-y-3">
-      <div id="mobile-auth-section" class="pb-3 border-b border-slate-100 flex flex-col space-y-2">
-        <div class="grid grid-cols-2 gap-2">
-          <button onclick="app.showLoginPage('buyer'); app.toggleMobileMenu();" class="py-2.5 px-3 text-xs font-bold rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-300 flex items-center justify-center space-x-1.5 shadow-sm">
-            <i class="fa-solid fa-crown text-amber-500"></i>
-            <span>Masuk Pembeli</span>
-          </button>
-          <button onclick="app.showLoginPage('seller'); app.toggleMobileMenu();" class="py-2.5 px-3 text-xs font-bold rounded-xl bg-slate-100 text-slate-800 border border-slate-300 flex items-center justify-center space-x-1.5 shadow-sm">
-            <i class="fa-solid fa-store text-emerald-600"></i>
-            <span>Masuk Penjual</span>
-          </button>
-        </div>
+      <div id="mobile-auth-section" class="pb-3 border-b border-slate-100 grid grid-cols-2 gap-2">
+        <button onclick="app.showLoginPage('buyer'); app.toggleMobileMenu();" class="py-2.5 px-3 text-xs font-bold rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-200 flex items-center justify-center gap-1.5">
+          <i class="fa-solid fa-crown text-amber-500"></i> Masuk Pembeli
+        </button>
+        <button onclick="app.showLoginPage('seller'); app.toggleMobileMenu();" class="py-2.5 px-3 text-xs font-bold rounded-xl bg-slate-100 text-slate-800 border border-slate-200 flex items-center justify-center gap-1.5">
+          <i class="fa-solid fa-store text-emerald-600"></i> Masuk Penjual
+        </button>
       </div>
-      <div class="text-xs font-bold text-slate-600 uppercase tracking-wider mb-1">Ganti Peran Pengguna (Simulasi):</div>
-      <div class="grid grid-cols-4 gap-1.5 mb-3">
-        <button onclick="app.setRole('public'); app.toggleMobileMenu();" class="py-1.5 text-xs font-medium rounded bg-slate-100 text-slate-700">Publik</button>
-        <button onclick="app.setRole('buyer'); app.toggleMobileMenu();" class="py-1.5 text-xs font-medium rounded bg-slate-100 text-slate-700">Pembeli</button>
-        <button onclick="app.setRole('seller'); app.toggleMobileMenu();" class="py-1.5 text-xs font-medium rounded bg-slate-100 text-slate-700">Penjual</button>
-        <button onclick="app.setRole('admin'); app.toggleMobileMenu();" class="py-1.5 text-xs font-medium rounded bg-slate-100 text-slate-700">Pengelola</button>
+      <div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Ganti Tampilan:</div>
+      <div class="grid grid-cols-4 gap-1.5">
+        <button onclick="app.setRole('public'); app.toggleMobileMenu();"  class="py-2 text-xs font-semibold rounded-lg bg-slate-100 text-slate-700 hover:bg-emerald-100 hover:text-emerald-800 transition">Publik</button>
+        <button onclick="app.setRole('buyer'); app.toggleMobileMenu();"   class="py-2 text-xs font-semibold rounded-lg bg-slate-100 text-slate-700 hover:bg-emerald-100 hover:text-emerald-800 transition">Pembeli</button>
+        <button onclick="app.setRole('seller'); app.toggleMobileMenu();"  class="py-2 text-xs font-semibold rounded-lg bg-slate-100 text-slate-700 hover:bg-emerald-100 hover:text-emerald-800 transition">Penjual</button>
+        <button onclick="app.setRole('admin'); app.toggleMobileMenu();"   class="py-2 text-xs font-semibold rounded-lg bg-slate-100 text-slate-700 hover:bg-emerald-100 hover:text-emerald-800 transition">Admin</button>
       </div>
-      <div class="border-t border-slate-100 pt-2 flex flex-col space-y-2 text-sm">
-        <button onclick="app.showRegisterOptions(); app.toggleMobileMenu();" class="text-left py-1 text-emerald-700 font-bold">✨ Daftar Akun Baru</button>
-        <button onclick="app.navigateToSection('postingan-publik'); app.toggleMobileMenu();" class="text-left py-1 text-slate-600">Bursa Terbuka (Gated)</button>
-        <button onclick="app.navigateToSection('tarif'); app.toggleMobileMenu();" class="text-left py-1 text-slate-600">3 Pilihan Paket Langganan</button>
-        <button onclick="app.navigateToSection('kalkulator'); app.toggleMobileMenu();" class="text-left py-1 text-slate-600">Kalkulator Nilai Limbah</button>
+      <div class="border-t border-slate-100 pt-3 flex flex-col gap-1.5 text-xs">
+        <button onclick="app.showRegisterOptions(); app.toggleMobileMenu();" class="text-left py-1.5 px-2 text-emerald-700 font-bold rounded hover:bg-emerald-50">✨ Daftar Akun Baru</button>
+        <button onclick="app.navigateToSection('postingan-publik'); app.toggleMobileMenu();" class="text-left py-1.5 px-2 text-slate-600 rounded hover:bg-slate-50">Bursa Terbuka (Gated)</button>
+        <button onclick="app.navigateToSection('tarif'); app.toggleMobileMenu();"            class="text-left py-1.5 px-2 text-slate-600 rounded hover:bg-slate-50">3 Pilihan Paket Langganan</button>
+        <button onclick="app.navigateToSection('kalkulator'); app.toggleMobileMenu();"       class="text-left py-1.5 px-2 text-slate-600 rounded hover:bg-slate-50">Kalkulator Nilai Limbah</button>
       </div>
     </div>
   </header>
@@ -594,7 +573,7 @@
           <div class="grid md:grid-cols-4 gap-6">
             
             <!-- Tahap 1 -->
-            <div class="bg-slate-800/70 rounded-2xl overflow-hidden border border-slate-700/80 flex flex-col justify-between group hover:border-emerald-500/50 transition">
+            <div class="card-hover bg-slate-800/70 rounded-2xl overflow-hidden border border-slate-700/80 flex flex-col justify-between group hover:border-emerald-500/50 transition">
               <div class="relative h-40 overflow-hidden bg-slate-950">
                 <img src="https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=600&q=80" alt="Unggah Eviden Gudang" class="w-full h-full object-cover group-hover:scale-105 transition duration-300">
                 <span class="absolute top-3 left-3 w-8 h-8 rounded-lg bg-slate-900/90 text-emerald-400 font-bold font-mono text-sm flex items-center justify-center border border-slate-700">01</span>
@@ -614,7 +593,7 @@
             </div>
 
             <!-- Tahap 2 -->
-            <div class="bg-slate-800/70 rounded-2xl overflow-hidden border border-slate-700/80 flex flex-col justify-between group hover:border-emerald-500/50 transition">
+            <div class="card-hover bg-slate-800/70 rounded-2xl overflow-hidden border border-slate-700/80 flex flex-col justify-between group hover:border-emerald-500/50 transition">
               <div class="relative h-40 overflow-hidden bg-slate-950">
                 <img src="https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=600&q=80" alt="Kurasi Tim Ahli" class="w-full h-full object-cover group-hover:scale-105 transition duration-300">
                 <span class="absolute top-3 left-3 w-8 h-8 rounded-lg bg-slate-900/90 text-emerald-400 font-bold font-mono text-sm flex items-center justify-center border border-slate-700">02</span>
@@ -634,7 +613,7 @@
             </div>
 
             <!-- Tahap 3 -->
-            <div class="bg-slate-800/70 rounded-2xl overflow-hidden border border-slate-700/80 flex flex-col justify-between group hover:border-emerald-500/50 transition">
+            <div class="card-hover bg-slate-800/70 rounded-2xl overflow-hidden border border-slate-700/80 flex flex-col justify-between group hover:border-emerald-500/50 transition">
               <div class="relative h-40 overflow-hidden bg-slate-950">
                 <img src="https://images.unsplash.com/photo-1450133064473-71024230f91b?auto=format&fit=crop&w=600&q=80" alt="Rekening Bersama Escrow" class="w-full h-full object-cover group-hover:scale-105 transition duration-300">
                 <span class="absolute top-3 left-3 w-8 h-8 rounded-lg bg-slate-900/90 text-emerald-400 font-bold font-mono text-sm flex items-center justify-center border border-slate-700">03</span>
@@ -654,7 +633,7 @@
             </div>
 
             <!-- Tahap 4 -->
-            <div class="bg-slate-800/70 rounded-2xl overflow-hidden border border-slate-700/80 flex flex-col justify-between group hover:border-emerald-500/50 transition">
+            <div class="card-hover bg-slate-800/70 rounded-2xl overflow-hidden border border-slate-700/80 flex flex-col justify-between group hover:border-emerald-500/50 transition">
               <div class="relative h-40 overflow-hidden bg-slate-950">
                 <img src="https://images.unsplash.com/photo-1587293852726-70cdb56c2866?auto=format&fit=crop&w=600&q=80" alt="Penjemputan & Timbangan" class="w-full h-full object-cover group-hover:scale-105 transition duration-300">
                 <span class="absolute top-3 left-3 w-8 h-8 rounded-lg bg-slate-900/90 text-emerald-400 font-bold font-mono text-sm flex items-center justify-center border border-slate-700">04</span>
@@ -701,11 +680,33 @@
               </div>
 
               <div>
-                <div class="flex justify-between items-center mb-1">
+                <div class="flex justify-between items-center mb-1.5">
                   <label class="block text-xs font-bold uppercase text-slate-600">Volume / Tonase Limbah</label>
-                  <span id="calc-unit-label" class="text-xs text-brand-700 font-mono font-bold">Liter</span>
+                  <div class="flex items-center space-x-1.5 bg-slate-100 px-2 py-0.5 rounded-md">
+                    <span id="calc-volume-display" class="text-xs font-mono font-bold text-slate-800">2.000</span>
+                    <span id="calc-unit-label" class="text-xs text-brand-700 font-mono font-bold">Liter</span>
+                  </div>
                 </div>
-                <input type="number" id="calc-quantity" value="2000" min="1" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2.5 text-sm font-semibold focus:ring-2 focus:ring-brand-500 focus:outline-none">
+                <input type="number" id="calc-quantity" value="2000" min="1" max="50000" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2.5 text-sm font-semibold focus:ring-2 focus:ring-brand-500 focus:outline-none transition">
+                
+                <!-- Penggeser Rentang Volume & Tombol Pintasan Cepat -->
+                <div class="mt-2.5 space-y-2">
+                  <input type="range" id="calc-volume-slider" min="100" max="20000" step="100" value="2000" class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-emerald-600">
+                  <div class="flex items-center justify-between text-[10px] text-slate-400 font-mono">
+                    <span>100</span>
+                    <span>5.000</span>
+                    <span>10.000</span>
+                    <span>20.000+</span>
+                  </div>
+                  <div class="flex flex-wrap items-center gap-1.5 pt-1">
+                    <span class="text-[11px] text-slate-500 font-medium mr-1">Preset:</span>
+                    <button type="button" onclick="app.setCalcVolume(500)" class="px-2.5 py-1 text-xs rounded-lg border border-slate-200 bg-white hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-300 text-slate-700 font-medium transition shadow-sm">500</button>
+                    <button type="button" onclick="app.setCalcVolume(1000)" class="px-2.5 py-1 text-xs rounded-lg border border-slate-200 bg-white hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-300 text-slate-700 font-medium transition shadow-sm">1.000</button>
+                    <button type="button" onclick="app.setCalcVolume(2500)" class="px-2.5 py-1 text-xs rounded-lg border border-slate-200 bg-white hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-300 text-slate-700 font-medium transition shadow-sm">2.500</button>
+                    <button type="button" onclick="app.setCalcVolume(5000)" class="px-2.5 py-1 text-xs rounded-lg border border-slate-200 bg-white hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-300 text-slate-700 font-medium transition shadow-sm">5.000</button>
+                    <button type="button" onclick="app.setCalcVolume(10000)" class="px-2.5 py-1 text-xs rounded-lg border border-slate-200 bg-white hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-300 text-slate-700 font-medium transition shadow-sm">10.000</button>
+                  </div>
+                </div>
               </div>
 
               <div>
@@ -1173,11 +1174,8 @@
       <div class="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
         
         <div class="space-y-3">
-          <div class="flex items-center space-x-2">
-            <div class="w-8 h-8 rounded-lg bg-emerald-500 flex items-center justify-center text-slate-950 font-bold">
-              <i class="fa-solid fa-recycle"></i>
-            </div>
-            <span class="text-xl font-extrabold text-white tracking-wider font-mono">BURSA LIMBAH</span>
+          <div class="flex items-center mb-1">
+            <img src="assets/logo.jpg" alt="Bursa Limbah" class="h-20 w-auto object-contain rounded-xl bg-white p-1" />
           </div>
           <p class="text-slate-400 text-xs leading-relaxed">
             Platform bursa perdagangan limbah berbasis ketertelusuran (traceability) terkemuka di Indonesia. Menghubungkan pasokan limbah industri secara terverifikasi, transparan, dan terukur.
@@ -1209,7 +1207,7 @@
           <h4 class="text-white font-bold mb-3 uppercase tracking-wider text-xs">Pusat Layanan Resmi</h4>
           <ul class="space-y-2 text-slate-400">
             <li><i class="fa-solid fa-phone mr-1.5 text-emerald-400"></i> +62 812-3456-7890</li>
-            <li><i class="fa-solid fa-envelope mr-1.5 text-emerald-400"></i> kemitraan@BURSA LIMBAH.com</li>
+            <li><i class="fa-solid fa-envelope mr-1.5 text-emerald-400"></i> kemitraan@bursalimbah.id</li>
             <li><i class="fa-solid fa-location-dot mr-1.5 text-emerald-400"></i> Sentra Inovasi Hijau BURSA LIMBAH Lt. 5, Jakarta Timur</li>
           </ul>
         </div>

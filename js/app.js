@@ -2208,7 +2208,9 @@ class BursaLimbahApp {
   setupCalculator() {
     const catSelect = [REDACTED]'calc-category');
     const qtyInput = [REDACTED]'calc-quantity');
+    const slider = [REDACTED]'calc-volume-slider');
     const priceInput = [REDACTED]'calc-price');
+    const volumeDisplay = [REDACTED]'calc-volume-display');
 
     if (!catSelect || !qtyInput || !priceInput) return;
 
@@ -2219,12 +2221,16 @@ class BursaLimbahApp {
 
     const updateCalc = () => {
       const selected = catSelect.selectedOptions[0];
-      const unit = selected.getAttribute('data-unit');
+      const unit = selected ? selected.getAttribute('data-unit') : 'Unit';
       const qty = Number(qtyInput.value) || 0;
       const price = Number(priceInput.value) || 0;
 
       const unitLabel = [REDACTED]'calc-unit-label');
       if (unitLabel) unitLabel.textContent = unit;
+      if (volumeDisplay) volumeDisplay.textContent = qty.toLocaleString('id-ID');
+      if (slider && Number(slider.value) !== qty && qty <= Number(slider.max)) {
+        slider.value = qty;
+      }
 
       const gross = qty * price;
       const dp = Math.round(gross * 0.3);
@@ -2240,13 +2246,31 @@ class BursaLimbahApp {
 
     catSelect.addEventListener('change', () => {
       const selected = catSelect.selectedOptions[0];
-      priceInput.value = selected.getAttribute('data-price');
+      if (selected) priceInput.value = selected.getAttribute('data-price');
       updateCalc();
     });
 
     qtyInput.addEventListener('input', updateCalc);
     priceInput.addEventListener('input', updateCalc);
+
+    if (slider) {
+      slider.addEventListener('input', (e) => {
+        qtyInput.value = e.target.value;
+        updateCalc();
+      });
+    }
+
     updateCalc();
+  }
+
+  setCalcVolume(val) {
+    const qtyInput = [REDACTED]'calc-quantity');
+    const slider = [REDACTED]'calc-volume-slider');
+    if (qtyInput) {
+      qtyInput.value = val;
+      if (slider) slider.value = val;
+      qtyInput.dispatchEvent(new Event('input'));
+    }
   }
 
   populateSelectCategories() {
