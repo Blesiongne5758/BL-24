@@ -1,0 +1,45 @@
+﻿name: Deploy BursaLimbah to AWS EC2
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    name: Deploy to EC2
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Checkout repository
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      # 2. Setup SSH key for EC2 connection
+      - name: Setup SSH Key
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.EC2_SSH_KEY }}
+
+      # 3. Add EC2 host to known_hosts
+      - name: Add EC2 to Known Hosts
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
+
+      # 4. Sync web files to web root on EC2
+      - name: Sync Static Files to EC2 (/var/www/bursalimbah)
+        run: |
+          rsync -avz --delete \
+            --exclude '.git*' \
+            --exclude 'bursa limbah' \
+            --exclude '*.md' \
+            --exclude '*.bat' \
+            --exclude '*.ps1' \
+            ./ ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:/var/www/bursalimbah/
+
+      # 5. Reload Nginx on EC2
+      - name: Reload Nginx Service
+        run: |
+          ssh ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} "sudo systemctl reload nginx"
