@@ -3,12 +3,13 @@
  * Versi 3: 3-Tier Berlangganan Pembeli, Gated Access Publik, Kontrol Admin Rentang Harga & Fitur Layar Chat Interaktif
  */
 
-class BURSA LIMBAHApp {
+class BursaLimbahApp {
   constructor() {
-    this.store = window.BURSA LIMBAHStore;
+    this.store = window.bursaLimbahStore || window.circulinkStore;
     this.activeModalMap = null;
     this.currentBuyerTab = 'market';
     this.currentAdminTab = 'verification';
+    this.currentLoginTab = 'buyer';
     this.publicPostingFilter = 'all'; // 'all', 'supply', 'demand'
     this.selectedRegisterTier = 'tier_pro'; // Default dipilih di modal registrasi
     this.currentChatProduct = null;
@@ -34,6 +35,7 @@ class BURSA LIMBAHApp {
     this.renderAdminDashboard();
     this.updateAdminPendingBadge();
     this.updateChatUnreadBadge();
+    this.updateNavUI();
   }
 
   // ================= FUNGSI BANTU & FORMATTER =================
@@ -115,7 +117,7 @@ class BURSA LIMBAHApp {
     });
 
     // Sembunyikan semua tab konten
-    roles.forEach(r => {
+    ['public', 'buyer', 'seller', 'admin', 'login'].forEach(r => {
       const view = [REDACTED]`view-${r}`);
       if (view) view.classList.add('hidden');
     });
@@ -131,53 +133,87 @@ class BURSA LIMBAHApp {
     const roleActions = [REDACTED]'role-context-actions');
     const roleIcon = [REDACTED]'role-badge-icon');
 
-    if (role === 'public') {
-      banner.classList.add('hidden');
+    if (role === 'public' || role === 'login') {
+      if (banner) banner.classList.add('hidden');
     } else {
-      banner.classList.remove('hidden');
+      if (banner) banner.classList.remove('hidden');
       const user = this.store.getCurrentUser();
 
-      if (role === 'buyer') {
+      if (role === 'buyer' && user) {
         const tier = this.store.getUserSubscriptionTier(user);
         const limitText = (!tier.maxPriceLimit || tier.maxPriceLimit === 0) 
           ? 'Unlimited (Semua Nilai Transaksi)' 
           : `Maksimal Nilai: ${this.formatRupiah(tier.maxPriceLimit)}`;
 
-        roleIcon.innerHTML = '<i class="fa-solid fa-crown text-amber-300"></i>';
-        roleTitle.textContent = `Peran Pembeli: ${user.name}`;
-        roleDesc.textContent = `Paket: ${tier.name} (${limitText}) • Alamat: ${tier.allowAddress === 'full' ? 'Lengkap' : 'Kota'} • GPS: ${tier.allowGpsMap ? 'Aktif' : 'Terkunci'} • WA: ${tier.allowWhatsapp ? 'Aktif' : 'Chat Saja'}`;
-        roleActions.innerHTML = `
-          <button onclick="app.showBuyerRegisterModal()" class="px-2.5 py-1 rounded bg-brand-600 hover:bg-brand-500 text-white font-bold transition flex items-center space-x-1">
-            <i class="fa-solid fa-crown text-amber-300"></i>
-            <span>Ganti Tier Langganan</span>
-          </button>
-        `;
-      } else if (role === 'seller') {
-        roleIcon.innerHTML = '<i class="fa-solid fa-store text-emerald-300"></i>';
-        roleTitle.textContent = `Peran Penjual: ${user.name}`;
-        roleDesc.textContent = `Status: ${user.verifiedBadge} • Saldo Penjualan: ${this.formatRupiah(user.balance)}`;
-        roleActions.innerHTML = `
-          <button onclick="app.showUploadModal()" class="px-2.5 py-1 rounded bg-brand-600 hover:bg-brand-500 text-white font-bold transition">
-            + Unggah Pasokan
-          </button>
-        `;
+        if (roleIcon) roleIcon.innerHTML = '<i class="fa-solid fa-crown text-amber-300"></i>';
+        if (roleTitle) roleTitle.textContent = `Akun Pembeli: ${user.name}`;
+        if (roleDesc) roleDesc.textContent = `Paket: ${tier.name} (${limitText}) • Alamat: ${tier.allowAddress === 'full' ? 'Lengkap' : 'Kota'} • GPS: ${tier.allowGpsMap ? 'Aktif' : 'Terkunci'} • WA: ${tier.allowWhatsapp ? 'Aktif' : 'Chat Saja'}`;
+        if (roleActions) {
+          roleActions.innerHTML = `
+            <button onclick="app.showBuyerRegisterModal()" class="px-2.5 py-1 rounded bg-brand-600 hover:bg-brand-500 text-white font-bold transition flex items-center space-x-1">
+              <i class="fa-solid fa-crown text-amber-300"></i>
+              <span>Ganti Tier</span>
+            </button>
+            <button onclick="app.logout()" class="px-2.5 py-1 rounded bg-slate-800 hover:bg-rose-600 text-white font-semibold transition flex items-center space-x-1">
+              <i class="fa-solid fa-right-from-bracket"></i>
+              <span>Keluar</span>
+            </button>
+          `;
+        }
+
+        // Update heading pada halaman view-buyer
+        const buyerHeading = [REDACTED]'buyer-company-name-heading');
+        if (buyerHeading) buyerHeading.textContent = `Portal Akun Pembeli: ${user.company || user.name}`;
+      } else if (role === 'seller' && user) {
+        if (roleIcon) roleIcon.innerHTML = '<i class="fa-solid fa-store text-emerald-300"></i>';
+        if (roleTitle) roleTitle.textContent = `Akun Penjual: ${user.name}`;
+        if (roleDesc) roleDesc.textContent = `Status: ${user.verifiedBadge} • Saldo Penjualan: ${this.formatRupiah(user.balance)}`;
+        if (roleActions) {
+          roleActions.innerHTML = `
+            <button onclick="app.showUploadModal()" class="px-2.5 py-1 rounded bg-brand-600 hover:bg-brand-500 text-white font-bold transition">
+              + Unggah Pasokan
+            </button>
+            <button onclick="app.logout()" class="px-2.5 py-1 rounded bg-slate-800 hover:bg-rose-600 text-white font-semibold transition flex items-center space-x-1">
+              <i class="fa-solid fa-right-from-bracket"></i>
+              <span>Keluar</span>
+            </button>
+          `;
+        }
+
+        // Update header profil di view-seller
+        const sellerName = [REDACTED]'seller-profile-name');
+        const sellerMeta = [REDACTED]'seller-profile-meta');
+        const sellerBadge = [REDACTED]'seller-badge-pill');
+        if (sellerName) sellerName.textContent = user.name;
+        if (sellerMeta) sellerMeta.textContent = `Email: ${user.email || '-'} • Lokasi: ${user.location || '-'} • Rekening: ${user.bankAccount || '-'}`;
+        if (sellerBadge) sellerBadge.textContent = user.verifiedBadge || 'Pemasok Terverifikasi';
       } else if (role === 'admin') {
-        roleIcon.innerHTML = '<i class="fa-solid fa-user-shield text-amber-300"></i>';
-        roleTitle.textContent = 'Peran Pengelola: Pusat Kontrol BURSA LIMBAH';
-        roleDesc.textContent = 'Otoritas: Kurasi Mutu, Audit Escrow DP, & Atur Batas Rentang Nilai Jual 3-Tier';
-        roleActions.innerHTML = `
-          <button onclick="app.resetDemoData()" class="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium">
-            Reset Data Demo
-          </button>
-        `;
+        if (roleIcon) roleIcon.innerHTML = '<i class="fa-solid fa-user-shield text-amber-300"></i>';
+        if (roleTitle) roleTitle.textContent = 'Peran Pengelola: Pusat Kontrol BURSA LIMBAH';
+        if (roleDesc) roleDesc.textContent = 'Otoritas: Kurasi Mutu, Audit Escrow DP, & Atur Batas Rentang Nilai Jual 3-Tier';
+        if (roleActions) {
+          roleActions.innerHTML = `
+            <button onclick="app.resetDemoData()" class="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium">
+              Reset Data Demo
+            </button>
+            <button onclick="app.logout()" class="px-2.5 py-1 rounded bg-slate-800 hover:bg-rose-600 text-white font-semibold transition flex items-center space-x-1">
+              <i class="fa-solid fa-right-from-bracket"></i>
+              <span>Keluar</span>
+            </button>
+          `;
+        }
       }
     }
+
+    // Perbarui Navigasi
+    this.updateNavUI();
 
     // Muat ulang data tampilan yang aktif
     if (role === 'public') this.renderPublicPostings();
     if (role === 'buyer') this.renderBuyerMarketplace();
     if (role === 'seller') this.renderSellerDashboard();
     if (role === 'admin') this.renderAdminDashboard();
+    if (role === 'login') this.renderLoginPage();
 
     window.scrollTo({ top: 0, behavior: 'smooth' });
 
@@ -186,10 +222,327 @@ class BURSA LIMBAHApp {
         public: 'Halaman Publik (Data Harga & GPS Terproteksi)',
         buyer: 'Portal Pembeli (Akses Sesuai Tier Berlangganan)',
         seller: 'Dashboard Penjual (Unggah Pasokan & Kontak)',
-        admin: 'Pusat Pengelola (Atur Batas Rentang 3-Tier)'
+        admin: 'Pusat Pengelola (Atur Batas Rentang 3-Tier)',
+        login: 'Halaman Masuk Akun Penjual & Pembeli'
       };
-      this.showToast(`Beralih ke mode: ${names[role]}`);
+      this.showToast(`Beralih ke: ${names[role] || role}`);
     }
+  }
+
+  // ================= NAVIGASI & HEADER DOKUMEN =================
+  updateNavUI() {
+    const navContainer = [REDACTED]'nav-action-container');
+    if (!navContainer) return;
+
+    const role = this.store.getCurrentRole();
+    const user = this.store.getCurrentUser();
+
+    if (role === 'buyer' && user) {
+      navContainer.innerHTML = `
+        <div class="flex items-center space-x-2">
+          <div class="hidden lg:flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold">
+            <i class="fa-solid fa-crown text-amber-500"></i>
+            <span class="truncate max-w-[140px]">${user.company || user.name}</span>
+          </div>
+          <button onclick="app.setRole('buyer')" class="px-3 py-2 text-xs font-bold rounded-xl bg-brand-600 hover:bg-brand-700 text-white shadow-sm transition flex items-center space-x-1">
+            <i class="fa-solid fa-user"></i>
+            <span>Akun Pembeli</span>
+          </button>
+          <button onclick="app.logout()" title="Keluar dari akun" class="p-2 text-xs rounded-xl border border-slate-300 text-slate-600 hover:text-rose-600 hover:border-rose-300 hover:bg-rose-50 transition">
+            <i class="fa-solid fa-right-from-bracket"></i>
+          </button>
+        </div>
+      `;
+    } else if (role === 'seller' && user) {
+      navContainer.innerHTML = `
+        <div class="flex items-center space-x-2">
+          <div class="hidden lg:flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-slate-100 border border-slate-200 text-slate-800 text-xs font-bold">
+            <i class="fa-solid fa-store text-emerald-600"></i>
+            <span class="truncate max-w-[140px]">${user.name}</span>
+          </div>
+          <button onclick="app.setRole('seller')" class="px-3 py-2 text-xs font-bold rounded-xl bg-slate-900 hover:bg-slate-800 text-white shadow-sm transition flex items-center space-x-1">
+            <i class="fa-solid fa-boxes-stacked"></i>
+            <span>Dashboard Penjual</span>
+          </button>
+          <button onclick="app.logout()" title="Keluar dari akun" class="p-2 text-xs rounded-xl border border-slate-300 text-slate-600 hover:text-rose-600 hover:border-rose-300 hover:bg-rose-50 transition">
+            <i class="fa-solid fa-right-from-bracket"></i>
+          </button>
+        </div>
+      `;
+    } else if (role === 'admin') {
+      navContainer.innerHTML = `
+        <div class="flex items-center space-x-2">
+          <button onclick="app.setRole('admin')" class="px-3 py-2 text-xs font-bold rounded-xl bg-slate-900 text-white shadow-sm transition flex items-center space-x-1">
+            <i class="fa-solid fa-user-shield text-amber-300"></i>
+            <span>Pusat Pengelola</span>
+          </button>
+          <button onclick="app.logout()" title="Keluar dari akun" class="p-2 text-xs rounded-xl border border-slate-300 text-slate-600 hover:text-rose-600 hover:border-rose-300 hover:bg-rose-50 transition">
+            <i class="fa-solid fa-right-from-bracket"></i>
+          </button>
+        </div>
+      `;
+    } else {
+      navContainer.innerHTML = `
+        <button onclick="app.showLoginPage()" class="px-3.5 py-2 text-xs font-bold rounded-xl border border-slate-300 hover:border-brand-500 hover:text-brand-700 bg-white text-slate-700 shadow-sm transition flex items-center space-x-1.5">
+          <i class="fa-solid fa-right-to-bracket text-brand-600"></i>
+          <span>Masuk</span>
+        </button>
+        <button onclick="app.showRegisterOptions()" class="px-3.5 py-2 text-xs font-bold rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white shadow-sm transition flex items-center space-x-1.5">
+          <i class="fa-solid fa-user-plus text-amber-300"></i>
+          <span>Daftar</span>
+        </button>
+      `;
+    }
+  }
+
+  // ================= MODUL AUTENTIKASI & HALAMAN LOGIN =================
+  showLoginPage(role = 'buyer') {
+    this.currentLoginTab = role;
+    this.setRole('login', false);
+  }
+
+  switchLoginTab(role) {
+    this.currentLoginTab = role;
+    this.renderLoginPage();
+  }
+
+  renderLoginPage() {
+    const isBuyer = this.currentLoginTab === 'buyer';
+
+    // Update Tombol Tab
+    const btnBuyer = [REDACTED]'login-tab-btn-buyer');
+    const btnSeller = [REDACTED]'login-tab-btn-seller');
+    const checkBuyer = [REDACTED]'login-tab-check-buyer');
+    const checkSeller = [REDACTED]'login-tab-check-seller');
+
+    if (btnBuyer && btnSeller) {
+      if (isBuyer) {
+        btnBuyer.className = 'p-5 rounded-2xl border-2 border-emerald-500 bg-emerald-50/80 text-left transition relative shadow-sm hover:shadow group focus:outline-none';
+        btnSeller.className = 'p-5 rounded-2xl border-2 border-slate-200 bg-white text-left transition relative shadow-sm hover:border-slate-300 hover:shadow group focus:outline-none';
+        if (checkBuyer) checkBuyer.classList.remove('hidden');
+        if (checkSeller) checkSeller.classList.add('hidden');
+      } else {
+        btnBuyer.className = 'p-5 rounded-2xl border-2 border-slate-200 bg-white text-left transition relative shadow-sm hover:border-slate-300 hover:shadow group focus:outline-none';
+        btnSeller.className = 'p-5 rounded-2xl border-2 border-slate-800 bg-slate-50 text-left transition relative shadow-sm hover:shadow group focus:outline-none';
+        if (checkBuyer) checkBuyer.classList.add('hidden');
+        if (checkSeller) checkSeller.classList.remove('hidden');
+      }
+    }
+
+    // Update Banner Kartu
+    const banner = [REDACTED]'login-form-banner');
+    const title = [REDACTED]'login-form-title');
+    const subtitle = [REDACTED]'login-form-subtitle');
+    const badge = [REDACTED]'login-form-badge');
+    const icon = [REDACTED]'login-form-icon');
+    const hint = [REDACTED]'login-hint-role');
+    const inputIdentifier = [REDACTED]'login-input-identifier');
+    const submitLabel = [REDACTED]'login-submit-label');
+    const submitBtn = [REDACTED]'login-submit-btn');
+    const prompt = [REDACTED]'login-register-prompt');
+
+    if (isBuyer) {
+      if (banner) banner.className = 'px-6 py-5 bg-gradient-to-r from-emerald-600 to-teal-700 text-white flex items-center justify-between';
+      if (title) title.textContent = 'Masuk sebagai Pembeli';
+      if (subtitle) subtitle.textContent = 'Buka katalog, harga terverifikasi, & tiket timbang';
+      if (badge) {
+        badge.textContent = 'PORTAL PEMBELI';
+        badge.className = 'px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-white/20 text-white border border-white/30';
+      }
+      if (icon) icon.className = 'fa-solid fa-crown text-amber-300';
+      if (hint) {
+        hint.textContent = 'Akun Pembeli';
+        hint.className = 'text-[11px] font-semibold text-emerald-700';
+      }
+      if (inputIdentifier) inputIdentifier.placeholder = 'pengadaan@hijaulestari.co.id';
+      if (submitLabel) submitLabel.textContent = 'Masuk ke Portal Pembeli';
+      if (submitBtn) submitBtn.className = 'w-full py-3.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold text-sm shadow-lg shadow-emerald-600/25 transition transform active:scale-95 flex items-center justify-center space-x-2';
+      if (prompt) {
+        prompt.innerHTML = `
+          Belum memiliki akun Pembeli?
+          <button type="button" onclick="app.showBuyerRegisterModal()" class="text-emerald-700 font-bold hover:underline ml-1">
+            Daftar & Berlangganan 3-Tier →
+          </button>
+        `;
+      }
+    } else {
+      if (banner) banner.className = 'px-6 py-5 bg-gradient-to-r from-slate-900 to-slate-800 text-white flex items-center justify-between';
+      if (title) title.textContent = 'Masuk sebagai Penjual / Pemasok';
+      if (subtitle) subtitle.textContent = 'Unggah pasokan limbah, pantau kurasi, & saldo cair';
+      if (badge) {
+        badge.textContent = 'DASHBOARD PENJUAL';
+        badge.className = 'px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-emerald-500/30 text-emerald-300 border border-emerald-500/40';
+      }
+      if (icon) icon.className = 'fa-solid fa-store text-emerald-300';
+      if (hint) {
+        hint.textContent = 'Akun Penjual';
+        hint.className = 'text-[11px] font-semibold text-slate-700';
+      }
+      if (inputIdentifier) inputIdentifier.placeholder = 'budi@sentrajelantah.id';
+      if (submitLabel) submitLabel.textContent = 'Masuk ke Dashboard Penjual';
+      if (submitBtn) submitBtn.className = 'w-full py-3.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-sm shadow-lg shadow-slate-900/25 transition transform active:scale-95 flex items-center justify-center space-x-2';
+      if (prompt) {
+        prompt.innerHTML = `
+          Belum terdaftar sebagai Penjual?
+          <button type="button" onclick="app.showSellerRegisterModal()" class="text-emerald-700 font-bold hover:underline ml-1">
+            Daftar Jadi Mitra Penjual →
+          </button>
+        `;
+      }
+    }
+
+    // Sembunyikan notifikasi error sebelumnya
+    const alertBox = [REDACTED]'login-alert-box');
+    if (alertBox) alertBox.classList.add('hidden');
+
+    this.renderQuickLoginAccounts();
+  }
+
+  renderQuickLoginAccounts() {
+    const container = [REDACTED]'login-quick-accounts-container');
+    if (!container) return;
+
+    const isBuyer = this.currentLoginTab === 'buyer';
+
+    if (isBuyer) {
+      container.innerHTML = `
+        <button type="button" onclick="app.quickLogin('pengadaan@hijaulestari.co.id', '[REDACTED]', 'buyer')" class="p-3 text-left rounded-xl border border-emerald-200 bg-emerald-50/70 hover:bg-emerald-100 hover:border-emerald-300 transition group">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-slate-900 group-hover:text-emerald-900">PT Hijau Lestari Biofuel</span>
+            <span class="text-[10px] px-1.5 py-0.5 rounded bg-emerald-200 text-emerald-800 font-bold">Tier Pro</span>
+          </div>
+          <div class="text-[11px] text-slate-500 font-mono mt-0.5">pengadaan@hijaulestari.co.id</div>
+        </button>
+
+        <button type="button" onclick="app.quickLogin('purchasing@daurnusantara.co.id', '[REDACTED]', 'buyer')" class="p-3 text-left rounded-xl border border-slate-200 bg-white hover:bg-slate-50 hover:border-slate-300 transition group">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-slate-900 group-hover:text-emerald-900">PT Daur Nusantara</span>
+            <span class="text-[10px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-900 font-bold">Tier Enterprise</span>
+          </div>
+          <div class="text-[11px] text-slate-500 font-mono mt-0.5">purchasing@daurnusantara.co.id</div>
+        </button>
+      `;
+    } else {
+      container.innerHTML = `
+        <button type="button" onclick="app.quickLogin('budi@sentrajelantah.id', '[REDACTED]', 'seller')" class="p-3 text-left rounded-xl border border-slate-300 bg-slate-50 hover:bg-slate-100 transition group">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-slate-900">Budi Santoso</span>
+            <span class="text-[10px] px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 font-bold">Pengepul Jelantah</span>
+          </div>
+          <div class="text-[11px] text-slate-500 font-mono mt-0.5">budi@sentrajelantah.id</div>
+        </button>
+
+        <button type="button" onclick="app.quickLogin('dwigraha@rongsok.co.id', '[REDACTED]', 'seller')" class="p-3 text-left rounded-xl border border-slate-200 bg-white hover:bg-slate-50 transition group">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-slate-900">PT Dwi Graha</span>
+            <span class="text-[10px] px-1.5 py-0.5 rounded bg-blue-100 text-blue-800 font-bold">Pemasok Logam</span>
+          </div>
+          <div class="text-[11px] text-slate-500 font-mono mt-0.5">dwigraha@rongsok.co.id</div>
+        </button>
+      `;
+    }
+  }
+
+  quickLogin(identifier, password, role) {
+    const inputId = [REDACTED]'login-input-identifier');
+    const inputPass = [REDACTED]'login-input-password');
+    if (inputId) inputId.value = identifier;
+    if (inputPass) inputPass.value = password;
+
+    const res = this.store.loginUser(identifier, password, role);
+    if (res.success) {
+      this.triggerConfetti();
+      this.showToast(`Berhasil masuk sebagai ${res.user.name}!`, 'success');
+      this.setRole(role, false);
+    } else {
+      this.showToast(res.message, 'error');
+    }
+  }
+
+  handleLoginFormSubmit(event) {
+    event.preventDefault();
+    const identifier = [REDACTED]'login-input-identifier').value.trim();
+    const password = [REDACTED]'login-input-password').value;
+
+    const res = this.store.loginUser(identifier, password, this.currentLoginTab);
+
+    const alertBox = [REDACTED]'login-alert-box');
+    const alertMsg = [REDACTED]'login-alert-msg');
+
+    if (res.success) {
+      if (alertBox) alertBox.classList.add('hidden');
+      this.triggerConfetti();
+      this.showToast(`Selamat datang kembali, ${res.user.name}!`, 'success');
+      this.setRole(res.role, false);
+    } else {
+      if (alertBox) {
+        alertBox.classList.remove('hidden');
+        if (alertMsg) alertMsg.textContent = res.message;
+      }
+      this.showToast(res.message, 'error');
+    }
+  }
+
+  togglePasswordVisibility(inputId, btn) {
+    const input = [REDACTED]inputId);
+    if (!input) return;
+    const isPassword = input.type === 'password';
+    input.type = isPassword ? 'text' : 'password';
+    if (btn) {
+      btn.innerHTML = isPassword ? '<i class="fa-solid fa-eye-slash"></i>' : '<i class="fa-solid fa-eye"></i>';
+    }
+  }
+
+  showForgotPasswordInfo() {
+    alert("Bantuan Kata Sandi:\n\nSeluruh akun demo dapat diakses menggunakan kata sandi bawaan: [REDACTED].\n\nJika Anda membutuhkan pengaturan ulang akun produksi, silakan hubungi tim dukungan Bursa Limbah di kemitraan@bursalimbah.com.");
+  }
+
+  showRegisterOptions() {
+    const modal = [REDACTED]'modal-register-choice');
+    if (modal) {
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+  }
+
+  showSellerRegisterModal() {
+    const modal = [REDACTED]'modal-seller-register');
+    if (modal) {
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+  }
+
+  handleSellerRegister(event) {
+    event.preventDefault();
+    const company = [REDACTED]'reg-seller-company').value.trim();
+    const name = [REDACTED]'reg-seller-name').value.trim();
+    const phone = [REDACTED]'reg-seller-phone').value.trim();
+    const email = [REDACTED]'reg-seller-email').value.trim();
+    const location = [REDACTED]'reg-seller-location').value.trim();
+    const bankAccount = [REDACTED]'reg-seller-bank').value.trim();
+    const password = [REDACTED]'reg-seller-password').value;
+
+    const newUser = this.store.registerSeller({
+      company,
+      name,
+      phone,
+      email,
+      location,
+      bankAccount,
+      password
+    });
+
+    this.closeModals();
+    this.triggerConfetti();
+    this.showToast(`Selamat datang ${company}! Akun Penjual berhasil dibuat.`, 'success');
+    this.setRole('seller', false);
+  }
+
+  logout() {
+    this.store.logout();
+    this.setRole('public', false);
+    this.showToast("Anda telah keluar dari akun.", "info");
   }
 
   toggleMobileMenu() {
@@ -614,12 +967,14 @@ class BURSA LIMBAHApp {
     const company = [REDACTED]'reg-buyer-company').value;
     const phone = [REDACTED]'reg-buyer-phone').value;
     const email = [REDACTED]'reg-buyer-email').value;
+    const password = [REDACTED]'reg-buyer-password') ? [REDACTED]'reg-buyer-password').value : '[REDACTED]';
 
     const newUser = this.store.registerBuyer({
       name,
       company,
       phone,
       email,
+      password,
       tierId: this.selectedRegisterTier
     });
 
@@ -2038,6 +2393,6 @@ class BURSA LIMBAHApp {
 
 // Inisialisasi Aplikasi BURSA LIMBAH Saat DOM Siap
 document.addEventListener('DOMContentLoaded', () => {
-  window.app = new BURSA LIMBAHApp();
+  window.app = new BursaLimbahApp();
   window.app.init();
 });

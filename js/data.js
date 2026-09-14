@@ -212,9 +212,9 @@ const INITIAL_SETTINGS = {
   appFeePerTransaction: 5000, // Fee Aplikasi
   shippingServiceEnabled: true, // Jasa Pengiriman
   shippingFlatFee: 250000, // Tarif Jasa Pengiriman Flat Mitra BURSA LIMBAH
-  contactEmail: "kemitraan@BURSA LIMBAH.com",
+  contactEmail: "kemitraan@bursalimbah.com",
   contactPhone: "+62 812-3456-7890",
-  address: "Sentra Inovasi Hijau BURSA LIMBAH Lt. 5, Kawasan Industri Pulogadung, Jakarta Timur",
+  address: "Sentra Inovasi Hijau Bursa Limbah Lt. 5, Kawasan Industri Pulogadung, Jakarta Timur",
   subscriptionTiers: [...INITIAL_SUBSCRIPTION_TIERS]
 };
 
@@ -230,7 +230,22 @@ const INITIAL_USERS = [
     location: "Kawasan Industri MM2100, Cikarang Barat",
     subscriptionActive: true,
     subscriptionTier: "tier_pro", // Default berlangganan Bisnis Pro
-    subscriptionExpiry: "2026-10-15"
+    subscriptionExpiry: "2026-10-15",
+    password: [REDACTED]
+  },
+  {
+    id: "user_buyer_2",
+    name: "PT Daur Nusantara Sukses",
+    role: "buyer",
+    email: "purchasing@daurnusantara.co.id",
+    phone: "+62 812-3344-5566",
+    company: "PT Daur Nusantara Sukses",
+    nib: "9120005541829",
+    location: "Kawasan Industri SIER, Surabaya",
+    subscriptionActive: true,
+    subscriptionTier: "tier_enterprise",
+    subscriptionExpiry: "2026-12-31",
+    password: [REDACTED]
   },
   {
     id: "user_seller_1",
@@ -243,7 +258,8 @@ const INITIAL_USERS = [
     verifiedBadge: "Pengepul Terverifikasi",
     location: "Pasar Minggu, Jakarta Selatan",
     bankAccount: "BCA 8271-992-102 a.n Budi Santoso",
-    balance: 14500000
+    balance: 14500000,
+    password: [REDACTED]
   },
   {
     id: "user_seller_2",
@@ -256,15 +272,17 @@ const INITIAL_USERS = [
     verifiedBadge: "Pemasok Industri Terverifikasi",
     location: "Cilegon, Banten",
     bankAccount: "Mandiri 137-00-982736-1 a.n PT Dwi Graha",
-    balance: 42300000
+    balance: 42300000,
+    password: [REDACTED]
   },
   {
     id: "user_admin_1",
     name: "Pengelola Utama BURSA LIMBAH",
     role: "admin",
-    email: "admin@BURSA LIMBAH.com",
+    email: "admin@bursalimbah.com",
     phone: "+62 811-1234-5678",
-    accessLevel: "Administrator Utama"
+    accessLevel: "Administrator Utama",
+    password: [REDACTED]
   }
 ];
 

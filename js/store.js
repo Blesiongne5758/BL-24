@@ -3,9 +3,9 @@
  * Versi 3: 3-Tier Berlangganan Pembeli, Gated Access Publik, Kontrol Admin Rentang Harga & Chat Interaktif
  */
 
-const STORAGE_KEY = "BURSA LIMBAH_state_v3";
+const STORAGE_KEY = "bursalimbah_state_v3";
 
-class BURSA LIMBAHStore {
+class BursaLimbahStore {
   constructor() {
     this.initStore();
   }
@@ -79,13 +79,75 @@ class BURSA LIMBAHStore {
   getCurrentUser() {
     const role = this.getCurrentRole();
     if (role === "buyer") {
-      return this.state.users.find(u => u.id === this.state.activeUserId) || this.state.users[0];
+      return this.state.users.find(u => u.id === this.state.activeUserId) || this.state.users.find(u => u.role === "buyer") || this.state.users[0];
     } else if (role === "seller") {
-      return this.state.users.find(u => u.id === this.state.sellerUserId) || this.state.users[1];
+      return this.state.users.find(u => u.id === this.state.sellerUserId) || this.state.users.find(u => u.role === "seller") || this.state.users[1];
     } else if (role === "admin") {
       return this.state.users.find(u => u.role === "admin") || this.state.users[3];
     }
     return null;
+  }
+
+  getUsersByRole(role) {
+    return (this.state.users || []).filter(u => u.role === role);
+  }
+
+  loginUser(identifier, password, expectedRole = null) {
+    const cleanId = (identifier || "").trim().toLowerCase();
+    const cleanDigits = cleanId.replace(/[^0-9]/g, "");
+
+    const user = this.state.users.find(u => {
+      const emailMatch = u.email && u.email.toLowerCase() === cleanId;
+      const phoneMatch = cleanDigits && u.phone && u.phone.replace(/[^0-9]/g, "") === cleanDigits;
+      return emailMatch || phoneMatch;
+    });
+
+    if (!user) {
+      return {
+        success: false,
+        message: "Akun dengan email atau nomor telepon tersebut tidak ditemukan. Silakan periksa kembali atau lakukan pendaftaran."
+      };
+    }
+
+    if (expectedRole && user.role !== expectedRole) {
+      const roleLabel = user.role === "buyer" ? "Pembeli" : (user.role === "seller" ? "Penjual" : "Pengelola");
+      return {
+        success: false,
+        message: `Akun ini terdaftar sebagai ${roleLabel}. Silakan masuk melalui tab login ${roleLabel}.`
+      };
+    }
+
+    // Periksa password
+    const userPass = user.[REDACTED] "[REDACTED]";
+    if (password && password !== userPass) {
+      return {
+        success: false,
+        message: "Kata sandi yang Anda masukkan salah. Silakan coba lagi atau gunakan tombol Akun Demo."
+      };
+    }
+
+    // Aktifkan sesi pengguna
+    if (user.role === "buyer") {
+      this.state.activeUserId = user.id;
+      this.state.currentRole = "buyer";
+    } else if (user.role === "seller") {
+      this.state.sellerUserId = user.id;
+      this.state.currentRole = "seller";
+    } else if (user.role === "admin") {
+      this.state.currentRole = "admin";
+    }
+
+    this.save();
+    return {
+      success: true,
+      user,
+      role: user.role
+    };
+  }
+
+  logout() {
+    this.state.currentRole = "public";
+    this.save();
   }
 
   // ================= 3-TIER SUBSCRIPTION MANAGEMENT =================
@@ -155,7 +217,7 @@ class BURSA LIMBAHStore {
     return null;
   }
 
-  registerBuyer({ name, email, phone, company, tierId }) {
+  registerBuyer({ name, email, phone, company, tierId, password }) {
     const newId = "user_buyer_" + Date.now();
     const chosenTierId = tierId || "tier_starter";
     const nextMonth = new Date();
@@ -163,20 +225,45 @@ class BURSA LIMBAHStore {
 
     const newUser = {
       id: newId,
-      name: name || "Pembeli Baru BURSA LIMBAH",
+      name: name || "Pembeli Baru Bursa Limbah",
       role: "buyer",
-      email: email || `buyer_${Date.now()}@BURSA LIMBAH.id`,
+      email: email || `buyer_${Date.now()}@bursalimbah.id`,
       phone: phone || "+62 812-0000-0000",
       company: company || "Perusahaan Pembeli",
       location: "Indonesia",
       subscriptionActive: true,
       subscriptionTier: chosenTierId,
-      subscriptionExpiry: nextMonth.toISOString().split("T")[0]
+      subscriptionExpiry: nextMonth.toISOString().split("T")[0],
+      password: [REDACTED]
     };
 
     this.state.users.push(newUser);
     this.state.activeUserId = newId;
     this.state.currentRole = "buyer";
+    this.save();
+    return newUser;
+  }
+
+  registerSeller({ name, email, phone, company, location, bankAccount, password }) {
+    const newId = "user_seller_" + Date.now();
+    const newUser = {
+      id: newId,
+      name: name || "Penjual Baru Bursa Limbah",
+      role: "seller",
+      email: email || `seller_${Date.now()}@bursalimbah.id`,
+      phone: phone || "+62 813-0000-0000",
+      company: company || name || "Pemasok Limbah Mandiri",
+      identityVerified: false,
+      verifiedBadge: "Pemasok Baru",
+      location: location || "Indonesia",
+      bankAccount: bankAccount || "-",
+      balance: 0,
+      password: [REDACTED]
+    };
+
+    this.state.users.push(newUser);
+    this.state.sellerUserId = newId;
+    this.state.currentRole = "seller";
     this.save();
     return newUser;
   }
@@ -653,4 +740,6 @@ class BURSA LIMBAHStore {
 }
 
 // Inisialisasi store global
-window.BURSA LIMBAHStore = new BURSA LIMBAHStore();
+window.bursaLimbahStore = new BursaLimbahStore();
+window.BURSA_LIMBAHStore = window.bursaLimbahStore;
+window.circulinkStore = window.bursaLimbahStore;
