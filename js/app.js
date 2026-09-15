@@ -728,14 +728,99 @@ class BursaLimbahApp {
     this.showToast(`Berhasil! Notifikasi event akan dikirim ke ${email}.`, 'success');
   }
 
-  // ================= TICKER HARGA LIVE =================
+  // ================= TICKER HARGA LIVE & KURS =================
+  async fetchLiveMarketRates() {
+    try {
+      const response = await fetch('https://open.er-api.com/v6/latest/USD');
+      if (response.ok) {
+        const data = await response.json();
+        if (data && data.rates && data.rates.IDR) {
+          const liveUsd = Math.round(data.rates.IDR);
+          this.marketCurrencies.usd.rate = liveUsd;
+          // Estimasi harga emas per gram (spot dunia ~US$ 2.650 / troy ounce; 1 troy oz = 31.1035 gr)
+          const goldPerGram = Math.round((2650 * liveUsd) / 31.1035);
+          if (goldPerGram > 1000000 && goldPerGram < 2500000) {
+            this.marketCurrencies.gold.rate = goldPerGram;
+          }
+          this.renderPriceTicker();
+        }
+      }
+    } catch (e) {
+      console.log("Menggunakan rate kurs standar bawaan", e);
+    }
+  }
+
   renderPriceTicker() {
     const tickerContainer = [REDACTED]'price-ticker-strip');
     if (!tickerContainer) return;
 
+    if (!this.marketCurrencies) {
+      this.marketCurrencies = {
+        usd: {
+          name: 'USD / IDR',
+          label: 'Kurs Dolar AS',
+          rate: 16180,
+          trend: 'up',
+          changePercent: '+0.15%'
+        },
+        gold: {
+          name: 'Harga Emas Antam',
+          label: 'Emas Logam Mulia',
+          rate: 1515000,
+          unit: 'gr',
+          trend: 'up',
+          changePercent: '+0.42%'
+        }
+      };
+      this.fetchLiveMarketRates();
+    }
+
     const categories = this.store.getCategories();
     let html = '';
 
+    // 1. Kurs Dolar AS terhadap Rupiah (USD/IDR)
+    const usd = this.marketCurrencies.usd;
+    const usdIsUp = usd.trend === 'up';
+    const usdIsDown = usd.trend === 'down';
+    const usdTrendColor = usdIsUp ? 'text-emerald-400 border-emerald-800/60 bg-emerald-950/70' : usdIsDown ? 'text-rose-400 border-rose-800/60 bg-rose-950/70' : 'text-slate-400 border-slate-700 bg-slate-800';
+    const usdTrendIcon = usdIsUp ? 'fa-arrow-trend-up' : usdIsDown ? 'fa-arrow-trend-down' : 'fa-minus';
+
+    html += `
+      <div class="inline-flex items-center space-x-2 bg-gradient-to-r from-emerald-950/90 to-slate-900 px-3 py-1 rounded-lg border border-emerald-500/50 hover:border-emerald-400 transition shadow-sm">
+        <span class="w-2 h-2 rounded-full ${usdIsUp ? 'bg-emerald-400' : 'bg-rose-400'} animate-pulse"></span>
+        <span class="text-emerald-400 font-bold flex items-center space-x-1 text-xs">
+          <i class="fa-solid fa-dollar-sign text-[11px]"></i>
+          <span>USD/IDR:</span>
+        </span>
+        <span class="text-white font-bold font-mono text-xs">${this.formatRupiah(usd.rate)}</span>
+        <span class="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded border ${usdTrendColor} flex items-center">
+          <i class="fa-solid ${usdTrendIcon} mr-1 text-[9px]"></i>${usd.changePercent}
+        </span>
+      </div>
+    `;
+
+    // 2. Harga Emas Murni / Antam
+    const gold = this.marketCurrencies.gold;
+    const goldIsUp = gold.trend === 'up';
+    const goldIsDown = gold.trend === 'down';
+    const goldTrendColor = goldIsUp ? 'text-amber-300 border-amber-800/60 bg-amber-950/70' : goldIsDown ? 'text-rose-400 border-rose-800/60 bg-rose-950/70' : 'text-slate-400 border-slate-700 bg-slate-800';
+    const goldTrendIcon = goldIsUp ? 'fa-arrow-trend-up' : goldIsDown ? 'fa-arrow-trend-down' : 'fa-minus';
+
+    html += `
+      <div class="inline-flex items-center space-x-2 bg-gradient-to-r from-amber-950/90 to-slate-900 px-3 py-1 rounded-lg border border-amber-500/50 hover:border-amber-400 transition shadow-sm">
+        <span class="w-2 h-2 rounded-full ${goldIsUp ? 'bg-amber-400' : 'bg-rose-400'} animate-pulse"></span>
+        <span class="text-amber-300 font-bold flex items-center space-x-1 text-xs">
+          <i class="fa-solid fa-coins text-[11px] text-amber-400"></i>
+          <span>Harga Emas:</span>
+        </span>
+        <span class="text-white font-bold font-mono text-xs">${this.formatRupiah(gold.rate)}<span class="text-[10px] text-slate-400 font-normal">/gr</span></span>
+        <span class="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded border ${goldTrendColor} flex items-center">
+          <i class="fa-solid ${goldTrendIcon} mr-1 text-[9px]"></i>${gold.changePercent}
+        </span>
+      </div>
+    `;
+
+    // 3. Kategori Komoditas Limbah
     categories.forEach(cat => {
       const approvedProducts = this.store.getProducts({ category: cat.id, status: 'approved' });
       let currentPrice = cat.avgPrice;
@@ -766,11 +851,26 @@ class BursaLimbahApp {
     if (!this.tickerPulseInterval) {
       this.tickerPulseInterval = setInterval(() => {
         this.simulateLiveMarketTick();
-      }, 6000);
+      }, 5000);
     }
   }
 
   simulateLiveMarketTick() {
+    // Fluktuasi acak untuk Kurs USD atau Harga Emas
+    if (this.marketCurrencies && Math.random() > 0.3) {
+      if (Math.random() > 0.5) {
+        const delta = Math.floor(Math.random() * 30) - 14;
+        this.marketCurrencies.usd.rate = Math.max(15000, this.marketCurrencies.usd.rate + delta);
+        this.marketCurrencies.usd.trend = delta >= 0 ? 'up' : 'down';
+        this.marketCurrencies.usd.changePercent = `${delta >= 0 ? '+' : ''}${(Math.random() * 0.25).toFixed(2)}%`;
+      } else {
+        const delta = (Math.floor(Math.random() * 7) - 3) * 1000;
+        this.marketCurrencies.gold.rate = Math.max(1000000, this.marketCurrencies.gold.rate + delta);
+        this.marketCurrencies.gold.trend = delta >= 0 ? 'up' : 'down';
+        this.marketCurrencies.gold.changePercent = `${delta >= 0 ? '+' : ''}${(Math.random() * 0.35).toFixed(2)}%`;
+      }
+    }
+
     const categories = this.store.getCategories();
     if (!categories || categories.length === 0) return;
 
