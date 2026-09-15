@@ -22,8 +22,11 @@ class BursaLimbahStore {
         buyerRequests: [...INITIAL_BUYER_REQUESTS],
         chats: [...INITIAL_CHATS],
         currentRole: "public", // 'public', 'buyer', 'seller', 'admin'
-        activeUserId: "user_buyer_1",
-        sellerUserId: "user_seller_1"
+        activeUserId: null,
+        sellerUserId: null,
+        adminUserId: null,
+        authenticatedBuyerId: null,
+        authenticatedSellerId: null
       };
       this.save();
     } else {
@@ -36,8 +39,27 @@ class BursaLimbahStore {
         }
         if (!this.state.settings.subscriptionTiers || this.state.settings.subscriptionTiers.length === 0) {
           this.state.settings.subscriptionTiers = [...INITIAL_SUBSCRIPTION_TIERS];
+        } else {
+          // Sinkronisasi pembaruan Tier Gratis (Rp 1 - Rp 200.000)
+          const starterTier = this.state.settings.subscriptionTiers.find(t => t.id === 'tier_starter');
+          if (starterTier) {
+            starterTier.name = "Paket Gratis (Starter)";
+            starterTier.badge = "Gratis Rp 0";
+            starterTier.monthlyFee = 0;
+            starterTier.minPriceLimit = 1;
+            starterTier.maxPriceLimit = 200000;
+            starterTier.tagline = "Gratis — Harga Penawaran Rp 1 s/d Rp 200.000";
+            starterTier.description = "Khusus pembeli pemula & UMKM, membuka akses harga penawaran Rp 1 hingga Rp 200.000.";
+            starterTier.isFree = true;
+          }
         }
         if (!this.state.users) this.state.users = [...INITIAL_USERS];
+        // Pastikan akun demo user_buyer_free terdaftar di users
+        if (!this.state.users.some(u => u.id === 'user_buyer_free')) {
+          const freeSeed = INITIAL_USERS.find(u => u.id === 'user_buyer_free');
+          if (freeSeed) this.state.users.push(freeSeed);
+        }
+
         if (!this.state.categories || this.state.categories.length === 0) {
           this.state.categories = [...INITIAL_CATEGORIES];
         }
@@ -47,6 +69,24 @@ class BursaLimbahStore {
         if (!this.state.chats || this.state.chats.length === 0) {
           this.state.chats = [...INITIAL_CHATS];
         }
+
+        // Keamanan: Jika peran saat ini memerlukan login namun belum ada sesi valid, kembalikan ke public
+        if (this.state.currentRole === "admin" && !this.isAdminAuthenticated()) {
+          this.state.currentRole = "public";
+        }
+        if (this.state.currentRole === "buyer" && !this.isBuyerAuthenticated()) {
+          this.state.currentRole = "public";
+        }
+        if (this.state.currentRole === "seller" && !this.isSellerAuthenticated()) {
+          this.state.currentRole = "public";
+        }
+
+        // Pastikan produk baru berharga Rp 1 - Rp 200.000 ikut tersinkronisasi
+        INITIAL_PRODUCTS.forEach(ip => {
+          if (!this.state.products.some(p => p.id === ip.id)) {
+            this.state.products.push({ ...ip });
+          }
+        });
 
         // Sinkronisasi dan pastikan properti 'city' terisi pada seluruh produk & permintaan
         if (this.state.products && this.state.products.length > 0) {
@@ -116,13 +156,44 @@ class BursaLimbahStore {
   getCurrentUser() {
     const role = this.getCurrentRole();
     if (role === "buyer") {
-      return this.state.users.find(u => u.id === this.state.activeUserId) || this.state.users.find(u => u.role === "buyer") || this.state.users[0];
+      const buyerId = this.state.authenticatedBuyerId || this.state.activeUserId;
+      if (buyerId) {
+        return this.state.users.find(u => u.id === buyerId && u.role === "buyer") || null;
+      }
+      return null;
     } else if (role === "seller") {
-      return this.state.users.find(u => u.id === this.state.sellerUserId) || this.state.users.find(u => u.role === "seller") || this.state.users[1];
+      const sellerId = this.state.authenticatedSellerId || this.state.sellerUserId;
+      if (sellerId) {
+        return this.state.users.find(u => u.id === sellerId && u.role === "seller") || null;
+      }
+      return null;
     } else if (role === "admin") {
-      return this.state.users.find(u => u.role === "admin") || this.state.users[3];
+      if (this.state.adminUserId) {
+        return this.state.users.find(u => u.id === this.state.adminUserId && u.role === "admin") || null;
+      }
+      return null;
     }
     return null;
+  }
+
+  isBuyerAuthenticated() {
+    const buyerId = this.state.authenticatedBuyerId;
+    if (!buyerId) return false;
+    const buyerUser = (this.state.users || []).find(u => u.id === buyerId && u.role === "buyer");
+    return !!buyerUser;
+  }
+
+  isSellerAuthenticated() {
+    const sellerId = this.state.authenticatedSellerId;
+    if (!sellerId) return false;
+    const sellerUser = (this.state.users || []).find(u => u.id === sellerId && u.role === "seller");
+    return !!sellerUser;
+  }
+
+  isAdminAuthenticated() {
+    if (!this.state.adminUserId) return false;
+    const adminUser = (this.state.users || []).find(u => u.id === this.state.adminUserId && u.role === "admin");
+    return !!adminUser;
   }
 
   getUsersByRole(role) {
@@ -140,9 +211,42 @@ class BursaLimbahStore {
     });
 
     if (!user) {
+      // Jika pengguna memasukkan format email yang valid, sediakan akses login instan sesuai tab peran (pembeli/penjual)
+      if (cleanId.includes("@") && cleanId.includes(".")) {
+        const role = expectedRole || "buyer";
+        const emailName = cleanId.split("@")[0].replace(/[^a-zA-Z0-9]/g, " ").trim();
+        const displayName = emailName.charAt(0).toUpperCase() + emailName.slice(1);
+
+        let newUser;
+        if (role === "seller") {
+          newUser = this.registerSeller({
+            name: `${displayName} (Mitra Penjual)`,
+            email: cleanId,
+            phone: "+62 812-" + Math.floor(10000000 + Math.random() * 90000000),
+            company: `CV ${displayName} Mandiri`,
+            password: [REDACTED]
+          });
+        } else {
+          newUser = this.registerBuyer({
+            name: `${displayName} (Pembeli)`,
+            email: cleanId,
+            phone: "+62 812-" + Math.floor(10000000 + Math.random() * 90000000),
+            company: `PT ${displayName} Daur Ulang`,
+            tierId: "tier_starter", // Otomatis akun Pembeli Tier Gratis (Rp 1 - Rp 200.000)
+            password: [REDACTED]
+          });
+        }
+        return {
+          success: true,
+          user: newUser,
+          role: newUser.role,
+          isNewAccount: true
+        };
+      }
+
       return {
         success: false,
-        message: "Akun dengan email atau nomor telepon tersebut tidak ditemukan. Silakan periksa kembali atau lakukan pendaftaran."
+        message: "Akun tidak ditemukan. Silakan masukkan alamat email yang valid (contoh: nama@perusahaan.com) untuk masuk."
       };
     }
 
@@ -166,11 +270,14 @@ class BursaLimbahStore {
     // Aktifkan sesi pengguna
     if (user.role === "buyer") {
       this.state.activeUserId = user.id;
+      this.state.authenticatedBuyerId = user.id;
       this.state.currentRole = "buyer";
     } else if (user.role === "seller") {
       this.state.sellerUserId = user.id;
+      this.state.authenticatedSellerId = user.id;
       this.state.currentRole = "seller";
     } else if (user.role === "admin") {
+      this.state.adminUserId = user.id;
       this.state.currentRole = "admin";
     }
 
@@ -184,6 +291,11 @@ class BursaLimbahStore {
 
   logout() {
     this.state.currentRole = "public";
+    this.state.adminUserId = null;
+    this.state.authenticatedBuyerId = null;
+    this.state.authenticatedSellerId = null;
+    this.state.activeUserId = null;
+    this.state.sellerUserId = null;
     this.save();
   }
 
@@ -276,6 +388,7 @@ class BursaLimbahStore {
 
     this.state.users.push(newUser);
     this.state.activeUserId = newId;
+    this.state.authenticatedBuyerId = newId;
     this.state.currentRole = "buyer";
     this.save();
     return newUser;
@@ -300,6 +413,7 @@ class BursaLimbahStore {
 
     this.state.users.push(newUser);
     this.state.sellerUserId = newId;
+    this.state.authenticatedSellerId = newId;
     this.state.currentRole = "seller";
     this.save();
     return newUser;
@@ -383,7 +497,15 @@ class BursaLimbahStore {
 
       const tier = this.getUserSubscriptionTier(user);
       const isUnlimited = !tier.maxPriceLimit || tier.maxPriceLimit === 0;
-      const isWithinLimit = isUnlimited || product.totalPrice <= tier.maxPriceLimit;
+      const minLimit = Number(tier.minPriceLimit) || 1;
+      const maxLimit = Number(tier.maxPriceLimit) || 0;
+      const priceToCheck = (product.totalPrice && product.totalPrice > 0) ? product.totalPrice : (product.offerPrice || 0);
+
+      let isWithinLimit = true;
+      if (!isUnlimited) {
+        // Kuota tier: untuk tier gratis hanya dapat melihat harga penawaran Rp 1 hingga Rp 200.000
+        isWithinLimit = priceToCheck >= minLimit && priceToCheck <= maxLimit;
+      }
 
       return {
         isPublic: false,

@@ -153,18 +153,20 @@ const INITIAL_CATEGORIES = [
 const INITIAL_SUBSCRIPTION_TIERS = [
   {
     id: "tier_starter",
-    name: "Paket Starter (Pemula)",
-    badge: "Starter",
-    monthlyFee: 99000,
-    maxPriceLimit: 15000000, // s/d Rp 15.000.000
+    name: "Paket Gratis (Starter)",
+    badge: "Gratis Rp 0",
+    monthlyFee: 0,
+    minPriceLimit: 1,
+    maxPriceLimit: 200000, // s/d Rp 200.000
     allowAddress: "area_only", // Hanya kota/kabupaten umum
     allowGpsMap: false, // Peta GPS terkunci
     allowWhatsapp: false, // WA terkunci
     allowInAppChat: true, // Layar chat aktif
-    tagline: "Nilai Transaksi s/d Rp15 Juta",
-    description: "Ideal untuk perintis UMKM daur ulang & pengumpul skala kecil pemula.",
+    tagline: "Gratis — Harga Penawaran Rp 1 s/d Rp 200.000",
+    description: "Khusus pembeli pemula & UMKM, membuka akses harga penawaran Rp 1 hingga Rp 200.000.",
     color: "slate",
-    popular: false
+    popular: false,
+    isFree: true
   },
   {
     id: "tier_pro",
@@ -245,6 +247,20 @@ const INITIAL_USERS = [
     subscriptionActive: true,
     subscriptionTier: "tier_enterprise",
     subscriptionExpiry: "2026-12-31",
+    password: [REDACTED]
+  },
+  {
+    id: "user_buyer_free",
+    name: "Ahmad Fauzi (UMKM Daur Mandiri)",
+    role: "buyer",
+    email: "ahmad@daurmandiri.id",
+    phone: "+62 813-5566-7788",
+    company: "UMKM Daur Mandiri",
+    nib: "9120007712345",
+    location: "Pasar Rebo, Jakarta Timur",
+    subscriptionActive: true,
+    subscriptionTier: "tier_starter", // Akun Pembeli Tier Gratis
+    subscriptionExpiry: "2027-12-31",
     password: [REDACTED]
   },
   {
@@ -590,6 +606,157 @@ const INITIAL_PRODUCTS = [
     },
     createdAt: "2026-09-10 11:15",
     verifiedAt: "2026-09-10 13:40",
+    verifiedBy: "Tim Verifikasi BURSA LIMBAH"
+  },
+  {
+    id: "PRD-2026-007",
+    code: "CIR-UCO-07",
+    title: "Minyak Jelantah Jerigen Mini Resto (Kualitas Jernih Disaring)",
+    categoryId: "cat_jelantah",
+    categoryName: "Minyak Jelantah (UCO)",
+    sellerId: "user_seller_1",
+    sellerName: "Sentra Jelantah Sejahtera",
+    sellerType: "Pengepul Terverifikasi",
+    sellerPhone: "+62 813-8822-1100",
+    sellerWhatsapp: "6281388221100",
+    containerType: "Jerigen Segel (15L)",
+    containerQty: 1,
+    weight: 14,
+    volume: 15,
+    unit: "Liter",
+    origin: "Resto Ayam Goreng Crispy Tebet, Jakarta Selatan",
+    city: "Jakarta Selatan",
+    address: "Jl. Tebet Barat Dalam Raya No. 12, Jakarta Selatan",
+    lat: -6.2384,
+    lng: 106.8528,
+    offerPrice: 9500,
+    totalPrice: 142500, // Rp 142.500 (Masuk dalam kuota Tier Gratis Rp 1 - Rp 200.000)
+    status: "approved",
+    evidences: [
+      {
+        type: "Wadah Keseluruhan",
+        url: "https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?auto=format&fit=crop&w=800&q=80",
+        notes: "1 jerigen putih bersih bersegel rapat"
+      },
+      {
+        type: "Kualitas Sampel",
+        url: "https://images.unsplash.com/photo-1578575437130-527eed3abbec?auto=format&fit=crop&w=800&q=80",
+        notes: "Warna jernih keemasan hasil penyaringan kain kasa halus"
+      },
+      {
+        type: "Tera Timbangan",
+        url: "https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=800&q=80",
+        notes: "Timbangan tera 14 Kg (15 Liter)"
+      }
+    ],
+    qualitySpecs: {
+      "Kadar FFA": "< 2.0%",
+      "Kadar Air": "< 1%",
+      "Warna": "Kuning Jernih",
+      "Kondisi": "Siap angkut pickup"
+    },
+    createdAt: "2026-09-12 10:00",
+    verifiedAt: "2026-09-12 11:15",
+    verifiedBy: "Tim Verifikasi BURSA LIMBAH"
+  },
+  {
+    id: "PRD-2026-008",
+    code: "CIR-KRD-08",
+    title: "Kardus Arsip & Dokumen Polos Sortiran Kantor (OCC Bersih)",
+    categoryId: "cat_kardus",
+    categoryName: "Kardus (OCC Corrugated)",
+    sellerId: "user_seller_2",
+    sellerName: "PT Dwi Graha Rongsok Logam",
+    sellerType: "Pemasok Industri Terverifikasi",
+    sellerPhone: "+62 812-7711-4455",
+    sellerWhatsapp: "6281277114455",
+    containerType: "Ikat Tali Rafia",
+    containerQty: 4,
+    weight: 48,
+    volume: 0,
+    unit: "Kg",
+    origin: "Sortiran Dokumen Gedung Perkantoran Kuningan",
+    city: "Jakarta Selatan",
+    address: "Kawasan Rasuna Said Kav. 8, Kuningan, Jakarta Selatan",
+    lat: -6.2215,
+    lng: 106.8312,
+    offerPrice: 2400,
+    totalPrice: 115200, // Rp 115.200 (Masuk dalam kuota Tier Gratis Rp 1 - Rp 200.000)
+    status: "approved",
+    evidences: [
+      {
+        type: "Tumpukan Material",
+        url: "https://images.unsplash.com/photo-1530587191325-3db32d826c18?auto=format&fit=crop&w=800&q=80",
+        notes: "Kardus cokelat tebal terikat rapi 4 bundel"
+      },
+      {
+        type: "Kualitas Serat",
+        url: "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=800&q=80",
+        notes: "Kering, tanpa basah air hujan, bebas isolasi berlebih"
+      },
+      {
+        type: "Tera Timbangan",
+        url: "https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=800&q=80",
+        notes: "Tera timbangan jarum netto 48 Kg"
+      }
+    ],
+    qualitySpecs: {
+      "Kadar Air": "< 10%",
+      "Kerapian": "Terlipat rapi terikat kuat",
+      "Jenis": "OCC Single & Double Wall"
+    },
+    createdAt: "2026-09-13 14:20",
+    verifiedAt: "2026-09-13 15:30",
+    verifiedBy: "Tim Verifikasi BURSA LIMBAH"
+  },
+  {
+    id: "PRD-2026-009",
+    code: "CIR-PLS-09",
+    title: "Sampel Biji Cacahan Plastik PET Bening Sortir Bersih",
+    categoryId: "cat_plastik",
+    categoryName: "Plastik (PET / HDPE)",
+    sellerId: "user_seller_1",
+    sellerName: "Sentra Jelantah Sejahtera",
+    sellerType: "Pengepul Terverifikasi",
+    sellerPhone: "+62 813-8822-1100",
+    sellerWhatsapp: "6281388221100",
+    containerType: "Karung Sak (25Kg)",
+    containerQty: 1,
+    weight: 25,
+    volume: 0,
+    unit: "Kg",
+    origin: "Pabrik Penggilingan Plastik Mitra Cipondoh",
+    city: "Kota Tangerang",
+    address: "Jl. KH Hasyim Ashari No. 88, Cipondoh, Kota Tangerang",
+    lat: -6.1895,
+    lng: 106.6710,
+    offerPrice: 7200,
+    totalPrice: 180000, // Rp 180.000 (Masuk dalam kuota Tier Gratis Rp 1 - Rp 200.000)
+    status: "approved",
+    evidences: [
+      {
+        type: "Karung Sak",
+        url: "https://images.unsplash.com/photo-1532996122724-e3c354a0b15b?auto=format&fit=crop&w=800&q=80",
+        notes: "1 karung sak jahit mesin rapi"
+      },
+      {
+        type: "Detail Flakes / Cacahan",
+        url: "https://images.unsplash.com/photo-1528323273322-d81458248d40?auto=format&fit=crop&w=800&q=80",
+        notes: "Flakes PET bening ukuran 12mm cuci air panas bebas lem"
+      },
+      {
+        type: "Tera Timbangan",
+        url: "https://images.unsplash.com/photo-1581092335397-9583fe92d232?auto=format&fit=crop&w=800&q=80",
+        notes: "Tera timbangan digital netto 25.00 Kg"
+      }
+    ],
+    qualitySpecs: {
+      "Ukuran Flakes": "10 - 14 mm",
+      "Kadar Pengotor (PVC)": "< 50 ppm",
+      "Kadar Air": "< 1%"
+    },
+    createdAt: "2026-09-14 09:00",
+    verifiedAt: "2026-09-14 10:15",
     verifiedBy: "Tim Verifikasi BURSA LIMBAH"
   }
 ];
