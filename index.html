@@ -482,7 +482,7 @@
           <form id="form-login-account" onsubmit="app.handleLoginFormSubmit(event)" class="space-y-4">
             <div>
               <label class="block text-xs font-bold uppercase text-slate-700 mb-1.5 flex items-center justify-between">
-                <span>Email Terdaftar / Nomor WhatsApp *</span>
+                <span id="login-identifier-label">Email Terdaftar / Nomor WhatsApp *</span>
                 <span id="login-hint-role" class="text-[11px] font-semibold text-emerald-700">Akun Pembeli</span>
               </label>
               <div class="relative">
@@ -521,6 +521,38 @@
               <span id="login-submit-label">Masuk ke Portal Pembeli</span>
             </button>
           </form>
+
+          <!-- Info Daftar Otomatis Penjual (tampil di tab Penjual) -->
+          <div id="seller-auto-register-info" class="hidden p-4 rounded-2xl bg-gradient-to-r from-slate-900 to-slate-800 border border-emerald-500/40 text-white text-xs space-y-2.5">
+            <div class="flex items-start space-x-3">
+              <div class="w-8 h-8 rounded-xl bg-emerald-500/20 flex items-center justify-center shrink-0 mt-0.5 border border-emerald-500/30">
+                <i class="fa-solid fa-store text-emerald-400 text-sm"></i>
+              </div>
+              <div>
+                <p class="font-bold text-emerald-400 text-xs uppercase tracking-wide flex items-center gap-1.5">
+                  <span>Daftar & Login Mitra Penjual via Email</span>
+                  <span class="px-1.5 py-0.5 rounded bg-emerald-500/30 text-emerald-300 text-[10px] font-bold">Instan</span>
+                </p>
+                <p class="text-slate-300 leading-relaxed text-[11px] mt-0.5">
+                  Ketik email aktif Anda di atas. Jika akun belum terdaftar, sistem akan <strong class="text-white">langsung mendaftarkan Anda secara otomatis</strong> sebagai Mitra Penjual tanpa syarat biaya langganan.
+                </p>
+              </div>
+            </div>
+            <div class="grid grid-cols-3 gap-2 pt-1 border-t border-slate-700/60">
+              <div class="bg-white/5 rounded-xl px-2.5 py-2 text-center border border-white/5">
+                <i class="fa-solid fa-cloud-arrow-up text-emerald-400 text-xs mb-1 block"></i>
+                <span class="text-[10px] text-slate-300 font-semibold block leading-tight">Unggah Pasokan</span>
+              </div>
+              <div class="bg-white/5 rounded-xl px-2.5 py-2 text-center border border-white/5">
+                <i class="fa-solid fa-shield-halved text-emerald-400 text-xs mb-1 block"></i>
+                <span class="text-[10px] text-slate-300 font-semibold block leading-tight">Escrow DP 30%</span>
+              </div>
+              <div class="bg-white/5 rounded-xl px-2.5 py-2 text-center border border-white/5">
+                <i class="fa-solid fa-wallet text-emerald-400 text-xs mb-1 block"></i>
+                <span class="text-[10px] text-slate-300 font-semibold block leading-tight">Pencairan Cepat</span>
+              </div>
+            </div>
+          </div>
 
           <!-- Pilihan Cepat Akun Demo (1-Klik) -->
           <div class="pt-4 border-t border-slate-100 space-y-3">
@@ -2141,7 +2173,7 @@
         </button>
       </div>
 
-      <div class="text-xs text-slate-600">
+      <div id="google-modal-role-subtitle" class="text-xs text-slate-600">
         Pilih akun Google Anda untuk masuk ke <strong>Bursa Limbah</strong>:
       </div>
 

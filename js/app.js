@@ -455,6 +455,8 @@ class BursaLimbahApp {
     const submitLabel = [REDACTED]'login-submit-label');
     const submitBtn = [REDACTED]'login-submit-btn');
     const prompt = [REDACTED]'login-register-prompt');
+    const identifierLabel = [REDACTED]'login-identifier-label');
+    const sellerInfoBanner = [REDACTED]'seller-auto-register-info');
 
     if (tab === 'buyer') {
       if (banner) banner.className = 'px-6 py-5 bg-gradient-to-r from-emerald-600 to-teal-700 text-white flex items-center justify-between';
@@ -469,9 +471,11 @@ class BursaLimbahApp {
         hint.textContent = 'Akun Pembeli';
         hint.className = 'text-[11px] font-semibold text-emerald-700';
       }
+      if (identifierLabel) identifierLabel.textContent = 'Email Terdaftar / Nomor WhatsApp *';
       if (inputIdentifier) inputIdentifier.placeholder = 'pengadaan@hijaulestari.co.id';
       if (submitLabel) submitLabel.textContent = 'Masuk ke Portal Pembeli';
       if (submitBtn) submitBtn.className = 'w-full py-3.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold text-sm shadow-lg shadow-emerald-600/25 transition transform active:scale-95 flex items-center justify-center space-x-2';
+      if (sellerInfoBanner) sellerInfoBanner.classList.add('hidden');
       if (prompt) {
         prompt.innerHTML = `
           Belum memiliki akun Pembeli?
@@ -482,26 +486,35 @@ class BursaLimbahApp {
       }
     } else if (tab === 'seller') {
       if (banner) banner.className = 'px-6 py-5 bg-gradient-to-r from-slate-900 to-slate-800 text-white flex items-center justify-between';
-      if (title) title.textContent = 'Masuk sebagai Penjual / Pemasok';
-      if (subtitle) subtitle.textContent = 'Unggah pasokan limbah, pantau kurasi, & saldo cair';
+      if (title) title.textContent = 'Masuk / Daftar sebagai Penjual';
+      if (subtitle) subtitle.textContent = 'Login akun lama atau daftar baru instan cukup dengan memasukkan email aktif';
       if (badge) {
-        badge.textContent = 'DASHBOARD PENJUAL';
+        badge.textContent = 'PORTAL MITRA PENJUAL';
         badge.className = 'px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-emerald-500/30 text-emerald-300 border border-emerald-500/40';
       }
       if (icon) icon.className = 'fa-solid fa-store text-emerald-300';
       if (hint) {
-        hint.textContent = 'Akun Penjual';
-        hint.className = 'text-[11px] font-semibold text-slate-700';
+        hint.textContent = 'Login / Daftar dengan Email';
+        hint.className = 'text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200';
       }
-      if (inputIdentifier) inputIdentifier.placeholder = 'budi@sentrajelantah.id';
-      if (submitLabel) submitLabel.textContent = 'Masuk ke Dashboard Penjual';
-      if (submitBtn) submitBtn.className = 'w-full py-3.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-sm shadow-lg shadow-slate-900/25 transition transform active:scale-95 flex items-center justify-center space-x-2';
+      if (identifierLabel) identifierLabel.textContent = 'Email Penjual (Baru / Terdaftar) *';
+      if (inputIdentifier) inputIdentifier.placeholder = 'contoh: budi@sentrajelantah.id atau email baru';
+      if (submitLabel) submitLabel.textContent = 'Masuk / Daftar sebagai Penjual';
+      if (submitBtn) submitBtn.className = 'w-full py-3.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-emerald-400 font-bold text-sm shadow-lg shadow-slate-900/25 transition transform active:scale-95 flex items-center justify-center space-x-2';
+      if (sellerInfoBanner) sellerInfoBanner.classList.remove('hidden');
       if (prompt) {
         prompt.innerHTML = `
-          Belum terdaftar sebagai Penjual?
-          <button type="button" onclick="app.showSellerRegisterModal()" class="text-emerald-700 font-bold hover:underline ml-1">
-            Daftar Jadi Mitra Penjual →
-          </button>
+          <div class="space-y-1">
+            <p class="text-xs text-slate-600">
+              💡 <strong>Email baru?</strong> Cukup ketik email & kata sandi di atas, akun Mitra Penjual akan <strong>otomatis dibuat</strong>.
+            </p>
+            <p class="text-[11px] text-slate-500">
+              Ingin mendaftar lengkap dengan data NIB & rekening bank?
+              <button type="button" onclick="app.showSellerRegisterModal()" class="text-emerald-700 font-bold hover:underline ml-1">
+                Buka Formulir Pemasok Lengkap →
+              </button>
+            </p>
+          </div>
         `;
       }
     } else if (tab === 'admin') {
@@ -517,9 +530,11 @@ class BursaLimbahApp {
         hint.textContent = 'Akun Administrator Utama';
         hint.className = 'text-[11px] font-semibold text-amber-700';
       }
+      if (identifierLabel) identifierLabel.textContent = 'Email Administrator *';
       if (inputIdentifier) inputIdentifier.placeholder = 'admin@bursalimbah.com';
       if (submitLabel) submitLabel.textContent = 'Masuk ke Dashboard Pengelola';
       if (submitBtn) submitBtn.className = 'w-full py-3.5 rounded-xl bg-slate-950 hover:bg-slate-900 text-amber-300 font-bold text-sm shadow-lg shadow-slate-950/30 border border-amber-400/30 transition transform active:scale-95 flex items-center justify-center space-x-2';
+      if (sellerInfoBanner) sellerInfoBanner.classList.add('hidden');
       if (prompt) {
         prompt.innerHTML = `
           <div class="text-slate-500 text-xs flex items-center justify-center space-x-1.5 py-1">
@@ -568,7 +583,7 @@ class BursaLimbahApp {
             <span class="text-xs font-bold text-slate-900">Budi Santoso</span>
             <span class="text-[10px] px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 font-bold">Pengepul Jelantah</span>
           </div>
-          <div class="text-[11px] text-slate-500 font-mono mt-0.5">budi@sentrajelantah.id</div>
+          <div class="text-[11px] text-slate-500 font-mono mt-0.5">budi@sentrajelantah.id • Login</div>
         </button>
 
         <button type="button" onclick="app.quickLogin('dwigraha@rongsok.co.id', '[REDACTED]', 'seller')" class="p-3 text-left rounded-xl border border-slate-200 bg-white hover:bg-slate-50 transition group">
@@ -576,7 +591,18 @@ class BursaLimbahApp {
             <span class="text-xs font-bold text-slate-900">PT Dwi Graha</span>
             <span class="text-[10px] px-1.5 py-0.5 rounded bg-blue-100 text-blue-800 font-bold">Pemasok Logam</span>
           </div>
-          <div class="text-[11px] text-slate-500 font-mono mt-0.5">dwigraha@rongsok.co.id</div>
+          <div class="text-[11px] text-slate-500 font-mono mt-0.5">dwigraha@rongsok.co.id • Login</div>
+        </button>
+
+        <button type="button" onclick="app.quickRegisterNewSellerDemo()" class="p-3 text-left rounded-xl border border-dashed border-emerald-500 bg-emerald-50/80 hover:bg-emerald-100 transition group sm:col-span-2">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-2">
+              <i class="fa-solid fa-user-plus text-emerald-600 text-xs"></i>
+              <span class="text-xs font-bold text-emerald-900">Simulasi Daftar Penjual Baru via Email</span>
+            </div>
+            <span class="text-[10px] px-2 py-0.5 rounded bg-emerald-200 text-emerald-800 font-bold">1-Klik Auto-Daftar</span>
+          </div>
+          <div class="text-[11px] text-slate-600 mt-0.5">Klik untuk membuat akun mitra penjual baru secara instan dengan email demo</div>
         </button>
       `;
     } else if (tab === 'admin') {
@@ -595,6 +621,17 @@ class BursaLimbahApp {
     }
   }
 
+  quickRegisterNewSellerDemo() {
+    const randId = Math.floor(100 + Math.random() * 900);
+    const demoEmail = `penjual.mitra${randId}@sentralimbah.id`;
+    const demoPass = '[REDACTED]';
+    const inputId = [REDACTED]'login-input-identifier');
+    const inputPass = [REDACTED]'login-input-password');
+    if (inputId) inputId.value = demoEmail;
+    if (inputPass) inputPass.value = demoPass;
+    this.quickLogin(demoEmail, demoPass, 'seller');
+  }
+
   quickLogin(identifier, password, role) {
     const inputId = [REDACTED]'login-input-identifier');
     const inputPass = [REDACTED]'login-input-password');
@@ -604,7 +641,15 @@ class BursaLimbahApp {
     const res = this.store.loginUser(identifier, password, role);
     if (res.success) {
       this.triggerConfetti();
-      this.showToast(`Berhasil masuk sebagai ${res.user.name}!`, 'success');
+      if (res.isNewAccount) {
+        if (res.role === 'seller') {
+          this.showToast(`🎉 Pendaftaran berhasil! Selamat datang Mitra Penjual baru (${res.user.email}).`, 'success');
+        } else {
+          this.showToast(`🎉 Pendaftaran berhasil! Akun Pembeli (${res.user.email}) aktif dengan Starter Tier Gratis.`, 'success');
+        }
+      } else {
+        this.showToast(`Berhasil masuk sebagai ${res.user.name}!`, 'success');
+      }
       this.setRole(role, false);
     } else {
       this.showToast(res.message, 'error');
@@ -624,7 +669,15 @@ class BursaLimbahApp {
     if (res.success) {
       if (alertBox) alertBox.classList.add('hidden');
       this.triggerConfetti();
-      this.showToast(`Selamat datang kembali, ${res.user.name}!`, 'success');
+      if (res.isNewAccount) {
+        if (res.role === 'seller') {
+          this.showToast(`🎉 Pendaftaran berhasil! Selamat datang Mitra Penjual baru (${res.user.email}).`, 'success');
+        } else {
+          this.showToast(`🎉 Pendaftaran berhasil! Akun Pembeli (${res.user.email}) aktif dengan Starter Tier Gratis.`, 'success');
+        }
+      } else {
+        this.showToast(`Selamat datang kembali, ${res.user.name}!`, 'success');
+      }
       this.setRole(res.role, false);
     } else {
       if (alertBox) {
@@ -674,6 +727,21 @@ class BursaLimbahApp {
     const location = [REDACTED]'reg-seller-location').value.trim();
     const bankAccount = [REDACTED]'reg-seller-bank').value.trim();
     const password = [REDACTED]'reg-seller-password').value;
+
+    const existing = this.store.state.users.find(u => u.email && u.email.toLowerCase() === email.toLowerCase());
+    if (existing) {
+      if (existing.role === 'seller') {
+        this.showToast(`Email ${email} sudah terdaftar. Silakan langsung masuk.`, 'info');
+        this.closeModals();
+        this.showLoginPage('seller');
+        const inputId = [REDACTED]'login-input-identifier');
+        if (inputId) inputId.value = email;
+        return;
+      } else {
+        this.showToast(`Email ${email} sudah terdaftar sebagai ${existing.role === 'buyer' ? 'Pembeli' : 'Pengelola'}.`, 'error');
+        return;
+      }
+    }
 
     const newUser = this.store.registerSeller({
       company,
@@ -2561,6 +2629,12 @@ class BursaLimbahApp {
   // ================= LOGIN DENGAN GOOGLE =================
   showGoogleLoginModal() {
     const modal = [REDACTED]'modal-google-auth');
+    const role = this.currentLoginTab || 'buyer';
+    const roleLabel = role === 'seller' ? 'Mitra Penjual' : (role === 'admin' ? 'Pengelola' : 'Pembeli');
+    const subEl = [REDACTED]'google-modal-role-subtitle');
+    if (subEl) {
+      subEl.innerHTML = `Pilih akun Google Anda untuk masuk atau daftar sebagai <strong>${roleLabel}</strong>:`;
+    }
     if (modal) {
       modal.classList.remove('hidden');
       modal.classList.add('flex');
@@ -2581,13 +2655,18 @@ class BursaLimbahApp {
     const res = this.store.loginWithGoogle({ email, name, avatar, role });
 
     if (res.success) {
+      this.triggerConfetti();
       this.updateNavUI();
       if (res.role === 'buyer') {
         this.setRole('buyer');
       } else if (res.role === 'seller') {
         this.setRole('seller');
       }
-      this.showToast(`🎉 Berhasil masuk dengan Google (${email})!`, 'success');
+      if (res.isNewAccount) {
+        this.showToast(`🎉 Pendaftaran berhasil! Masuk dengan Google sebagai ${res.role === 'seller' ? 'Mitra Penjual' : 'Pembeli'} (${email}).`, 'success');
+      } else {
+        this.showToast(`🎉 Berhasil masuk dengan Google (${email})!`, 'success');
+      }
     } else {
       this.showToast('Gagal masuk dengan Google. Silakan coba lagi.', 'error');
     }
