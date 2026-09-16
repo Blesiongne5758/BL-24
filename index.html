@@ -587,8 +587,113 @@
     <!-- ================= TAMPILAN 1: HALAMAN DEPAN (PUBLIK) ================= -->
     <div id="view-public" class="tab-content">
       
+      <!-- ================= STRIP DISCOVERY STORY HIGHLIGHTS (KHUSUS MOBILE) ================= -->
+      <div class="lg:hidden bg-gradient-to-b from-white via-slate-50 to-slate-100/80 border-b border-slate-200/90 px-3 pt-3 pb-2.5">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-[11px] font-extrabold uppercase text-slate-800 tracking-wider flex items-center gap-1.5">
+            <span class="w-2 h-2 rounded-full bg-emerald-500 live-badge-dot"></span>
+            Sorotan Pasar Limbah
+          </span>
+          <span class="text-[10px] text-emerald-700 font-bold bg-emerald-100/70 px-2 py-0.5 rounded-full border border-emerald-200">
+            PASAR AKTIF WIB
+          </span>
+        </div>
+        
+        <div class="flex items-center space-x-3 overflow-x-auto no-scrollbar py-1">
+          <!-- Story 1: Jelantah -->
+          <button onclick="app.filterMobileByCat('cat_jelantah')" class="flex flex-col items-center shrink-0 tap-highlight group">
+            <div class="w-12 h-12 rounded-full p-0.5 bg-gradient-to-tr from-amber-500 via-emerald-500 to-teal-400 story-ring-active shadow-xs">
+              <div class="w-full h-full rounded-full bg-white flex items-center justify-center text-lg overflow-hidden">
+                🛢️
+              </div>
+            </div>
+            <span class="text-[10px] font-bold text-slate-800 mt-1 truncate max-w-[62px]">Jelantah</span>
+            <span class="text-[9px] font-extrabold text-emerald-600">+4.5%</span>
+          </button>
+
+          <!-- Story 2: Besi Scrap -->
+          <button onclick="app.filterMobileByCat('cat_besi')" class="flex flex-col items-center shrink-0 tap-highlight group">
+            <div class="w-12 h-12 rounded-full p-0.5 bg-gradient-to-tr from-blue-500 to-slate-700 shadow-xs">
+              <div class="w-full h-full rounded-full bg-white flex items-center justify-center text-lg overflow-hidden">
+                🏗️
+              </div>
+            </div>
+            <span class="text-[10px] font-bold text-slate-800 mt-1 truncate max-w-[62px]">Besi Scrap</span>
+            <span class="text-[9px] font-extrabold text-blue-600">8 Ton</span>
+          </button>
+
+          <!-- Story 3: Plastik PET -->
+          <button onclick="app.filterMobileByCat('cat_plastik')" class="flex flex-col items-center shrink-0 tap-highlight group">
+            <div class="w-12 h-12 rounded-full p-0.5 bg-gradient-to-tr from-cyan-400 to-emerald-500 shadow-xs">
+              <div class="w-full h-full rounded-full bg-white flex items-center justify-center text-lg overflow-hidden">
+                🍶
+              </div>
+            </div>
+            <span class="text-[10px] font-bold text-slate-800 mt-1 truncate max-w-[62px]">Plastik PET</span>
+            <span class="text-[9px] font-extrabold text-cyan-700">Bal Press</span>
+          </button>
+
+          <!-- Story 4: Kardus OCC -->
+          <button onclick="app.filterMobileByCat('cat_kardus')" class="flex flex-col items-center shrink-0 tap-highlight group">
+            <div class="w-12 h-12 rounded-full p-0.5 bg-gradient-to-tr from-amber-600 to-orange-400 shadow-xs">
+              <div class="w-full h-full rounded-full bg-white flex items-center justify-center text-lg overflow-hidden">
+                📦
+              </div>
+            </div>
+            <span class="text-[10px] font-bold text-slate-800 mt-1 truncate max-w-[62px]">Kardus OCC</span>
+            <span class="text-[9px] font-extrabold text-amber-700">Ready</span>
+          </button>
+
+          <!-- Story 5: PreLoved Mesin -->
+          <button onclick="app.navigateToSection('preloved')" class="flex flex-col items-center shrink-0 tap-highlight group">
+            <div class="w-12 h-12 rounded-full p-0.5 bg-gradient-to-tr from-pink-500 to-rose-400 shadow-xs">
+              <div class="w-full h-full rounded-full bg-white flex items-center justify-center text-lg overflow-hidden">
+                💖
+              </div>
+            </div>
+            <span class="text-[10px] font-bold text-pink-700 mt-1 truncate max-w-[62px]">PreLoved</span>
+            <span class="text-[9px] font-extrabold text-pink-600">-30%</span>
+          </button>
+
+          <!-- Story 6: Event Lelang -->
+          <button onclick="app.navigateToSection('event')" class="flex flex-col items-center shrink-0 tap-highlight group">
+            <div class="w-12 h-12 rounded-full p-0.5 bg-gradient-to-tr from-indigo-500 to-purple-500 shadow-xs">
+              <div class="w-full h-full rounded-full bg-white flex items-center justify-center text-lg overflow-hidden">
+                📅
+              </div>
+            </div>
+            <span class="text-[10px] font-bold text-indigo-700 mt-1 truncate max-w-[62px]">Event</span>
+            <span class="text-[9px] font-extrabold text-indigo-600">Lelang</span>
+          </button>
+
+          <!-- Story 7: Kalkulator ESG -->
+          <button onclick="app.navigateToSection('kalkulator')" class="flex flex-col items-center shrink-0 tap-highlight group">
+            <div class="w-12 h-12 rounded-full p-0.5 bg-gradient-to-tr from-emerald-600 to-teal-700 shadow-xs">
+              <div class="w-full h-full rounded-full bg-white flex items-center justify-center text-lg overflow-hidden">
+                🧮
+              </div>
+            </div>
+            <span class="text-[10px] font-bold text-emerald-800 mt-1 truncate max-w-[62px]">Kalkulator</span>
+            <span class="text-[9px] font-extrabold text-emerald-600">Hitung DP</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- ================= BANNER AKTIVITAS PASAR REALTIME (MOBILE) ================= -->
+      <div class="lg:hidden mx-3 my-2.5 p-2.5 rounded-2xl bg-gradient-to-r from-slate-950 via-slate-900 to-emerald-950 text-white shadow-md flex items-center justify-between text-xs border border-emerald-500/20">
+        <div class="flex items-center space-x-2 truncate min-w-0">
+          <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 live-badge-dot shrink-0"></span>
+          <span class="font-extrabold text-emerald-400 shrink-0 text-[10px] tracking-wider uppercase">LIVE:</span>
+          <span class="truncate text-[11px] text-slate-200 font-medium" id="mobile-live-pulse-text">14 Pemasok Online • ⚡ 3 Escrow Baru Diproses • 📈 Jelantah +4.5%</span>
+        </div>
+        <button onclick="app.showMobileQuickActionSheet()" class="shrink-0 ml-2 px-2.5 py-1 rounded-xl bg-emerald-500/20 text-emerald-300 text-[10px] font-bold border border-emerald-500/40 active:scale-95 transition flex items-center space-x-1">
+          <i class="fa-solid fa-bolt text-amber-400 text-[9px]"></i>
+          <span>Aksi</span>
+        </button>
+      </div>
+
       <!-- HERO SECTION UTAMA -->
-      <section id="hero" class="relative overflow-hidden pt-10 pb-16 lg:pt-14 lg:pb-20 bg-gradient-to-b from-white via-slate-50 to-emerald-50/40">
+      <section id="hero" class="relative overflow-hidden pt-6 pb-14 lg:pt-14 lg:pb-20 bg-gradient-to-b from-white via-slate-50 to-emerald-50/40">
         <div class="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-96 bg-gradient-to-r from-emerald-100/60 via-teal-50/40 to-cyan-100/50 blur-3xl -z-10 rounded-full pointer-events-none"></div>
 
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -716,40 +821,55 @@
         </div>
       </section>
  
-      <!-- ================= STRIP KATEGORI CEPAT MOBILE (HORIZONTALLY SCROLLABLE) ================= -->
-      <div class="lg:hidden bg-white/95 backdrop-blur-md border-b border-slate-200/90 py-2.5 px-3 sticky top-16 z-30 shadow-xs">
+      <!-- ================= STRIP KATEGORI CEPAT & PENCARIAN INSTAN MOBILE (STICKY) ================= -->
+      <div class="lg:hidden bg-white/95 backdrop-blur-md border-b border-slate-200/90 p-2.5 sticky top-16 z-30 shadow-sm space-y-2">
+        <!-- Bilah Pencarian Realtime Mobile -->
+        <div class="flex items-center gap-2">
+          <div class="relative flex-1">
+            <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-slate-400 text-xs"></i>
+            <input type="text" id="mobile-live-search-input" oninput="app.handleMobileInstantSearch(this.value)" placeholder="Cari pasokan limbah (jelantah, besi, pet)..." class="w-full bg-slate-100/90 border border-slate-200/80 rounded-xl pl-8 pr-7 py-2 text-xs focus:ring-2 focus:ring-brand-500 focus:bg-white focus:outline-none transition">
+            <button type="button" onclick="[REDACTED]'mobile-live-search-input').value=''; app.handleMobileInstantSearch('');" class="absolute right-2.5 top-2.5 text-slate-400 hover:text-slate-600 text-xs">
+              <i class="fa-solid fa-circle-xmark"></i>
+            </button>
+          </div>
+          <button type="button" onclick="app.showMobileQuickActionSheet()" class="w-8 h-8 rounded-xl bg-slate-900 text-amber-300 flex items-center justify-center text-xs shrink-0 active:scale-90 shadow transition" title="Menu Aksi Cepat">
+            <i class="fa-solid fa-bolt"></i>
+          </button>
+        </div>
+
+        <!-- Horizontal Scrollable Chips -->
         <div class="flex items-center space-x-2 overflow-x-auto no-scrollbar py-0.5">
-          <button onclick="app.filterMobileByCat('all')" class="mobile-chip-filter px-3.5 py-1.5 rounded-full text-xs font-bold shrink-0 bg-emerald-600 text-white shadow-xs transition active:scale-95 flex items-center space-x-1.5">
+          <button onclick="app.filterMobileByCat('all')" class="mobile-chip-filter px-3 py-1.5 rounded-full text-xs font-bold shrink-0 bg-emerald-600 text-white shadow-xs transition active:scale-95 flex items-center space-x-1.5">
             <i class="fa-solid fa-layer-group text-[10px]"></i>
             <span>Semua</span>
           </button>
-          <button onclick="app.filterMobileByCat('cat_jelantah')" class="mobile-chip-filter px-3.5 py-1.5 rounded-full text-xs font-semibold shrink-0 bg-slate-100 text-slate-700 hover:bg-emerald-50 hover:text-emerald-700 border border-slate-200 transition active:scale-95 flex items-center space-x-1.5">
-            <span>🛢️ Jelantah (UCO)</span>
+          <button onclick="app.filterMobileByCat('cat_jelantah')" class="mobile-chip-filter px-3 py-1.5 rounded-full text-xs font-semibold shrink-0 bg-slate-100 text-slate-700 hover:bg-emerald-50 hover:text-emerald-700 border border-slate-200 transition active:scale-95 flex items-center space-x-1.5">
+            <span>🛢️ Jelantah</span>
           </button>
-          <button onclick="app.filterMobileByCat('cat_besi')" class="mobile-chip-filter px-3.5 py-1.5 rounded-full text-xs font-semibold shrink-0 bg-slate-100 text-slate-700 hover:bg-emerald-50 hover:text-emerald-700 border border-slate-200 transition active:scale-95 flex items-center space-x-1.5">
+          <button onclick="app.filterMobileByCat('cat_besi')" class="mobile-chip-filter px-3 py-1.5 rounded-full text-xs font-semibold shrink-0 bg-slate-100 text-slate-700 hover:bg-emerald-50 hover:text-emerald-700 border border-slate-200 transition active:scale-95 flex items-center space-x-1.5">
             <span>🏗️ Besi Scrap</span>
           </button>
-          <button onclick="app.filterMobileByCat('cat_plastik')" class="mobile-chip-filter px-3.5 py-1.5 rounded-full text-xs font-semibold shrink-0 bg-slate-100 text-slate-700 hover:bg-emerald-50 hover:text-emerald-700 border border-slate-200 transition active:scale-95 flex items-center space-x-1.5">
+          <button onclick="app.filterMobileByCat('cat_plastik')" class="mobile-chip-filter px-3 py-1.5 rounded-full text-xs font-semibold shrink-0 bg-slate-100 text-slate-700 hover:bg-emerald-50 hover:text-emerald-700 border border-slate-200 transition active:scale-95 flex items-center space-x-1.5">
             <span>🍶 Plastik PET</span>
           </button>
-          <button onclick="app.filterMobileByCat('cat_kardus')" class="mobile-chip-filter px-3.5 py-1.5 rounded-full text-xs font-semibold shrink-0 bg-slate-100 text-slate-700 hover:bg-emerald-50 hover:text-emerald-700 border border-slate-200 transition active:scale-95 flex items-center space-x-1.5">
+          <button onclick="app.filterMobileByCat('cat_kardus')" class="mobile-chip-filter px-3 py-1.5 rounded-full text-xs font-semibold shrink-0 bg-slate-100 text-slate-700 hover:bg-emerald-50 hover:text-emerald-700 border border-slate-200 transition active:scale-95 flex items-center space-x-1.5">
             <span>📦 Kardus OCC</span>
           </button>
-          <button onclick="app.filterMobileByCat('cat_oli')" class="mobile-chip-filter px-3.5 py-1.5 rounded-full text-xs font-semibold shrink-0 bg-slate-100 text-slate-700 hover:bg-emerald-50 hover:text-emerald-700 border border-slate-200 transition active:scale-95 flex items-center space-x-1.5">
+          <button onclick="app.filterMobileByCat('cat_oli')" class="mobile-chip-filter px-3 py-1.5 rounded-full text-xs font-semibold shrink-0 bg-slate-100 text-slate-700 hover:bg-emerald-50 hover:text-emerald-700 border border-slate-200 transition active:scale-95 flex items-center space-x-1.5">
             <span>🛢️ Oli Bekas</span>
           </button>
-          <button onclick="app.filterMobileByCat('cat_tembaga')" class="mobile-chip-filter px-3.5 py-1.5 rounded-full text-xs font-semibold shrink-0 bg-slate-100 text-slate-700 hover:bg-emerald-50 hover:text-emerald-700 border border-slate-200 transition active:scale-95 flex items-center space-x-1.5">
+          <button onclick="app.filterMobileByCat('cat_tembaga')" class="mobile-chip-filter px-3 py-1.5 rounded-full text-xs font-semibold shrink-0 bg-slate-100 text-slate-700 hover:bg-emerald-50 hover:text-emerald-700 border border-slate-200 transition active:scale-95 flex items-center space-x-1.5">
             <span>⚡ Tembaga</span>
           </button>
-          <button onclick="app.navigateToSection('preloved')" class="mobile-chip-filter px-3.5 py-1.5 rounded-full text-xs font-semibold shrink-0 bg-pink-50 text-pink-700 hover:bg-pink-100 border border-pink-200 transition active:scale-95 flex items-center space-x-1.5">
+          <button onclick="app.navigateToSection('preloved')" class="mobile-chip-filter px-3 py-1.5 rounded-full text-xs font-semibold shrink-0 bg-pink-50 text-pink-700 hover:bg-pink-100 border border-pink-200 transition active:scale-95 flex items-center space-x-1.5">
             <i class="fa-solid fa-heart text-pink-500 text-[10px]"></i>
             <span>PreLoved</span>
           </button>
-          <button onclick="app.navigateToSection('event')" class="mobile-chip-filter px-3.5 py-1.5 rounded-full text-xs font-semibold shrink-0 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-200 transition active:scale-95 flex items-center space-x-1.5">
+          <button onclick="app.navigateToSection('event')" class="mobile-chip-filter px-3 py-1.5 rounded-full text-xs font-semibold shrink-0 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-200 transition active:scale-95 flex items-center space-x-1.5">
             <i class="fa-solid fa-calendar-star text-indigo-500 text-[10px]"></i>
             <span>Event</span>
           </button>
-          <button onclick="app.navigateToSection('kalkulator')" class="mobile-chip-filter px-3.5 py-1.5 rounded-full text-xs font-semibold shrink-0 bg-emerald-50 text-emerald-800 hover:bg-emerald-100 border border-emerald-200 transition active:scale-95 flex items-center space-x-1.5">
+          <button onclick="app.navigateToSection('kalkulator')" class="mobile-chip-filter px-3 py-1.5 rounded-full text-xs font-semibold shrink-0 bg-emerald-50 text-emerald-800 hover:bg-emerald-100 border border-emerald-200 transition active:scale-95 flex items-center space-x-1.5">
             <i class="fa-solid fa-calculator text-emerald-600 text-[10px]"></i>
             <span>Kalkulator</span>
           </button>
@@ -2557,6 +2677,81 @@
 
     </div>
   </nav>
+
+  <!-- ================= MODAL 8: MOBILE QUICK ACTION BOTTOM SHEET ================= -->
+  <div id="modal-mobile-quick-actions" class="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs hidden items-end justify-center p-0 sm:p-4 lg:hidden">
+    <div class="bg-white w-full rounded-t-3xl sm:rounded-3xl p-5 shadow-2xl border-t sm:border border-slate-200 space-y-4 mobile-sheet-animate max-w-md mx-auto">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+        <div class="flex items-center space-x-2">
+          <div class="w-8 h-8 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center text-sm font-bold">
+            <i class="fa-solid fa-bolt"></i>
+          </div>
+          <div>
+            <h3 class="font-extrabold text-sm text-slate-900">Aksi Cepat Pasar Limbah</h3>
+            <p class="text-[10px] text-slate-500">Pintasan transaksi dan pemantauan harga</p>
+          </div>
+        </div>
+        <button type="button" onclick="app.closeMobileQuickActionSheet()" class="p-1.5 rounded-lg text-slate-400 hover:text-slate-600">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <div class="grid grid-cols-2 gap-2.5">
+        <button onclick="app.closeMobileQuickActionSheet(); app.navigateToSection('kalkulator')" class="p-3 rounded-2xl bg-emerald-50/80 border border-emerald-200 text-left tap-highlight group flex items-start space-x-3">
+          <div class="w-9 h-9 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0 text-sm shadow-xs">
+            <i class="fa-solid fa-calculator"></i>
+          </div>
+          <div>
+            <span class="text-xs font-bold text-slate-900 group-hover:text-emerald-900 block">Kalkulator DP</span>
+            <span class="text-[10px] text-slate-500 block leading-tight mt-0.5">Hitung nilai limbah & DP 30%</span>
+          </div>
+        </button>
+
+        <button onclick="app.closeMobileQuickActionSheet(); app.showLoginPage('seller')" class="p-3 rounded-2xl bg-slate-50 border border-slate-200 text-left tap-highlight group flex items-start space-x-3">
+          <div class="w-9 h-9 rounded-xl bg-slate-900 text-emerald-400 flex items-center justify-center shrink-0 text-sm shadow-xs">
+            <i class="fa-solid fa-store"></i>
+          </div>
+          <div>
+            <span class="text-xs font-bold text-slate-900 block">Jual Pasokan</span>
+            <span class="text-[10px] text-slate-500 block leading-tight mt-0.5">Login / Pasang limbah</span>
+          </div>
+        </button>
+
+        <button onclick="app.closeMobileQuickActionSheet(); app.navigateToSection('postingan-publik')" class="p-3 rounded-2xl bg-slate-50 border border-slate-200 text-left tap-highlight group flex items-start space-x-3">
+          <div class="w-9 h-9 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0 text-sm shadow-xs">
+            <i class="fa-solid fa-boxes-stacked"></i>
+          </div>
+          <div>
+            <span class="text-xs font-bold text-slate-900 block">Bursa Komoditas</span>
+            <span class="text-[10px] text-slate-500 block leading-tight mt-0.5">Cek pasokan & permintaan</span>
+          </div>
+        </button>
+
+        <button onclick="app.closeMobileQuickActionSheet(); app.navigateToSection('event')" class="p-3 rounded-2xl bg-indigo-50/80 border border-indigo-200 text-left tap-highlight group flex items-start space-x-3">
+          <div class="w-9 h-9 rounded-xl bg-indigo-600 text-white flex items-center justify-center shrink-0 text-sm shadow-xs">
+            <i class="fa-solid fa-calendar-star"></i>
+          </div>
+          <div>
+            <span class="text-xs font-bold text-slate-900 group-hover:text-indigo-950 block">Jadwal Event</span>
+            <span class="text-[10px] text-slate-500 block leading-tight mt-0.5">Lelang & temu bisnis</span>
+          </div>
+        </button>
+      </div>
+
+      <div class="p-3 rounded-2xl bg-slate-900 text-white flex items-center justify-between text-xs">
+        <div class="flex items-center space-x-2.5">
+          <i class="fa-brands fa-whatsapp text-emerald-400 text-lg"></i>
+          <div>
+            <div class="font-bold text-[11px]">Bantuan Kurator & CS</div>
+            <div class="text-[10px] text-slate-400">Tanya transaksi rekening bersama</div>
+          </div>
+        </div>
+        <a href="https://wa.me/628[REDACTED]7890" target="_blank" class="px-3 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-[11px] transition shadow">
+          Chat WA
+        </a>
+      </div>
+    </div>
+  </div>
 
   <!-- WADAH TOAST -->
   <div id="toast-container" class="fixed bottom-20 lg:bottom-5 right-5 z-50 flex flex-col space-y-2 pointer-events-none"></div>

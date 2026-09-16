@@ -816,6 +816,35 @@ class BursaLimbahApp {
     }
   }
 
+  handleMobileInstantSearch(query) {
+    const cleanQuery = (query || '').toLowerCase().trim();
+    const cards = document.querySelectorAll('.public-posting-card');
+    cards.forEach(card => {
+      const text = card.textContent.toLowerCase();
+      if (!cleanQuery || text.includes(cleanQuery)) {
+        card.style.display = '';
+      } else {
+        card.style.display = 'none';
+      }
+    });
+  }
+
+  showMobileQuickActionSheet() {
+    const modal = [REDACTED]'modal-mobile-quick-actions');
+    if (modal) {
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+  }
+
+  closeMobileQuickActionSheet() {
+    const modal = [REDACTED]'modal-mobile-quick-actions');
+    if (modal) {
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+  }
+
   // ================= FILTER EVENT =================
   filterEvents(category) {
     // Update active state on filter pills
@@ -1025,6 +1054,20 @@ class BursaLimbahApp {
     }
 
     this.renderPriceTicker();
+
+    // Rotasi teks dinamis di banner aktivitas mobile
+    const mobilePulse = [REDACTED]'mobile-live-pulse-text');
+    if (mobilePulse) {
+      const messages = [
+        `14 Pemasok Online • ⚡ 3 Escrow Baru Diproses • 📈 Jelantah +4.5%`,
+        `🏗️ Besi Scrap WF 8 Ton Masuk (Cikarang) • 🛡️ Garansi Rekening Bersama DP 30%`,
+        `💵 Kurs USD Rp ${this.marketCurrencies ? this.formatRupiah(this.marketCurrencies.usd.rate) : '16.180'} • 🪙 Emas Antam Aktif`,
+        `🍶 Pasokan Plastik PET Bal Press 5 Ton Siap Kirim • 🚚 Manifes Digital Siap`,
+        `💖 PreLoved Alat Industri & Mesin Press Diskon s/d 30% • 📦 Siap Pakai`
+      ];
+      this.mobilePulseIndex = ((this.mobilePulseIndex || 0) + 1) % messages.length;
+      mobilePulse.textContent = messages[this.mobilePulseIndex];
+    }
   }
 
   renderPublicCategories() {
@@ -2610,7 +2653,8 @@ class BursaLimbahApp {
       'modal-checkout',
       'modal-receipt',
       'modal-google-auth',
-      'modal-user-profile'
+      'modal-user-profile',
+      'modal-mobile-quick-actions'
     ];
     modals.forEach(id => {
       const el = [REDACTED]id);

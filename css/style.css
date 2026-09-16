@@ -218,3 +218,56 @@ input[type="range"] {
   padding-bottom: max(env(safe-area-inset-bottom, 0px), 6px);
 }
 
+/* Mobile Dynamic Interactive Elements */
+@keyframes storyPulse {
+  0%, 100% {
+    box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.6);
+  }
+  50% {
+    box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.2);
+  }
+}
+
+.story-ring-active {
+  animation: storyPulse 2s infinite ease-in-out;
+}
+
+@keyframes liveBadgeBlink {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(0.85); }
+}
+
+.live-badge-dot {
+  animation: liveBadgeBlink 1.5s infinite;
+}
+
+@keyframes slideUpModal {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.mobile-sheet-animate {
+  animation: slideUpModal 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.tap-highlight:active {
+  transform: scale(0.95);
+  transition: transform 0.12s ease-out;
+}
+
+/* Smooth Tab Underline for Mobile Dock */
+.mobile-nav-btn.active {
+  color: #059669;
+}
+.mobile-nav-btn.active .dock-icon-wrap {
+  background-color: #ecfdf5;
+  color: #059669;
+  transform: translateY(-2px);
+}
+
