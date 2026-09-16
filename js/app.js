@@ -1244,42 +1244,62 @@ class BursaLimbahApp {
     }
   }
 
-  renderPublicCategories() {
+  renderPublicCategories(groupFilter = 'all') {
     const grid = [REDACTED]'category-grid-public');
     if (!grid) return;
 
-    const categories = this.store.getCategories();
-    grid.innerHTML = categories.map(cat => `
-      <div class="rounded-2xl border border-slate-200 bg-white overflow-hidden hover:border-brand-500 hover:shadow-lg transition group cursor-pointer flex flex-col justify-between" onclick="app.setRole('buyer')">
-        <div>
-          <div class="relative h-32 overflow-hidden bg-slate-100">
-            <img src="${cat.image}" alt="${cat.name}" class="w-full h-full object-cover group-hover:scale-105 transition duration-500">
-            <span class="absolute top-2 left-2 px-2 py-0.5 rounded-md text-[10px] font-bold bg-slate-900/80 backdrop-blur-sm text-white">
-              ${cat.name}
-            </span>
-            <span class="absolute bottom-2 right-2 px-2 py-0.5 rounded text-[9px] font-semibold bg-brand-600/90 text-white">
-              ${cat.badge || 'Standar Daur Ulang'}
-            </span>
-          </div>
+    ['all', 'utama', 'industri', 'b3'].forEach(g => {
+      const btn = [REDACTED]`cat-tab-${g}`);
+      if (btn) {
+        btn.className = 'px-4 py-2 rounded-xl text-xs font-bold transition flex items-center space-x-1.5 ' + 
+          (g === 'b3' ? 'bg-slate-100 text-rose-700 hover:bg-rose-100 border border-rose-200' : 'bg-slate-100 text-slate-700 hover:bg-slate-200');
+      }
+    });
 
-          <div class="p-4">
-            <div class="text-xs font-mono font-bold text-emerald-700 bg-emerald-50 px-2 py-1 rounded-md inline-block">
-              ${cat.priceRange}
+    const activeTab = [REDACTED]`cat-tab-${groupFilter}`);
+    if (activeTab) {
+      if (groupFilter === 'b3') {
+        activeTab.className = 'px-4 py-2 rounded-xl text-xs font-bold transition flex items-center space-x-1.5 bg-rose-600 text-white shadow-sm border border-rose-600';
+      } else {
+        activeTab.className = 'px-4 py-2 rounded-xl text-xs font-bold transition flex items-center space-x-1.5 bg-brand-600 text-white shadow-sm';
+      }
+    }
+
+    const categories = this.store.getCategories(groupFilter);
+    grid.innerHTML = categories.map(cat => {
+      const isB3 = Boolean(cat.isB3 || cat.group === 'b3');
+      return `
+        <div class="rounded-2xl border ${isB3 ? 'border-rose-200 bg-rose-50/30' : 'border-slate-200 bg-white'} overflow-hidden hover:border-brand-500 hover:shadow-lg transition group cursor-pointer flex flex-col justify-between" onclick="app.filterByPill('${cat.id}')">
+          <div>
+            <div class="relative h-32 overflow-hidden bg-slate-100">
+              <img src="${cat.image}" alt="${cat.name}" class="w-full h-full object-cover group-hover:scale-105 transition duration-500">
+              <span class="absolute top-2 left-2 px-2 py-0.5 rounded-md text-[10px] font-bold bg-slate-900/80 backdrop-blur-sm text-white">
+                ${cat.name}
+              </span>
+              <span class="absolute bottom-2 right-2 px-2 py-0.5 rounded text-[9px] font-semibold ${isB3 ? 'bg-rose-600 text-white' : 'bg-brand-600/90 text-white'}">
+                ${cat.badge || (isB3 ? 'Izin Khusus KLHK' : 'Standar Daur Ulang')}
+              </span>
             </div>
-            <p class="text-[11px] text-slate-500 mt-2 leading-relaxed line-clamp-2">
-              ${cat.description}
-            </p>
-          </div>
-        </div>
 
-        <div class="p-4 pt-0">
-          <div class="text-[11px] font-bold text-brand-600 group-hover:text-brand-700 flex items-center justify-between border-t border-slate-100 pt-2.5">
-            <span>Buka Bursa Pembeli</span>
-            <i class="fa-solid fa-arrow-right text-[10px] transform group-hover:translate-x-1 transition"></i>
+            <div class="p-4">
+              <div class="text-xs font-mono font-bold ${isB3 ? 'text-rose-700 bg-rose-100/70 border border-rose-200' : 'text-emerald-700 bg-emerald-50'} px-2 py-1 rounded-md inline-block">
+                ${cat.priceRange}
+              </div>
+              <p class="text-[11px] text-slate-500 mt-2 leading-relaxed line-clamp-2">
+                ${cat.description}
+              </p>
+            </div>
+          </div>
+
+          <div class="p-4 pt-0">
+            <div class="text-[11px] font-bold ${isB3 ? 'text-rose-600 group-hover:text-rose-700' : 'text-brand-600 group-hover:text-brand-700'} flex items-center justify-between border-t border-slate-100 pt-2.5">
+              <span>${isB3 ? '⚠️ Buka Bursa B3' : 'Buka Bursa Pembeli'}</span>
+              <i class="fa-solid fa-arrow-right text-[10px] transform group-hover:translate-x-1 transition"></i>
+            </div>
           </div>
         </div>
-      </div>
-    `).join('');
+      `;
+    }).join('');
   }
 
   // ================= 1. POSTINGAN PUBLIK: GATED ACCESS DATA HARGA, ALAMAT, GPS, WA =================
@@ -1374,6 +1394,30 @@ class BursaLimbahApp {
                 <div class="flex items-center space-x-2 text-xs text-slate-500 mt-1">
                   <span><i class="fa-solid fa-scale-balanced mr-1 text-slate-400"></i>Volume:</span>
                   <span class="font-bold text-slate-800">${qtyText}</span>
+                  ${item.pickupSchedule ? `<span>• <i class="fa-solid fa-calendar-check mr-1 text-slate-400"></i>${item.pickupSchedule}</span>` : ''}
+                </div>
+
+                <!-- 10 Atribut Wajib Listing Badges -->
+                <div class="flex flex-wrap gap-1 mt-2">
+                  ${item.isB3 ? `
+                    <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-100 text-rose-800 border border-rose-300 flex items-center">
+                      <i class="fa-solid fa-triangle-exclamation mr-1 text-rose-600"></i>Limbah B3 (Izin KLHK)
+                    </span>
+                  ` : ''}
+                  <span class="px-2 py-0.5 rounded text-[10px] font-medium bg-slate-100 text-slate-700">
+                    <i class="fa-solid fa-box-open mr-1 text-slate-400"></i>Kondisi: ${item.condition || 'Bersih'}
+                  </span>
+                  <span class="px-2 py-0.5 rounded text-[10px] font-medium bg-slate-100 text-slate-700">
+                    <i class="fa-solid fa-certificate mr-1 text-slate-400"></i>${item.grade || 'Standar'}
+                  </span>
+                  ${item.minimumOrder ? `
+                    <span class="px-2 py-0.5 rounded text-[10px] font-medium bg-slate-100 text-slate-700">
+                      Min: ${item.minimumOrder} ${item.minimumOrderUnit || item.unit || 'Kg'}
+                    </span>
+                  ` : ''}
+                  <span class="px-2 py-0.5 rounded text-[10px] font-bold ${item.listingStatus === 'Tersedia' ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-700'}">
+                    ${item.listingStatus || 'Tersedia'}
+                  </span>
                 </div>
               </div>
 
@@ -1894,22 +1938,67 @@ class BursaLimbahApp {
           </div>
         </div>
 
-        <!-- Parameter Mutu & Finansial -->
+        <!-- 10 Atribut Wajib Listing & Finansial -->
         <div class="grid sm:grid-cols-2 gap-4">
           <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-2 text-xs">
-            <h5 class="font-bold uppercase tracking-wider text-slate-700">Parameter Uji Mutu</h5>
+            <div class="flex items-center justify-between border-b border-slate-200 pb-2">
+              <h5 class="font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
+                <i class="fa-solid fa-list-check text-emerald-600"></i>
+                <span>10 Atribut Wajib Listing</span>
+              </h5>
+              <span class="px-2 py-0.5 rounded text-[10px] font-bold ${p.listingStatus === 'Tersedia' ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-200 text-slate-700'}">
+                ${p.listingStatus || 'Tersedia'}
+              </span>
+            </div>
+
             <div class="divide-y divide-slate-200">
               <div class="py-1.5 flex justify-between">
-                <span class="text-slate-500">Jenis Wadah:</span>
-                <span class="font-semibold text-slate-800">${p.containerType}</span>
+                <span class="text-slate-500">1. Komoditas / Jenis:</span>
+                <span class="font-semibold text-slate-900">${p.categoryName}</span>
               </div>
               <div class="py-1.5 flex justify-between">
-                <span class="text-slate-500">Volume:</span>
-                <span class="font-semibold text-slate-800">${qtyDisplay}</span>
+                <span class="text-slate-500">2. Berat / Volume:</span>
+                <span class="font-bold text-slate-900">${qtyDisplay} (${p.containerType})</span>
               </div>
               <div class="py-1.5 flex justify-between">
-                <span class="text-slate-500">Penjual:</span>
-                <span class="font-semibold text-slate-800">${p.sellerName}</span>
+                <span class="text-slate-500">3. Kondisi Material:</span>
+                <span class="font-semibold text-slate-900 bg-white px-2 py-0.5 rounded border border-slate-200">${p.condition || 'Bersih'}</span>
+              </div>
+              <div class="py-1.5 flex justify-between">
+                <span class="text-slate-500">4. Kadar / Grade Mutu:</span>
+                <span class="font-semibold text-emerald-800">${p.grade || 'Grade Standar Industri'}</span>
+              </div>
+              <div class="py-1.5 flex justify-between">
+                <span class="text-slate-500">5. Foto Eviden:</span>
+                <span class="font-semibold text-slate-800">3 Sudut (Wadah, Sampel, Tera)</span>
+              </div>
+              <div class="py-1.5 flex justify-between">
+                <span class="text-slate-500">6. Lokasi Gudang:</span>
+                <span class="font-semibold text-slate-800">${this.getCity(p)}</span>
+              </div>
+              <div class="py-1.5 flex justify-between">
+                <span class="text-slate-500">7. Minimal Order (MOQ):</span>
+                <span class="font-semibold text-slate-900">${p.minimumOrder || 1} ${p.minimumOrderUnit || p.unit || 'Kg'}</span>
+              </div>
+              <div class="py-1.5 flex justify-between">
+                <span class="text-slate-500">8. Jadwal Pengambilan:</span>
+                <span class="font-semibold text-slate-900">${p.pickupSchedule || 'Siap Angkut Segera'}</span>
+              </div>
+              <div class="py-1.5 flex justify-between">
+                <span class="text-slate-500">9. Asal Usul Limbah:</span>
+                <span class="font-semibold text-slate-800 truncate max-w-[180px]">${p.origin || 'Sentra Industri'}</span>
+              </div>
+              <div class="py-1.5 flex justify-between items-center">
+                <span class="text-slate-500">10. Regulasi KLHK:</span>
+                ${p.isB3 ? `
+                  <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-100 text-rose-800 border border-rose-300">
+                    ⚠️ Limbah B3 (${p.b3PermitNumber || 'Izin KLHK Valid'})
+                  </span>
+                ` : `
+                  <span class="px-2 py-0.5 rounded text-[10px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
+                    Limbah Non-B3 (Umum)
+                  </span>
+                `}
               </div>
             </div>
           </div>
@@ -2787,6 +2876,21 @@ class BursaLimbahApp {
     const address = [REDACTED]'up-address').value;
     const coords = [REDACTED]'up-coords').value.split(',');
 
+    // 10 Atribut Wajib Tambahan:
+    const condition = [REDACTED]'up-condition') ? [REDACTED]'up-condition').value : 'Bersih';
+    const grade = [REDACTED]'up-grade') ? [REDACTED]'up-grade').value.trim() : 'Grade Standar Industri';
+    const minOrder = [REDACTED]'up-min-order') ? Number([REDACTED]'up-min-order').value) : 100;
+    const minOrderUnit = [REDACTED]'up-min-order-unit') ? [REDACTED]'up-min-order-unit').textContent.trim() : unit;
+    const pickupSchedule = [REDACTED]'up-pickup-schedule') ? [REDACTED]'up-pickup-schedule').value : 'Siap Angkut Segera (H+0 s/d H+1)';
+    const listingStatus = [REDACTED]'up-listing-status') ? [REDACTED]'up-listing-status').value : 'Tersedia';
+    const isB3Check = [REDACTED]'up-is-b3');
+    const isB3 = isB3Check ? isB3Check.checked : false;
+    const b3Permit = [REDACTED]'up-b3-permit') ? [REDACTED]'up-b3-permit').value.trim() : null;
+
+    const foto1 = ([REDACTED]'up-foto-1') && [REDACTED]'up-foto-1').value) || "https://images.unsplash.com/photo-1578575437130-527eed3abbec?auto=format&fit=crop&w=800&q=80";
+    const foto2 = ([REDACTED]'up-foto-2') && [REDACTED]'up-foto-2').value) || "https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?auto=format&fit=crop&w=800&q=80";
+    const foto3 = ([REDACTED]'up-foto-3') && [REDACTED]'up-foto-3').value) || "https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=800&q=80";
+
     const cat = this.store.getCategoryById(catId);
     const user = this.store.getCurrentUser();
 
@@ -2804,6 +2908,15 @@ class BursaLimbahApp {
       weight: unit === 'Liter' ? 0 : qty,
       volume: unit === 'Liter' ? qty : 0,
       unit,
+      // 10 Atribut Wajib:
+      condition,
+      grade,
+      minimumOrder: minOrder,
+      minimumOrderUnit: minOrderUnit,
+      pickupSchedule,
+      listingStatus,
+      isB3: Boolean(isB3 || (cat && cat.isB3)),
+      b3PermitNumber: b3Permit,
       origin,
       city: city || this.store.extractCity(address || origin),
       address,
@@ -2812,9 +2925,9 @@ class BursaLimbahApp {
       offerPrice: price,
       totalPrice: qty * price,
       evidences: [
-        { type: "Wadah Keseluruhan", url: "https://images.unsplash.com/photo-1578575437130-527eed3abbec?auto=format&fit=crop&w=800&q=80", notes: "Wadah penyimpanan tersegel baik" },
-        { type: "Kualitas Sampel", url: "https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?auto=format&fit=crop&w=800&q=80", notes: "Sampel fisik bersih bebas pengotor" },
-        { type: "Tera Timbangan", url: "https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=800&q=80", notes: "Slip kalibrasi timbangan tera digital sah" }
+        { type: "Wadah Keseluruhan", url: foto1, notes: "Wadah penyimpanan tersegel baik" },
+        { type: "Kualitas Sampel", url: foto2, notes: "Sampel fisik bersih bebas pengotor" },
+        { type: "Tera Timbangan", url: foto3, notes: "Slip kalibrasi timbangan tera digital sah" }
       ]
     });
 
@@ -3235,24 +3348,76 @@ class BursaLimbahApp {
     const upCat = [REDACTED]'up-category');
     const filterCat = [REDACTED]'buyer-cat-filter');
     const pills = [REDACTED]'buyer-cat-pills');
+    const publicHotBar = [REDACTED]'public-hot-categories-bar');
 
     const categories = this.store.getCategories();
+    const utama = categories.filter(c => c.group === 'utama');
+    const industri = categories.filter(c => c.group === 'industri');
+    const b3 = categories.filter(c => c.group === 'b3');
+
+    const optgroupHtml = `
+      <optgroup label="📦 Kategori Utama (12)">
+        ${utama.map(c => `<option value="${c.id}">${c.name}</option>`).join('')}
+      </optgroup>
+      <optgroup label="🏭 Khusus Industri B2B (3)">
+        ${industri.map(c => `<option value="${c.id}">${c.name}</option>`).join('')}
+      </optgroup>
+      <optgroup label="⚠️ Limbah B3 (Izin Khusus KLHK) (1)">
+        ${b3.map(c => `<option value="${c.id}">${c.name} [Wajib Izin KLHK]</option>`).join('')}
+      </optgroup>
+    `;
 
     if (upCat) {
-      upCat.innerHTML = categories.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+      upCat.innerHTML = optgroupHtml;
+      upCat.addEventListener('change', () => {
+        const sel = categories.find(c => c.id === upCat.value);
+        const b3Box = [REDACTED]'up-b3-permit-box');
+        const b3Check = [REDACTED]'up-is-b3');
+        if (sel && sel.isB3) {
+          if (b3Check) b3Check.checked = true;
+          if (b3Box) b3Box.classList.remove('hidden');
+        }
+      });
     }
 
     if (filterCat) {
-      filterCat.innerHTML = `<option value="all">Semua 10 Kategori</option>` + categories.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+      filterCat.innerHTML = `<option value="all">Semua Kategori (16 Komoditas)</option>` + optgroupHtml;
     }
 
-    if (pills) {
-      pills.innerHTML = `<button onclick="app.filterByPill('all')" class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-brand-600 text-white">Semua</button>` + categories.map(c => `
-        <button onclick="app.filterByPill('${c.id}')" class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700">
-          ${c.name}
+    // Render MVP Hot Categories (10 komoditas terlaris)
+    const hotCats = this.store.getHotCategories();
+    if (publicHotBar && hotCats.length > 0) {
+      publicHotBar.innerHTML = hotCats.map(h => `
+        <button onclick="app.filterByHotKeyword('${h.keyword}')" class="px-3 py-1.5 rounded-xl text-xs font-semibold bg-orange-50 hover:bg-orange-100 text-orange-900 border border-orange-200 transition flex items-center space-x-1.5 shadow-2xs cursor-pointer active:scale-95">
+          <span>${h.icon}</span>
+          <span>${h.name}</span>
         </button>
       `).join('');
     }
+
+    if (pills) {
+      pills.innerHTML = `<button onclick="app.filterByPill('all')" class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-brand-600 text-white">Semua (16)</button>` + categories.map(c => `
+        <button onclick="app.filterByPill('${c.id}')" class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 ${c.isB3 ? 'border border-rose-300 text-rose-700' : ''}">
+          ${c.isB3 ? '⚠️ ' : ''}${c.name}
+        </button>
+      `).join('');
+    }
+  }
+
+  filterByHotKeyword(keyword) {
+    const searchInput = [REDACTED]'buyer-search-input');
+    if (searchInput) {
+      searchInput.value = keyword;
+    }
+    // Filter kartu pada postingan publik
+    const cards = document.querySelectorAll('.public-posting-card');
+    if (cards.length > 0) {
+      cards.forEach(card => {
+        const text = card.textContent.toLowerCase();
+        card.style.display = text.includes(keyword.toLowerCase()) ? '' : 'none';
+      });
+    }
+    this.filterBuyerProducts();
   }
 
   filterBuyerProducts() {
@@ -3304,6 +3469,29 @@ class BursaLimbahApp {
                   <span class="font-semibold text-slate-700">${qtyDisplay}</span>
                   <span>•</span>
                   <span class="text-emerald-700 font-semibold flex items-center"><i class="fa-solid fa-city mr-1 text-[10px]"></i>${this.getCity(p)}</span>
+                </div>
+
+                <!-- 10 Atribut Wajib Listing Badges -->
+                <div class="flex flex-wrap gap-1 mt-2">
+                  ${p.isB3 ? `
+                    <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-100 text-rose-800 border border-rose-300 flex items-center">
+                      <i class="fa-solid fa-triangle-exclamation mr-1 text-rose-600"></i>Limbah B3 KLHK
+                    </span>
+                  ` : ''}
+                  <span class="px-2 py-0.5 rounded text-[10px] font-medium bg-slate-100 text-slate-700">
+                    Kondisi: ${p.condition || 'Bersih'}
+                  </span>
+                  <span class="px-2 py-0.5 rounded text-[10px] font-medium bg-slate-100 text-slate-700">
+                    Grade: ${p.grade || 'Standar'}
+                  </span>
+                  ${p.minimumOrder ? `
+                    <span class="px-2 py-0.5 rounded text-[10px] font-medium bg-slate-100 text-slate-700">
+                      MOQ: ${p.minimumOrder} ${p.minimumOrderUnit || p.unit || 'Kg'}
+                    </span>
+                  ` : ''}
+                  <span class="px-2 py-0.5 rounded text-[10px] font-bold ${p.listingStatus === 'Tersedia' ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-700'}">
+                    ${p.listingStatus || 'Tersedia'}
+                  </span>
                 </div>
               </div>
 

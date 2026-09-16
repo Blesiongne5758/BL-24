@@ -77,7 +77,7 @@
 
         <!-- Logo -->
         <div class="flex items-center cursor-pointer shrink-0" onclick="app.setRole('public')">
-          <img src="assets/logo.jpg" alt="Bursa Limbah" class="h-12 w-auto object-contain" />
+          <img src="assets/logo.png" alt="Bursa Limbah" class="h-12 w-auto object-contain" />
         </div>
 
         <!-- Nav Links (Desktop) -->
@@ -958,6 +958,22 @@
             </button>
           </div>
 
+          <!-- Quick Filter 10 Komoditas Terlaris Saat MVP -->
+          <div class="mb-6 bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-2">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center space-x-2">
+                <span class="w-6 h-6 rounded-lg bg-orange-100 text-orange-600 flex items-center justify-center text-xs">
+                  <i class="fa-solid fa-fire"></i>
+                </span>
+                <span class="text-xs font-bold uppercase tracking-wider text-slate-700">10 Komoditas Terlaris (MVP)</span>
+              </div>
+              <span class="text-[11px] text-slate-400">Klik untuk filter cepat</span>
+            </div>
+            <div id="public-hot-categories-bar" class="flex flex-wrap gap-1.5 pt-1">
+              <!-- Diisi oleh JS: app.renderHotCategoryPills() -->
+            </div>
+          </div>
+
           <!-- Kisi Postingan Publik (Diisi oleh JS) -->
           <div id="public-postings-grid" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
             <!-- Diisi secara dinamis oleh app.renderPublicPostings() -->
@@ -970,15 +986,34 @@
       <section id="kategori" class="py-16 bg-white border-b border-slate-200">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           
-          <div class="text-center max-w-3xl mx-auto mb-12">
-            <h2 class="text-xs font-bold text-brand-600 uppercase tracking-widest mb-2">10 Kategori Awal Komoditas</h2>
-            <h3 class="text-3xl font-extrabold text-slate-900">Perdagangan Limbah "Zero Waste" Tervalidasi</h3>
+          <div class="text-center max-w-3xl mx-auto mb-8">
+            <h2 class="text-xs font-bold text-brand-600 uppercase tracking-widest mb-2">16 Katalog Komoditas Sirkular & Industri</h2>
+            <h3 class="text-3xl font-extrabold text-slate-900">Perdagangan Limbah Terverifikasi & Ramah Regulasi</h3>
             <p class="text-slate-600 mt-2 text-sm">
-              Masing-masing kategori memiliki standarisasi wadah kemasan, acuan harga pasar terkini, dan parameter uji mutu yang transparan.
+              Masing-masing kategori memiliki standarisasi wadah kemasan, acuan harga pasar terkini, 10 atribut wajib listing, serta verifikasi izin khusus KLHK untuk limbah B3.
             </p>
           </div>
 
-          <div id="category-grid-public" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-5">
+          <!-- Tab Filter Kelompok Kategori -->
+          <div class="flex flex-wrap items-center justify-center gap-2 mb-10">
+            <button id="cat-tab-all" onclick="app.renderPublicCategories('all')" class="px-4 py-2 rounded-xl text-xs font-bold transition bg-brand-600 text-white shadow-sm flex items-center space-x-1.5">
+              <span>Semua Kategori (16)</span>
+            </button>
+            <button id="cat-tab-utama" onclick="app.renderPublicCategories('utama')" class="px-4 py-2 rounded-xl text-xs font-bold transition bg-slate-100 text-slate-700 hover:bg-slate-200 flex items-center space-x-1.5">
+              <i class="fa-solid fa-recycle text-emerald-600"></i>
+              <span>Kategori Utama (12)</span>
+            </button>
+            <button id="cat-tab-industri" onclick="app.renderPublicCategories('industri')" class="px-4 py-2 rounded-xl text-xs font-bold transition bg-slate-100 text-slate-700 hover:bg-slate-200 flex items-center space-x-1.5">
+              <i class="fa-solid fa-industry text-blue-600"></i>
+              <span>Khusus Industri B2B (3)</span>
+            </button>
+            <button id="cat-tab-b3" onclick="app.renderPublicCategories('b3')" class="px-4 py-2 rounded-xl text-xs font-bold transition bg-slate-100 text-rose-700 hover:bg-rose-100 flex items-center space-x-1.5 border border-rose-200">
+              <i class="fa-solid fa-triangle-exclamation text-rose-600"></i>
+              <span>⚠️ Limbah B3 (Izin KLHK)</span>
+            </button>
+          </div>
+
+          <div id="category-grid-public" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
             <!-- Diisi dinamis dengan foto representatif oleh JavaScript -->
           </div>
 
@@ -1991,7 +2026,7 @@
         
         <div class="space-y-3">
           <div class="flex items-center mb-1">
-            <img src="assets/logo.jpg" alt="Bursa Limbah" class="h-20 w-auto object-contain rounded-xl bg-white p-1" />
+            <img src="assets/logo.png" alt="Bursa Limbah" class="h-16 w-auto object-contain bg-white/10 p-2 rounded-2xl backdrop-blur-xs" />
           </div>
           <p class="text-slate-400 text-xs leading-relaxed">
             Platform bursa perdagangan limbah berbasis ketertelusuran (traceability) terkemuka di Indonesia. Menghubungkan pasokan limbah industri secara terverifikasi, transparan, dan terukur.
@@ -2323,6 +2358,50 @@
           </div>
         </div>
 
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Kondisi Fisik Pasokan *</label>
+            <select id="up-condition" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-brand-500 focus:outline-none">
+              <option value="Bersih">Bersih (Tanpa Campuran / Siap Olah)</option>
+              <option value="Campur">Campur (Perlu Pemilahan / Sortir)</option>
+              <option value="Terpress">Terpress (Bal Padat Siap Muat)</option>
+              <option value="Cacah">Cacah (Flakes / Crushed)</option>
+              <option value="Baled">Baled (Terikat Rapi Standar Ekspor)</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Kadar / Grade Mutu *</label>
+            <input type="text" id="up-grade" required placeholder="Contoh: FFA < 3%, Kadar Air < 1.5%, Tebal 10mm" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-brand-500 focus:outline-none">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-3 gap-3">
+          <div>
+            <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Minimal Beli (MOQ) *</label>
+            <div class="flex">
+              <input type="number" id="up-min-order" value="100" min="1" class="w-full bg-slate-50 border border-slate-300 rounded-l-xl px-3 py-2 text-xs focus:outline-none">
+              <span id="up-min-order-unit" class="bg-slate-200 border border-l-0 border-slate-300 rounded-r-xl px-2.5 py-2 text-xs font-semibold text-slate-700 flex items-center">Kg</span>
+            </div>
+          </div>
+          <div>
+            <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Jadwal Pengambilan *</label>
+            <select id="up-pickup-schedule" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-brand-500 focus:outline-none">
+              <option value="Siap Angkut Segera (H+0 s/d H+1)">Siap Angkut Segera (H+0 - H+1)</option>
+              <option value="Terjadwal (H+2 s/d H+3)">Terjadwal (H+2 - H+3)</option>
+              <option value="Pengambilan Rutin Mingguan">Pengambilan Rutin Mingguan</option>
+              <option value="Kontrak Pasokan Berkala Bulanan">Kontrak Pasokan Berkala</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Status Ketersediaan *</label>
+            <select id="up-listing-status" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-brand-500 focus:outline-none">
+              <option value="Tersedia">Tersedia (Ready Stock)</option>
+              <option value="Kontrak">Kontrak (Pemasok Rutin)</option>
+              <option value="Terjual">Terjual (Arsip)</option>
+            </select>
+          </div>
+        </div>
+
         <div class="grid grid-cols-2 gap-4">
           <div>
             <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Harga Penawaran Satuan (Rp) *</label>
@@ -2332,6 +2411,52 @@
             <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Total Nilai Penawaran</label>
             <div id="up-total-display" class="bg-slate-100 border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-bold font-mono text-emerald-800">
               Rp9.500.000
+            </div>
+          </div>
+        </div>
+
+        <!-- Klasifikasi Limbah B3 KLHK -->
+        <div class="p-3 bg-amber-50 rounded-2xl border border-amber-200 space-y-2">
+          <div class="flex items-center space-x-2">
+            <input type="checkbox" id="up-is-b3" class="w-4 h-4 text-rose-600 rounded focus:ring-rose-500 border-slate-300" onchange="[REDACTED]'up-b3-permit-box').classList.toggle('hidden', !this.checked)">
+            <label for="up-is-b3" class="text-xs font-bold text-slate-800 cursor-pointer flex items-center gap-1">
+              <i class="fa-solid fa-triangle-exclamation text-rose-600"></i>
+              <span>Limbah B3 (Bahan Berbahaya & Beracun) — Memerlukan Izin Khusus KLHK</span>
+            </label>
+          </div>
+          <div id="up-b3-permit-box" class="hidden pl-6">
+            <label class="block text-[11px] font-semibold text-slate-600 mb-1">Nomor Izin Pengelolaan / Rekomendasi Pengangkutan B3 KLHK</label>
+            <input type="text" id="up-b3-permit" placeholder="Contoh: SK.KLHK/PLB3/2026/8912" class="w-full bg-white border border-amber-300 rounded-xl px-3 py-2 text-xs focus:outline-none font-mono">
+          </div>
+        </div>
+
+        <!-- 3 Foto Eviden Fisik -->
+        <div class="border-t border-slate-100 pt-2">
+          <label class="block text-xs font-bold uppercase text-slate-600 mb-1.5 flex items-center">
+            <i class="fa-solid fa-camera mr-1.5 text-emerald-600"></i>
+            <span>3 Foto Eviden Fisik & Tera Digital (Wajib)</span>
+          </label>
+          <div class="grid grid-cols-3 gap-2 text-xs">
+            <div class="p-2 rounded-xl bg-slate-50 border border-slate-200 text-center space-y-1">
+              <i class="fa-solid fa-boxes-stacked text-emerald-600 text-lg"></i>
+              <div class="font-bold text-[11px] text-slate-700">1. Wadah Utuh</div>
+              <p class="text-[10px] text-slate-400">Drum/IBC/bal tersegel</p>
+              <input type="hidden" id="up-foto-1" value="https://images.unsplash.com/photo-1578575437130-527eed3abbec?auto=format&fit=crop&w=800&q=80">
+              <span class="text-[10px] text-emerald-600 font-semibold"><i class="fa-solid fa-check"></i> Siap Diunggah</span>
+            </div>
+            <div class="p-2 rounded-xl bg-slate-50 border border-slate-200 text-center space-y-1">
+              <i class="fa-solid fa-flask text-blue-600 text-lg"></i>
+              <div class="font-bold text-[11px] text-slate-700">2. Sampel Material</div>
+              <p class="text-[10px] text-slate-400">Detail kebersihan fisik</p>
+              <input type="hidden" id="up-foto-2" value="https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?auto=format&fit=crop&w=800&q=80">
+              <span class="text-[10px] text-emerald-600 font-semibold"><i class="fa-solid fa-check"></i> Siap Diunggah</span>
+            </div>
+            <div class="p-2 rounded-xl bg-slate-50 border border-slate-200 text-center space-y-1">
+              <i class="fa-solid fa-scale-balanced text-amber-600 text-lg"></i>
+              <div class="font-bold text-[11px] text-slate-700">3. Struk Timbangan</div>
+              <p class="text-[10px] text-slate-400">Bukti tera kalibrasi sah</p>
+              <input type="hidden" id="up-foto-3" value="https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=800&q=80">
+              <span class="text-[10px] text-emerald-600 font-semibold"><i class="fa-solid fa-check"></i> Siap Diunggah</span>
             </div>
           </div>
         </div>

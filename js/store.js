@@ -84,9 +84,9 @@ class BursaLimbahStore {
           if (freeSeed) this.state.users.push(freeSeed);
         }
 
-        if (!this.state.categories || this.state.categories.length === 0) {
-          this.state.categories = [...INITIAL_CATEGORIES];
-        }
+        // Sinkronisasi kategori terbaru (16 kategori komoditas lengkap: Utama, Industri B2B, B3)
+        this.state.categories = [...INITIAL_CATEGORIES];
+
         if (!this.state.buyerRequests || this.state.buyerRequests.length === 0) {
           this.state.buyerRequests = [...INITIAL_BUYER_REQUESTS];
         }
@@ -105,9 +105,23 @@ class BursaLimbahStore {
           this.state.currentRole = "public";
         }
 
-        // Pastikan produk baru berharga Rp 1 - Rp 200.000 ikut tersinkronisasi
+        // Sinkronisasi 10 atribut wajib (kondisi, grade, MOQ, jadwal, status, B3) ke seluruh produk
         INITIAL_PRODUCTS.forEach(ip => {
-          if (!this.state.products.some(p => p.id === ip.id)) {
+          const idx = this.state.products.findIndex(p => p.id === ip.id);
+          if (idx !== -1) {
+            this.state.products[idx] = {
+              ...this.state.products[idx],
+              condition: this.state.products[idx].condition || ip.condition,
+              grade: this.state.products[idx].grade || ip.grade,
+              minimumOrder: this.state.products[idx].minimumOrder || ip.minimumOrder,
+              minimumOrderUnit: this.state.products[idx].minimumOrderUnit || ip.minimumOrderUnit,
+              pickupSchedule: this.state.products[idx].pickupSchedule || ip.pickupSchedule,
+              listingStatus: this.state.products[idx].listingStatus || ip.listingStatus,
+              isB3: typeof this.state.products[idx].isB3 !== 'undefined' ? this.state.products[idx].isB3 : ip.isB3,
+              b3PermitNumber: this.state.products[idx].b3PermitNumber || ip.b3PermitNumber,
+              city: this.state.products[idx].city || ip.city
+            };
+          } else {
             this.state.products.push({ ...ip });
           }
         });
@@ -817,12 +831,18 @@ class BursaLimbahStore {
   }
 
   // ================= CATEGORIES =================
-  getCategories() {
-    return this.state.categories;
+  getCategories(group = null) {
+    const list = this.state.categories || INITIAL_CATEGORIES;
+    if (!group || group === "all") return list;
+    return list.filter(c => c.group === group);
+  }
+
+  getHotCategories() {
+    return (typeof MVP_HOT_CATEGORIES !== 'undefined') ? MVP_HOT_CATEGORIES : [];
   }
 
   getCategoryById(id) {
-    return this.state.categories.find(c => c.id === id);
+    return (this.state.categories || INITIAL_CATEGORIES).find(c => c.id === id);
   }
 
   // ================= PRODUCTS (WASTE LISTINGS) =================
@@ -835,6 +855,13 @@ class BursaLimbahStore {
     if (filters.category && filters.category !== "all") {
       list = list.filter(p => p.categoryId === filters.category);
     }
+    if (filters.categoryGroup && filters.categoryGroup !== "all") {
+      const catIdsInGroup = (this.state.categories || []).filter(c => c.group === filters.categoryGroup).map(c => c.id);
+      list = list.filter(p => catIdsInGroup.includes(p.categoryId));
+    }
+    if (filters.isB3 === true) {
+      list = list.filter(p => p.isB3 === true);
+    }
     if (filters.search && filters.search.trim()) {
       const q = filters.search.toLowerCase();
       list = list.filter(p => 
@@ -843,6 +870,8 @@ class BursaLimbahStore {
         p.origin.toLowerCase().includes(q) ||
         (p.city && p.city.toLowerCase().includes(q)) ||
         (p.address && p.address.toLowerCase().includes(q)) ||
+        (p.condition && p.condition.toLowerCase().includes(q)) ||
+        (p.grade && p.grade.toLowerCase().includes(q)) ||
         p.code.toLowerCase().includes(q)
       );
     }
@@ -880,6 +909,15 @@ class BursaLimbahStore {
       weight: Number(productData.weight) || 0,
       volume: Number(productData.volume) || 0,
       unit: productData.unit || "Kg",
+      // 10 Atribut Wajib Listing:
+      condition: productData.condition || "Bersih",
+      grade: productData.grade || "Grade Standar Industri",
+      minimumOrder: Number(productData.minimumOrder) || 1,
+      minimumOrderUnit: productData.minimumOrderUnit || productData.unit || "Kg",
+      pickupSchedule: productData.pickupSchedule || "Siap Angkut Segera (H+0 s/d H+1)",
+      listingStatus: productData.listingStatus || "Tersedia",
+      isB3: Boolean(productData.isB3),
+      b3PermitNumber: productData.b3PermitNumber || null,
       origin: productData.origin,
       city: productData.city || this.extractCity(productData.address || productData.origin),
       address: productData.address,
