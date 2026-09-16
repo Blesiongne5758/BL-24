@@ -1,6 +1,6 @@
-# Simple Local Static Web Server for Circulink Platform
+# Simple Local Web Server for Bursa Limbah Platform
 param (
-    [int]$Port = 8080
+    [int]$Port = 5000
 )
 
 $HostName = "localhost"
@@ -29,7 +29,7 @@ $Listener.Prefixes.Add($Prefix)
 try {
     $Listener.Start()
     Write-Host "=====================================================" -ForegroundColor Green
-    Write-Host "  Circulink Local Server Running!" -ForegroundColor Green
+    Write-Host "  Bursa Limbah Server Berjalan di Port ${Port}!" -ForegroundColor Green
     Write-Host "  URL: $Prefix" -ForegroundColor Cyan
     Write-Host "  Directory: $RootPath" -ForegroundColor Yellow
     Write-Host "=====================================================" -ForegroundColor Green
@@ -48,6 +48,30 @@ while ($Listener.IsListening) {
         $Response = $Context.Response
 
         $UrlPath = [System.Uri]::UnescapeDataString($Request.Url.AbsolutePath)
+
+        # Handle CORS OPTIONS Preflight
+        if ($Request.HttpMethod -eq "OPTIONS") {
+            $Response.StatusCode = 200
+            $Response.AddHeader("Access-Control-Allow-Origin", "*")
+            $Response.AddHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+            $Response.AddHeader("Access-Control-Allow-Headers", "Content-Type, Authorization")
+            $Response.OutputStream.Close()
+            continue
+        }
+
+        # Handle API Health Check
+        if ($UrlPath -eq "/api/health") {
+            $HealthJson = '{"status":"ok","server":"bursalimbah-http","port":' + $Port + ',"database":"hybrid-ready","timestamp":"' + (Get-Date -Format s) + '"}'
+            $Bytes = [System.Text.Encoding]::UTF8.GetBytes($HealthJson)
+            $Response.ContentType = "application/json; charset=utf-8"
+            $Response.ContentLength64 = $Bytes.Length
+            $Response.StatusCode = 200
+            $Response.AddHeader("Access-Control-Allow-Origin", "*")
+            $Response.OutputStream.Write($Bytes, 0, $Bytes.Length)
+            $Response.OutputStream.Close()
+            continue
+        }
+
         if ($UrlPath -eq "/" -or $UrlPath -eq "") {
             $UrlPath = "/index.html"
         }
