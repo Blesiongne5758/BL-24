@@ -13,11 +13,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit;
 }
 
-$host = getenv('DB_HOST') ?: '127.0.0.1';
+$host = getenv('DB_HOST') ?: '108.136.70.118';
 $port = getenv('DB_PORT') ?: '3306';
-$dbname = getenv('DB_NAME') ?: 'bursalimbah';
-$username = getenv('DB_USER') ?: 'root';
-$password = getenv('DB_PASSWORD') ?: '';
+$dbname = getenv('DB_NAME') ?: 'bursalimbahdb';
+$username = getenv('DB_USER') ?: 'admin';
+$password = getenv('DB_PASSWORD') ?: '[REDACTED]';
 
 try {
     $dsn = "mysql:host={$host};port={$port};dbname={$dbname};charset=utf8mb4";

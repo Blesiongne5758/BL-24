@@ -160,7 +160,7 @@ class BursaLimbahApp {
 
     this.store.setCurrentRole(role);
 
-    // Perbarui gaya tombol navigasi peran
+    // Perbarui gaya tombol navigasi peran (Desktop & Mobile Sub-bar)
     const roles = ['public', 'buyer', 'seller', 'admin'];
     roles.forEach(r => {
       const btn = [REDACTED]`role-btn-${r}`);
@@ -171,7 +171,29 @@ class BursaLimbahApp {
           btn.className = 'px-2.5 py-1 text-xs font-medium rounded-lg transition text-slate-600 hover:text-slate-900';
         }
       }
+
+      const mobPill = [REDACTED]`mob-role-${r}`);
+      if (mobPill) {
+        if (r === role) {
+          mobPill.className = 'mobile-role-pill active flex-1 py-1.5 px-1 rounded-lg text-center text-[11px] transition';
+        } else {
+          mobPill.className = 'mobile-role-pill flex-1 py-1.5 px-1 rounded-lg text-center text-[11px] text-slate-600 transition';
+        }
+      }
     });
+
+    // Perbarui status aktif tombol mobile dock
+    const dockHome = [REDACTED]'mob-dock-home');
+    const dockAccount = [REDACTED]'mob-dock-account');
+    if (dockHome && dockAccount) {
+      if (role === 'public') {
+        dockHome.classList.add('active');
+        dockAccount.classList.remove('active');
+      } else {
+        dockHome.classList.remove('active');
+        dockAccount.classList.add('active');
+      }
+    }
 
     // Sembunyikan semua tab konten
     ['public', 'buyer', 'seller', 'admin', 'login'].forEach(r => {
@@ -770,6 +792,59 @@ class BursaLimbahApp {
     if (drawer) drawer.classList.toggle('hidden');
   }
 
+  toggleMobileSearchBar() {
+    const bar = [REDACTED]'mobile-search-container');
+    if (bar) {
+      bar.classList.toggle('hidden');
+      if (!bar.classList.contains('hidden')) {
+        const input = [REDACTED]'mobile-global-search-input');
+        if (input) input.focus();
+      }
+    }
+  }
+
+  clearMobileSearch() {
+    const globalInput = [REDACTED]'mobile-global-search-input');
+    const liveInput = [REDACTED]'mobile-live-search-input');
+    if (globalInput) globalInput.value = '';
+    if (liveInput) liveInput.value = '';
+    this.handleMobileInstantSearch('');
+  }
+
+  navToMobileTab(tab) {
+    const tabs = ['home', 'bursa', 'calc', 'account'];
+    tabs.forEach(t => {
+      const btn = [REDACTED]`mob-dock-${t}`);
+      if (btn) {
+        if (t === tab) {
+          btn.classList.add('active');
+        } else {
+          btn.classList.remove('active');
+        }
+      }
+    });
+
+    if (tab === 'home') {
+      this.navigateToSection('hero');
+    } else if (tab === 'bursa') {
+      this.navigateToSection('postingan-publik');
+    } else if (tab === 'calc') {
+      this.openMobileDpSimulator();
+    } else if (tab === 'account') {
+      this.handleMobileAccountNav();
+    }
+  }
+
+  handleMobileSellAction() {
+    const role = this.store.getCurrentRole();
+    if (role === 'seller' && this.store.isSellerAuthenticated()) {
+      this.showUploadModal();
+    } else {
+      this.showLoginPage('seller');
+      this.showToast("Silakan masuk atau daftar sebagai Penjual untuk mengunggah pasokan limbah.", "info");
+    }
+  }
+
   navigateToSection(sectionId) {
     if (this.store.getCurrentRole() !== 'public') {
       this.setRole('public', false);
@@ -802,8 +877,8 @@ class BursaLimbahApp {
       if (catId === 'all') {
         card.style.display = '';
       } else {
-        const cId = card.getAttribute('data-category-id');
-        card.style.display = (cId === catId) ? '' : 'none';
+        const cId = card.getAttribute('data-category-id') || '';
+        card.style.display = (cId === catId || cId.includes(catId) || catId.includes(cId)) ? '' : 'none';
       }
     });
 
@@ -818,6 +893,11 @@ class BursaLimbahApp {
 
   handleMobileInstantSearch(query) {
     const cleanQuery = (query || '').toLowerCase().trim();
+    const globalInput = [REDACTED]'mobile-global-search-input');
+    const liveInput = [REDACTED]'mobile-live-search-input');
+    if (globalInput && globalInput.value !== query) globalInput.value = query;
+    if (liveInput && liveInput.value !== query) liveInput.value = query;
+
     const cards = document.querySelectorAll('.public-posting-card');
     cards.forEach(card => {
       const text = card.textContent.toLowerCase();
@@ -827,6 +907,100 @@ class BursaLimbahApp {
         card.style.display = 'none';
       }
     });
+  }
+
+  switchMobileFeedTab(type) {
+    const types = ['all', 'supply', 'demand'];
+    types.forEach(t => {
+      const btn = [REDACTED]`mob-seg-${t}`);
+      if (btn) {
+        if (t === type) {
+          btn.className = 'mobile-seg-btn active flex-1 min-w-[75px] py-2 px-2.5 rounded-xl text-center text-xs font-bold transition';
+        } else {
+          btn.className = 'mobile-seg-btn flex-1 min-w-[75px] py-2 px-2.5 rounded-xl text-center text-xs font-medium text-slate-600 transition';
+        }
+      }
+    });
+
+    this.filterPublicPostings(type);
+  }
+
+  openMobileDpSimulator(itemData = null) {
+    const modal = [REDACTED]'modal-mobile-dp-calculator');
+    if (!modal) return;
+
+    if (itemData) {
+      const catSelect = [REDACTED]'mob-calc-commodity');
+      if (catSelect && itemData.category) {
+        const itemCat = itemData.category.toLowerCase();
+        for (let i = 0; i < catSelect.options.length; i++) {
+          const optVal = catSelect.options[i].value.toLowerCase();
+          if (itemCat.includes(optVal) || optVal.includes(itemCat)) {
+            catSelect.selectedIndex = i;
+            break;
+          }
+        }
+      }
+
+      const slider = [REDACTED]'mob-calc-slider');
+      if (slider && itemData.qty) {
+        slider.value = Math.min(20000, Math.max(100, itemData.qty));
+      }
+    }
+
+    this.updateMobileDpCalc();
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+  }
+
+  closeMobileDpSimulator() {
+    const modal = [REDACTED]'modal-mobile-dp-calculator');
+    if (modal) {
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+  }
+
+  updateMobileDpCalc() {
+    const select = [REDACTED]'mob-calc-commodity');
+    const slider = [REDACTED]'mob-calc-slider');
+    const qtyDisplay = [REDACTED]'mob-calc-qty-display');
+    const totalDisplay = [REDACTED]'mob-calc-total-val');
+    const dpDisplay = [REDACTED]'mob-calc-dp-val');
+    const remDisplay = [REDACTED]'mob-calc-remaining-val');
+
+    if (!select || !slider) return;
+
+    const opt = select.options[select.selectedIndex];
+    const price = parseInt(opt.getAttribute('data-price') || '10500', 10);
+    const unit = opt.getAttribute('data-unit') || 'Liter';
+    const qty = parseInt(slider.value, 10);
+
+    if (qtyDisplay) {
+      qtyDisplay.textContent = `${qty.toLocaleString('id-ID')} ${unit}`;
+    }
+
+    const total = price * qty;
+    const dp = Math.round(total * 0.3);
+    const remaining = total - dp;
+
+    if (totalDisplay) totalDisplay.textContent = this.formatRupiah(total);
+    if (dpDisplay) dpDisplay.textContent = this.formatRupiah(dp);
+    if (remDisplay) remDisplay.textContent = this.formatRupiah(remaining);
+  }
+
+  consultDpWa() {
+    const select = [REDACTED]'mob-calc-commodity');
+    const slider = [REDACTED]'mob-calc-slider');
+    const opt = select ? select.options[select.selectedIndex] : null;
+    const commName = opt ? opt.text.split('(')[0].trim() : 'Minyak Jelantah';
+    const unit = opt ? (opt.getAttribute('data-unit') || 'Liter') : 'Liter';
+    const qty = slider ? parseInt(slider.value, 10).toLocaleString('id-ID') : '2.500';
+    const dpDisplay = [REDACTED]'mob-calc-dp-val');
+    const dpVal = dpDisplay ? dpDisplay.textContent : 'Rp7.875.000';
+
+    const msg = `Halo Admin Bursa Limbah, saya ingin konsultasi simulasi DP 30% Rekening Bersama Escrow untuk ${commName} sebanyak ${qty} ${unit} (Estimasi DP: ${dpVal}). Mohon info panduan booking & verifikasinya.`;
+    window.open(`https://wa.me/628[REDACTED]7890?text=${encodeURIComponent(msg)}`, '_blank');
   }
 
   showMobileQuickActionSheet() {
@@ -1133,8 +1307,17 @@ class BursaLimbahApp {
     const products = this.store.getProducts({ status: 'approved' });
     const requests = this.store.getBuyerRequests();
 
-    [REDACTED]'count-supply').textContent = products.length;
-    [REDACTED]'count-demand').textContent = requests.length;
+    const countSupplyEl = [REDACTED]'count-supply');
+    const countDemandEl = [REDACTED]'count-demand');
+    if (countSupplyEl) countSupplyEl.textContent = products.length;
+    if (countDemandEl) countDemandEl.textContent = requests.length;
+
+    const mobCountAllEl = [REDACTED]'mob-count-all');
+    const mobCountSupplyEl = [REDACTED]'mob-count-supply');
+    const mobCountDemandEl = [REDACTED]'mob-count-demand');
+    if (mobCountAllEl) mobCountAllEl.textContent = products.length + requests.length;
+    if (mobCountSupplyEl) mobCountSupplyEl.textContent = products.length;
+    if (mobCountDemandEl) mobCountDemandEl.textContent = requests.length;
 
     let items = [];
 
@@ -1247,15 +1430,21 @@ class BursaLimbahApp {
             </div>
           </div>
 
-          <!-- Tombol Aksi: Buka Akses via Pendaftaran 3-Tier -->
+          <!-- Tombol Aksi: Simulasi DP 30% & Buka Akses -->
           <div class="p-4 pt-0 space-y-2">
-            <button onclick="app.showBuyerRegisterModal()" class="w-full py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white text-xs font-bold shadow transition flex items-center justify-center space-x-1.5">
+            <div class="grid grid-cols-2 gap-1.5">
+              <button onclick="app.openMobileDpSimulator({ category: '${item.category || item.categoryId || 'jelantah'}', qty: ${item.volume || item.weight || 2500}, title: '${(item.title || '').replace(/'/g, "\\'")}' })" class="py-2 px-2.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 text-[11px] font-bold transition flex items-center justify-center space-x-1 active:scale-95 shadow-2xs">
+                <i class="fa-solid fa-calculator text-amber-600"></i>
+                <span>Simulasi DP</span>
+              </button>
+              <button onclick="app.showProductDetail('${item.id}')" class="py-2 px-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200 text-[11px] font-bold transition flex items-center justify-center space-x-1 active:scale-95">
+                <i class="fa-solid fa-eye text-emerald-600"></i>
+                <span>Detail</span>
+              </button>
+            </div>
+            <button onclick="app.showBuyerRegisterModal()" class="w-full py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white text-xs font-bold shadow-xs transition flex items-center justify-center space-x-1.5 active:scale-95">
               <i class="fa-solid fa-crown text-amber-300"></i>
-              <span>Daftar & Berlangganan (Buka Akses)</span>
-            </button>
-            <button onclick="app.showProductDetail('${item.id}')" class="w-full py-2 rounded-xl border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-semibold transition flex items-center justify-center space-x-1">
-              <i class="fa-solid fa-circle-info"></i>
-              <span>Tinjau Detail Terproteksi</span>
+              <span>Daftar &amp; Buka Akses (3 Paket)</span>
             </button>
           </div>
 

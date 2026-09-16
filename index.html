@@ -132,12 +132,47 @@
             </button>
           </div>
 
-          <!-- Hamburger Mobile -->
-          <button id="mobile-menu-btn" onclick="app.toggleMobileMenu()" class="lg:hidden p-2 text-slate-600 hover:text-slate-900 rounded-lg hover:bg-slate-100 transition">
-            <i class="fa-solid fa-bars text-lg"></i>
-          </button>
+          <!-- Tombol Aksi Cepat Mobile (Search & Hamburger) -->
+          <div class="lg:hidden flex items-center gap-1">
+            <button onclick="app.toggleMobileSearchBar()" class="w-9 h-9 flex items-center justify-center text-slate-600 hover:text-emerald-700 rounded-xl hover:bg-slate-100 active:scale-95 transition text-sm" title="Cari Komoditas">
+              <i class="fa-solid fa-magnifying-glass"></i>
+            </button>
+            <button id="mobile-menu-btn" onclick="app.toggleMobileMenu()" class="w-9 h-9 flex items-center justify-center text-slate-600 hover:text-slate-900 rounded-xl hover:bg-slate-100 active:scale-95 transition">
+              <i class="fa-solid fa-bars text-base"></i>
+            </button>
+          </div>
 
         </div>
+      </div>
+    </div>
+
+    <!-- ================= SUB-BAR MOBILE: ROLE SWITCHER INSTAN ================= -->
+    <div id="mobile-role-subbar" class="lg:hidden bg-slate-50/95 border-t border-slate-200/80 px-2.5 py-1.5 backdrop-blur-md">
+      <div class="flex items-center gap-1 max-w-md mx-auto bg-slate-200/80 p-1 rounded-xl text-xs font-semibold">
+        <button id="mob-role-public" onclick="app.setRole('public')" class="mobile-role-pill active flex-1 py-1.5 px-1 rounded-lg text-center text-[11px] transition">
+          🌐 Publik
+        </button>
+        <button id="mob-role-buyer" onclick="app.navigateToBuyer()" class="mobile-role-pill flex-1 py-1.5 px-1 rounded-lg text-center text-[11px] text-slate-600 transition">
+          🛒 Pembeli
+        </button>
+        <button id="mob-role-seller" onclick="app.navigateToSeller()" class="mobile-role-pill flex-1 py-1.5 px-1 rounded-lg text-center text-[11px] text-slate-600 transition">
+          🏭 Penjual
+        </button>
+        <button id="mob-role-admin" onclick="app.navigateToAdmin()" class="mobile-role-pill flex-1 py-1.5 px-1 rounded-lg text-center text-[11px] text-slate-600 transition flex items-center justify-center gap-1">
+          ⚙️ Admin
+          <span id="mob-admin-pending-pill" class="px-1.5 bg-amber-500 text-white text-[9px] rounded-full hidden">0</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- ================= DOCK PENCARIAN CEPAT MOBILE ================= -->
+    <div id="mobile-search-container" class="lg:hidden hidden bg-white border-b border-slate-200 px-3 py-2 transition-all shadow-sm">
+      <div class="relative max-w-md mx-auto">
+        <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+        <input type="text" id="mobile-global-search-input" oninput="app.handleMobileInstantSearch(this.value)" placeholder="Cari limbah (Jelantah, Besi, PET, Kardus)..." class="w-full pl-8 pr-8 py-2 bg-slate-100 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-emerald-500 focus:bg-white focus:outline-none">
+        <button type="button" onclick="app.clearMobileSearch()" class="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs p-1">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
       </div>
     </div>
 
@@ -690,6 +725,47 @@
           <i class="fa-solid fa-bolt text-amber-400 text-[9px]"></i>
           <span>Aksi</span>
         </button>
+      </div>
+
+      <!-- ================= MVP QUICK ACTION HUB (KHUSUS MOBILE) ================= -->
+      <div class="lg:hidden px-3 pt-1 pb-3">
+        <div class="grid grid-cols-4 gap-2">
+          <!-- 1. Jual Pasokan -->
+          <button onclick="app.handleMobileSellAction()" class="mobile-action-card p-2.5 rounded-2xl bg-white border border-slate-200 shadow-2xs flex flex-col items-center justify-center text-center group">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white flex items-center justify-center text-sm shadow-xs mb-1 group-active:scale-90 transition">
+              <i class="fa-solid fa-plus"></i>
+            </div>
+            <span class="text-[11px] font-bold text-slate-800 leading-tight">Jual Limbah</span>
+            <span class="text-[9px] text-emerald-600 font-semibold mt-0.5">Pasang Cepat</span>
+          </button>
+
+          <!-- 2. Hitung DP 30% -->
+          <button onclick="app.openMobileDpSimulator()" class="mobile-action-card p-2.5 rounded-2xl bg-white border border-slate-200 shadow-2xs flex flex-col items-center justify-center text-center group">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 text-white flex items-center justify-center text-sm shadow-xs mb-1 group-active:scale-90 transition">
+              <i class="fa-solid fa-calculator"></i>
+            </div>
+            <span class="text-[11px] font-bold text-slate-800 leading-tight">Hitung DP</span>
+            <span class="text-[9px] text-amber-600 font-semibold mt-0.5">Escrow 30%</span>
+          </button>
+
+          <!-- 3. Paket 3-Tier -->
+          <button onclick="app.showBuyerRegisterModal()" class="mobile-action-card p-2.5 rounded-2xl bg-white border border-slate-200 shadow-2xs flex flex-col items-center justify-center text-center group">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex items-center justify-center text-sm shadow-xs mb-1 group-active:scale-90 transition">
+              <i class="fa-solid fa-crown text-amber-300"></i>
+            </div>
+            <span class="text-[11px] font-bold text-slate-800 leading-tight">Buka Akses</span>
+            <span class="text-[9px] text-blue-600 font-semibold mt-0.5">3 Pilihan Tier</span>
+          </button>
+
+          <!-- 4. Peta GPS Gudang -->
+          <button onclick="app.navigateToSection('ketertelusuran')" class="mobile-action-card p-2.5 rounded-2xl bg-white border border-slate-200 shadow-2xs flex flex-col items-center justify-center text-center group">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-slate-700 to-slate-900 text-emerald-400 flex items-center justify-center text-sm shadow-xs mb-1 group-active:scale-90 transition">
+              <i class="fa-solid fa-map-location-dot"></i>
+            </div>
+            <span class="text-[11px] font-bold text-slate-800 leading-tight">Peta GPS</span>
+            <span class="text-[9px] text-slate-500 font-semibold mt-0.5">Traceability</span>
+          </button>
+        </div>
       </div>
 
       <!-- HERO SECTION UTAMA -->
@@ -1464,6 +1540,15 @@
     <!-- ================= TAMPILAN 2: PORTAL PEMBELI (BUYER) ================= -->
     <div id="view-buyer" class="tab-content hidden max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
       
+      <!-- Navigasi Cepat Mobile: Kembali ke Publik -->
+      <div class="lg:hidden flex items-center justify-between bg-white p-3 rounded-2xl border border-slate-200 shadow-xs mb-3">
+        <button onclick="app.setRole('public')" class="flex items-center gap-1.5 text-xs font-bold text-slate-700 hover:text-emerald-700 active:scale-95 transition">
+          <i class="fa-solid fa-arrow-left text-emerald-600"></i>
+          <span>Kembali ke Beranda Publik</span>
+        </button>
+        <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">Mode Pembeli</span>
+      </div>
+
       <!-- Bilah Status Pembeli & Ringkasan Tier Aktif -->
       <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
         <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -1581,6 +1666,15 @@
     <!-- ================= TAMPILAN 3: DASHBOARD PENJUAL (SELLER) ================= -->
     <div id="view-seller" class="tab-content hidden max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
       
+      <!-- Navigasi Cepat Mobile: Kembali ke Publik -->
+      <div class="lg:hidden flex items-center justify-between bg-white p-3 rounded-2xl border border-slate-200 shadow-xs mb-3">
+        <button onclick="app.setRole('public')" class="flex items-center gap-1.5 text-xs font-bold text-slate-700 hover:text-emerald-700 active:scale-95 transition">
+          <i class="fa-solid fa-arrow-left text-emerald-600"></i>
+          <span>Kembali ke Beranda Publik</span>
+        </button>
+        <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">Mode Penjual</span>
+      </div>
+
       <!-- Header Profil Akun Penjual -->
       <div class="bg-gradient-to-r from-slate-900 via-slate-800 to-emerald-950 rounded-3xl p-6 sm:p-8 text-white shadow-xl relative overflow-hidden border border-slate-700/50">
         <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -1681,6 +1775,15 @@
     <!-- ================= TAMPILAN 4: PUSAT PENGELOLA (ADMIN) ================= -->
     <div id="view-admin" class="tab-content hidden max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
       
+      <!-- Navigasi Cepat Mobile: Kembali ke Publik -->
+      <div class="lg:hidden flex items-center justify-between bg-white p-3 rounded-2xl border border-slate-200 shadow-xs mb-3">
+        <button onclick="app.setRole('public')" class="flex items-center gap-1.5 text-xs font-bold text-slate-700 hover:text-emerald-700 active:scale-95 transition">
+          <i class="fa-solid fa-arrow-left text-emerald-600"></i>
+          <span>Kembali ke Beranda Publik</span>
+        </button>
+        <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-300">Mode Admin</span>
+      </div>
+
       <!-- Header Pusat Pengelola & Status Sesi Admin Terautentikasi -->
       <div class="bg-gradient-to-r from-slate-950 via-slate-900 to-indigo-950 rounded-3xl p-6 sm:p-7 text-white shadow-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border border-slate-800">
         <div class="flex items-center space-x-4">
@@ -2635,44 +2738,49 @@
     </a>
   </div>
 
-  <!-- ================= BOTTOM NAVIGATION DOCK (MOBILE) ================= -->
-  <nav id="mobile-bottom-nav" class="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-xl border-t border-slate-200/90 shadow-[0_-8px_24px_rgba(0,0,0,0.06)] px-2 py-1.5 mobile-safe-bottom transition-all duration-300">
-    <div class="grid grid-cols-5 gap-1 items-center max-w-md mx-auto">
+  <!-- ================= BOTTOM NAVIGATION DOCK (MOBILE APP FEEL) ================= -->
+  <nav id="mobile-bottom-nav" class="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-xl border-t border-slate-200/90 shadow-[0_-8px_24px_rgba(0,0,0,0.08)] px-2 py-1 mobile-safe-bottom transition-all duration-300">
+    <div class="grid grid-cols-5 items-end max-w-md mx-auto relative">
       
-      <button onclick="app.navigateToSection('hero')" class="mobile-nav-btn flex flex-col items-center justify-center py-1 text-slate-500 hover:text-emerald-700 active:scale-90 transition group">
-        <div class="w-8 h-8 rounded-full flex items-center justify-center group-hover:bg-emerald-50 transition">
-          <i class="fa-solid fa-house text-base group-hover:text-emerald-600"></i>
+      <!-- 1. Beranda -->
+      <button id="mob-dock-home" onclick="app.navToMobileTab('home')" class="mobile-nav-btn active flex flex-col items-center justify-center py-1 text-slate-500 hover:text-emerald-700 active:scale-90 transition group">
+        <div class="dock-icon-wrap w-8 h-8 rounded-xl flex items-center justify-center transition">
+          <i class="fa-solid fa-house text-sm"></i>
         </div>
-        <span class="text-[10px] font-semibold mt-0.5 tracking-tight group-hover:text-emerald-700">Beranda</span>
+        <span class="text-[10px] font-semibold mt-0.5 tracking-tight">Beranda</span>
       </button>
 
-      <button onclick="app.navigateToSection('postingan-publik')" class="mobile-nav-btn flex flex-col items-center justify-center py-1 text-slate-500 hover:text-emerald-700 active:scale-90 transition group">
-        <div class="w-8 h-8 rounded-full flex items-center justify-center group-hover:bg-emerald-50 transition relative">
-          <i class="fa-solid fa-boxes-stacked text-base group-hover:text-emerald-600"></i>
-          <span class="absolute top-0.5 right-0.5 w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+      <!-- 2. Bursa Pasokan -->
+      <button id="mob-dock-bursa" onclick="app.navToMobileTab('bursa')" class="mobile-nav-btn flex flex-col items-center justify-center py-1 text-slate-500 hover:text-emerald-700 active:scale-90 transition group">
+        <div class="dock-icon-wrap w-8 h-8 rounded-xl flex items-center justify-center transition relative">
+          <i class="fa-solid fa-boxes-stacked text-sm"></i>
+          <span class="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
         </div>
-        <span class="text-[10px] font-semibold mt-0.5 tracking-tight group-hover:text-emerald-700">Bursa</span>
+        <span class="text-[10px] font-semibold mt-0.5 tracking-tight">Bursa</span>
       </button>
 
-      <button onclick="app.navigateToSection('preloved')" class="mobile-nav-btn flex flex-col items-center justify-center py-1 text-slate-500 hover:text-pink-600 active:scale-90 transition group">
-        <div class="w-8 h-8 rounded-full flex items-center justify-center group-hover:bg-pink-50 transition">
-          <i class="fa-solid fa-heart text-pink-500 text-base"></i>
+      <!-- 3. Center Elevated Action Button: + Jual Limbah -->
+      <div class="flex flex-col items-center justify-center relative">
+        <button onclick="app.handleMobileSellAction()" class="mobile-fab-center w-12 h-12 rounded-full text-white flex items-center justify-center text-xl shadow-lg border-2 border-white focus:outline-none" title="Pasang Limbah Baru">
+          <i class="fa-solid fa-plus"></i>
+        </button>
+        <span class="text-[10px] font-bold text-emerald-700 tracking-tight -mt-3.5 mb-1">Jual</span>
+      </div>
+
+      <!-- 4. Kalkulator DP 30% -->
+      <button id="mob-dock-calc" onclick="app.openMobileDpSimulator()" class="mobile-nav-btn flex flex-col items-center justify-center py-1 text-slate-500 hover:text-amber-600 active:scale-90 transition group">
+        <div class="dock-icon-wrap w-8 h-8 rounded-xl flex items-center justify-center transition">
+          <i class="fa-solid fa-calculator text-sm"></i>
         </div>
-        <span class="text-[10px] font-semibold mt-0.5 tracking-tight text-pink-600 font-bold">PreLoved</span>
+        <span class="text-[10px] font-semibold mt-0.5 tracking-tight">Hitung DP</span>
       </button>
 
-      <button onclick="app.navigateToSection('event')" class="mobile-nav-btn flex flex-col items-center justify-center py-1 text-slate-500 hover:text-indigo-600 active:scale-90 transition group">
-        <div class="w-8 h-8 rounded-full flex items-center justify-center group-hover:bg-indigo-50 transition">
-          <i class="fa-solid fa-calendar-star text-indigo-500 text-base"></i>
+      <!-- 5. Akun / Switch Role -->
+      <button id="mob-dock-account" onclick="app.handleMobileAccountNav()" class="mobile-nav-btn flex flex-col items-center justify-center py-1 text-slate-500 hover:text-emerald-700 active:scale-90 transition group">
+        <div class="dock-icon-wrap w-8 h-8 rounded-xl flex items-center justify-center transition" id="mobile-nav-user-icon">
+          <i class="fa-solid fa-user text-sm"></i>
         </div>
-        <span class="text-[10px] font-semibold mt-0.5 tracking-tight text-indigo-600 font-bold">Event</span>
-      </button>
-
-      <button onclick="app.handleMobileAccountNav()" class="mobile-nav-btn flex flex-col items-center justify-center py-1 text-slate-500 hover:text-emerald-700 active:scale-90 transition group">
-        <div class="w-8 h-8 rounded-full flex items-center justify-center bg-slate-100 group-hover:bg-emerald-100 transition" id="mobile-nav-user-icon">
-          <i class="fa-solid fa-user text-slate-700 text-sm"></i>
-        </div>
-        <span class="text-[10px] font-bold mt-0.5 tracking-tight text-slate-800" id="mobile-nav-user-label">Akun</span>
+        <span class="text-[10px] font-semibold mt-0.5 tracking-tight" id="mobile-nav-user-label">Akun</span>
       </button>
 
     </div>
@@ -2749,6 +2857,94 @@
         <a href="https://wa.me/628[REDACTED]7890" target="_blank" class="px-3 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-[11px] transition shadow">
           Chat WA
         </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= MODAL: BOTTOM SHEET KALKULATOR DP 30% MOBILE ================= -->
+  <div id="modal-mobile-dp-calculator" class="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs hidden items-end justify-center p-0 sm:p-4 lg:hidden">
+    <div class="bg-white w-full rounded-t-3xl sm:rounded-3xl p-5 shadow-2xl border-t sm:border border-slate-200 space-y-4 mobile-sheet-animate max-w-md mx-auto max-h-[92vh] overflow-y-auto">
+      <div class="sheet-drag-handle"></div>
+      <div class="flex items-center justify-between pb-2 border-b border-slate-100">
+        <div class="flex items-center space-x-2">
+          <div class="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center text-sm font-bold">
+            <i class="fa-solid fa-calculator"></i>
+          </div>
+          <div>
+            <h3 class="font-extrabold text-sm text-slate-900">Simulasi DP 30% &amp; Rekber Escrow</h3>
+            <p class="text-[10px] text-slate-500">Kalkulasi nilai pasokan &amp; batas aman transaksi</p>
+          </div>
+        </div>
+        <button type="button" onclick="app.closeMobileDpSimulator()" class="p-1.5 rounded-lg text-slate-400 hover:text-slate-600">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <!-- Input Komoditas & Volume -->
+      <div class="space-y-3">
+        <div>
+          <label class="block text-[11px] font-bold text-slate-700 mb-1">Pilih Komoditas Limbah:</label>
+          <select id="mob-calc-commodity" onchange="app.updateMobileDpCalc()" class="w-full text-xs font-semibold bg-slate-50 border border-slate-200 rounded-xl p-2.5 focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+            <option value="jelantah" data-price="10500" data-unit="Liter">🛢️ Minyak Jelantah (Rp10.500/Liter)</option>
+            <option value="besi" data-price="6200" data-unit="Kg">🏗️ Besi Rongsok / Scrap (Rp6.200/Kg)</option>
+            <option value="plastik" data-price="4800" data-unit="Kg">🍶 Plastik PET Bal (Rp4.800/Kg)</option>
+            <option value="kardus" data-price="2100" data-unit="Kg">📦 Kardus Bekas OCC (Rp2.100/Kg)</option>
+            <option value="oli" data-price="4500" data-unit="Liter">🛢️ Oli Bekas Industri (Rp4.500/Liter)</option>
+            <option value="tembaga" data-price="95000" data-unit="Kg">⚡ Tembaga Super (Rp95.000/Kg)</option>
+          </select>
+        </div>
+
+        <div>
+          <div class="flex items-center justify-between mb-1">
+            <label class="text-[11px] font-bold text-slate-700">Volume / Tonase Pasokan:</label>
+            <span id="mob-calc-qty-display" class="font-mono text-xs font-extrabold text-emerald-700">2.500 Liter</span>
+          </div>
+          <input type="range" id="mob-calc-slider" min="100" max="20000" step="100" value="2500" oninput="app.updateMobileDpCalc()" class="w-full h-2 bg-slate-200 rounded-lg cursor-pointer">
+          <div class="flex justify-between text-[9px] text-slate-400 mt-1">
+            <span>100</span>
+            <span>5.000</span>
+            <span>10.000</span>
+            <span>20.000</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Hasil Perhitungan Breakdown -->
+      <div class="p-3.5 rounded-2xl bg-gradient-to-br from-slate-900 to-slate-950 text-white space-y-2.5 shadow-md">
+        <div class="flex items-center justify-between text-xs text-slate-300">
+          <span>Estimasi Nilai Pasokan:</span>
+          <span id="mob-calc-total-val" class="font-mono font-bold text-white text-sm">Rp26.250.000</span>
+        </div>
+        <div class="h-px bg-slate-800"></div>
+        <div class="flex items-center justify-between text-xs">
+          <span class="text-amber-300 font-bold flex items-center">
+            <i class="fa-solid fa-shield-halved mr-1 text-[10px]"></i>
+            DP 30% Rekber Escrow:
+          </span>
+          <span id="mob-calc-dp-val" class="font-mono font-extrabold text-amber-400 text-base">Rp7.875.000</span>
+        </div>
+        <div class="flex items-center justify-between text-[11px] text-slate-400">
+          <span>Pelunasan 70% di Timbangan:</span>
+          <span id="mob-calc-remaining-val" class="font-mono text-slate-200">Rp18.375.000</span>
+        </div>
+      </div>
+
+      <!-- Jaminan Keamanan Escrow -->
+      <div class="p-2.5 rounded-xl bg-emerald-50 border border-emerald-200/80 flex items-start gap-2 text-[11px] text-emerald-900">
+        <i class="fa-solid fa-lock text-emerald-600 mt-0.5 shrink-0"></i>
+        <span>DP 30% ditahan aman di rekening bersama Bursa Limbah dan baru cair ke penjual setelah penimbangan fisik &amp; uji lab lolos.</span>
+      </div>
+
+      <!-- Tombol Aksi Cepat -->
+      <div class="grid grid-cols-2 gap-2 pt-1">
+        <button onclick="app.closeMobileDpSimulator(); app.showBuyerRegisterModal()" class="py-2.5 px-3 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-bold text-xs shadow-sm flex items-center justify-center gap-1.5 active:scale-95 transition">
+          <i class="fa-solid fa-crown text-amber-300"></i>
+          <span>Buka 3-Tier</span>
+        </button>
+        <button onclick="app.closeMobileDpSimulator(); app.consultDpWa()" class="py-2.5 px-3 rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-300 hover:bg-emerald-100 font-bold text-xs shadow-sm flex items-center justify-center gap-1.5 active:scale-95 transition">
+          <i class="fa-brands fa-whatsapp text-emerald-600"></i>
+          <span>Konsultasi WA</span>
+        </button>
       </div>
     </div>
   </div>

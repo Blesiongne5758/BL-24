@@ -4,11 +4,11 @@ const fs = require('fs');
 require('dotenv').config({ path: path.join(__dirname, '.env') });
 
 const dbConfig = {
-  host: process.env.DB_HOST || 'localhost',
+  host: process.env.DB_HOST || '108.136.70.118',
   port: parseInt(process.env.DB_PORT, 10) || 3306,
-  user: process.env.DB_USER || 'root',
+  user: process.env.DB_USER || 'admin',
   password: [REDACTED]
-  database: process.env.DB_NAME || 'bursalimbah',
+  database: process.env.DB_NAME || 'bursalimbahdb',
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0

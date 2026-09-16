@@ -3,11 +3,11 @@
 -- Autentikasi Pengguna: Pendaftaran (Signup) & Login
 -- =======================================================
 
-CREATE DATABASE IF NOT EXISTS `bursalimbah` 
+CREATE DATABASE IF NOT EXISTS `bursalimbahdb` 
 DEFAULT CHARACTER SET utf8mb4 
 COLLATE utf8mb4_unicode_ci;
 
-USE `bursalimbah`;
+USE `bursalimbahdb`;
 
 -- -------------------------------------------------------
 -- Tabel: users
