@@ -190,3 +190,31 @@ input[type="range"] {
     padding: 20px;
   }
 }
+
+/* Mobile Optimization & Dynamic UI */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+@keyframes floatGentle {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+.float-action-btn {
+  animation: floatGentle 3s ease-in-out infinite;
+}
+
+.mobile-safe-bottom {
+  padding-bottom: max(env(safe-area-inset-bottom, 0px), 6px);
+}
+

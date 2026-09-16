@@ -379,6 +379,29 @@ class BursaLimbahApp {
         <span id="admin-pending-pill" class="px-1.5 bg-amber-500 text-white text-[9px] rounded-full hidden">0</span>
       `;
     }
+
+    // Perbarui status icon dan label pada Mobile Bottom Nav
+    const mobUserIcon = [REDACTED]'mobile-nav-user-icon');
+    const mobUserLabel = [REDACTED]'mobile-nav-user-label');
+    if (mobUserIcon && mobUserLabel) {
+      if (role === 'buyer' && user) {
+        mobUserIcon.innerHTML = `<i class="fa-solid fa-crown text-amber-500 text-xs"></i>`;
+        mobUserLabel.textContent = 'Pembeli';
+        mobUserLabel.className = 'text-[10px] font-bold mt-0.5 tracking-tight text-emerald-700';
+      } else if (role === 'seller' && user) {
+        mobUserIcon.innerHTML = `<i class="fa-solid fa-store text-emerald-600 text-xs"></i>`;
+        mobUserLabel.textContent = 'Penjual';
+        mobUserLabel.className = 'text-[10px] font-bold mt-0.5 tracking-tight text-slate-900';
+      } else if (role === 'admin') {
+        mobUserIcon.innerHTML = `<i class="fa-solid fa-user-shield text-amber-600 text-xs"></i>`;
+        mobUserLabel.textContent = 'Admin';
+        mobUserLabel.className = 'text-[10px] font-bold mt-0.5 tracking-tight text-amber-700';
+      } else {
+        mobUserIcon.innerHTML = `<i class="fa-solid fa-user text-slate-700 text-xs"></i>`;
+        mobUserLabel.textContent = 'Akun';
+        mobUserLabel.className = 'text-[10px] font-bold mt-0.5 tracking-tight text-slate-800';
+      }
+    }
   }
 
   // ================= MODUL AUTENTIKASI & HALAMAN LOGIN =================
@@ -681,6 +704,42 @@ class BursaLimbahApp {
     }, 100);
   }
 
+  handleMobileAccountNav() {
+    const role = this.store.getCurrentRole();
+    if (role === 'buyer' && this.store.isBuyerAuthenticated()) {
+      this.setRole('buyer');
+    } else if (role === 'seller' && this.store.isSellerAuthenticated()) {
+      this.setRole('seller');
+    } else if (role === 'admin' && this.store.isAdminAuthenticated()) {
+      this.setRole('admin');
+    } else {
+      this.showLoginPage('buyer');
+    }
+  }
+
+  filterMobileByCat(catId) {
+    this.navigateToSection('postingan-publik');
+    const pubGrid = [REDACTED]'public-postings-grid');
+    if (!pubGrid) return;
+    const cards = pubGrid.querySelectorAll('.public-posting-card');
+    cards.forEach(card => {
+      if (catId === 'all') {
+        card.style.display = '';
+      } else {
+        const cId = card.getAttribute('data-category-id');
+        card.style.display = (cId === catId) ? '' : 'none';
+      }
+    });
+
+    // Perbarui style tombol filter chip yang dipilih
+    document.querySelectorAll('.mobile-chip-filter').forEach(btn => {
+      btn.className = 'mobile-chip-filter px-3.5 py-1.5 rounded-full text-xs font-semibold shrink-0 bg-slate-100 text-slate-700 hover:bg-emerald-50 hover:text-emerald-700 border border-slate-200 transition active:scale-95 flex items-center space-x-1.5';
+    });
+    if (window.event && window.event.currentTarget) {
+      window.event.currentTarget.className = 'mobile-chip-filter px-3.5 py-1.5 rounded-full text-xs font-bold shrink-0 bg-emerald-600 text-white shadow-xs transition active:scale-95 flex items-center space-x-1.5';
+    }
+  }
+
   // ================= FILTER EVENT =================
   filterEvents(category) {
     // Update active state on filter pills
@@ -979,7 +1038,7 @@ class BursaLimbahApp {
       const itemCity = this.getCity(item);
 
       return `
-        <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-md transition flex flex-col justify-between">
+        <div class="public-posting-card bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-md transition flex flex-col justify-between" data-category-id="${item.category || item.categoryId || ''}">
           <div>
             <!-- Banner Gambar & Label Tipe Postingan -->
             <div class="relative h-44 bg-slate-100 overflow-hidden">
