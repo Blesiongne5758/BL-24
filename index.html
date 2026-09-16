@@ -382,7 +382,7 @@
   </div>
 
   <!-- ================= WADAH UTAMA APLIKASI ================= -->
-  <main id="app-container" class="flex-1 pb-20 lg:pb-0">
+  <main id="app-container" class="flex-1 pb-4 lg:pb-0">
 
     <!-- ================= TAMPILAN 0: HALAMAN LOGIN (PENJUAL & PEMBELI) ================= -->
     <div id="view-login" class="tab-content hidden max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10 lg:py-16 space-y-8">
@@ -725,47 +725,6 @@
           <i class="fa-solid fa-bolt text-amber-400 text-[9px]"></i>
           <span>Aksi</span>
         </button>
-      </div>
-
-      <!-- ================= MVP QUICK ACTION HUB (KHUSUS MOBILE) ================= -->
-      <div class="lg:hidden px-3 pt-1 pb-3">
-        <div class="grid grid-cols-4 gap-2">
-          <!-- 1. Jual Pasokan -->
-          <button onclick="app.handleMobileSellAction()" class="mobile-action-card p-2.5 rounded-2xl bg-white border border-slate-200 shadow-2xs flex flex-col items-center justify-center text-center group">
-            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white flex items-center justify-center text-sm shadow-xs mb-1 group-active:scale-90 transition">
-              <i class="fa-solid fa-plus"></i>
-            </div>
-            <span class="text-[11px] font-bold text-slate-800 leading-tight">Jual Limbah</span>
-            <span class="text-[9px] text-emerald-600 font-semibold mt-0.5">Pasang Cepat</span>
-          </button>
-
-          <!-- 2. Hitung DP 30% -->
-          <button onclick="app.openMobileDpSimulator()" class="mobile-action-card p-2.5 rounded-2xl bg-white border border-slate-200 shadow-2xs flex flex-col items-center justify-center text-center group">
-            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 text-white flex items-center justify-center text-sm shadow-xs mb-1 group-active:scale-90 transition">
-              <i class="fa-solid fa-calculator"></i>
-            </div>
-            <span class="text-[11px] font-bold text-slate-800 leading-tight">Hitung DP</span>
-            <span class="text-[9px] text-amber-600 font-semibold mt-0.5">Escrow 30%</span>
-          </button>
-
-          <!-- 3. Paket 3-Tier -->
-          <button onclick="app.showBuyerRegisterModal()" class="mobile-action-card p-2.5 rounded-2xl bg-white border border-slate-200 shadow-2xs flex flex-col items-center justify-center text-center group">
-            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex items-center justify-center text-sm shadow-xs mb-1 group-active:scale-90 transition">
-              <i class="fa-solid fa-crown text-amber-300"></i>
-            </div>
-            <span class="text-[11px] font-bold text-slate-800 leading-tight">Buka Akses</span>
-            <span class="text-[9px] text-blue-600 font-semibold mt-0.5">3 Pilihan Tier</span>
-          </button>
-
-          <!-- 4. Peta GPS Gudang -->
-          <button onclick="app.navigateToSection('ketertelusuran')" class="mobile-action-card p-2.5 rounded-2xl bg-white border border-slate-200 shadow-2xs flex flex-col items-center justify-center text-center group">
-            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-slate-700 to-slate-900 text-emerald-400 flex items-center justify-center text-sm shadow-xs mb-1 group-active:scale-90 transition">
-              <i class="fa-solid fa-map-location-dot"></i>
-            </div>
-            <span class="text-[11px] font-bold text-slate-800 leading-tight">Peta GPS</span>
-            <span class="text-[9px] text-slate-500 font-semibold mt-0.5">Traceability</span>
-          </button>
-        </div>
       </div>
 
       <!-- HERO SECTION UTAMA -->
@@ -1532,6 +1491,55 @@
             </div>
           </div>
 
+        </div>
+      </section>
+
+      <!-- ================= MVP QUICK ACTION HUB (KHUSUS MOBILE - POSISI STATIK PALING BAWAH) ================= -->
+      <section id="mobile-static-bottom-hub" class="lg:hidden static py-6 px-3 bg-gradient-to-b from-slate-50 to-emerald-50/40 border-t border-slate-200">
+        <div class="max-w-md mx-auto">
+          <div class="flex items-center justify-between mb-3 px-1">
+            <span class="text-xs font-black text-slate-800 flex items-center gap-1.5 uppercase tracking-wide">
+              <i class="fa-solid fa-bolt text-amber-500"></i> Aksi Cepat Pasar Limbah
+            </span>
+            <span class="text-[10px] text-emerald-700 font-bold bg-emerald-100/80 border border-emerald-200 px-2 py-0.5 rounded-full">Menu Pintasan</span>
+          </div>
+          <div class="grid grid-cols-4 gap-2">
+            <!-- 1. Jual Pasokan -->
+            <button onclick="app.handleMobileSellAction()" class="mobile-action-card p-2.5 rounded-2xl bg-white border border-slate-200 shadow-2xs flex flex-col items-center justify-center text-center group active:scale-95 transition">
+              <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white flex items-center justify-center text-sm shadow-xs mb-1 group-active:scale-90 transition">
+                <i class="fa-solid fa-plus"></i>
+              </div>
+              <span class="text-[11px] font-bold text-slate-800 leading-tight">Jual Limbah</span>
+              <span class="text-[9px] text-emerald-600 font-semibold mt-0.5">Pasang Cepat</span>
+            </button>
+
+            <!-- 2. Hitung DP 30% -->
+            <button onclick="app.openMobileDpSimulator()" class="mobile-action-card p-2.5 rounded-2xl bg-white border border-slate-200 shadow-2xs flex flex-col items-center justify-center text-center group active:scale-95 transition">
+              <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 text-white flex items-center justify-center text-sm shadow-xs mb-1 group-active:scale-90 transition">
+                <i class="fa-solid fa-calculator"></i>
+              </div>
+              <span class="text-[11px] font-bold text-slate-800 leading-tight">Hitung DP</span>
+              <span class="text-[9px] text-amber-600 font-semibold mt-0.5">Escrow 30%</span>
+            </button>
+
+            <!-- 3. Paket 3-Tier -->
+            <button onclick="app.showBuyerRegisterModal()" class="mobile-action-card p-2.5 rounded-2xl bg-white border border-slate-200 shadow-2xs flex flex-col items-center justify-center text-center group active:scale-95 transition">
+              <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex items-center justify-center text-sm shadow-xs mb-1 group-active:scale-90 transition">
+                <i class="fa-solid fa-crown text-amber-300"></i>
+              </div>
+              <span class="text-[11px] font-bold text-slate-800 leading-tight">Buka Akses</span>
+              <span class="text-[9px] text-blue-600 font-semibold mt-0.5">3 Pilihan Tier</span>
+            </button>
+
+            <!-- 4. Peta GPS Gudang -->
+            <button onclick="app.navigateToSection('ketertelusuran')" class="mobile-action-card p-2.5 rounded-2xl bg-white border border-slate-200 shadow-2xs flex flex-col items-center justify-center text-center group active:scale-95 transition">
+              <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-slate-700 to-slate-900 text-emerald-400 flex items-center justify-center text-sm shadow-xs mb-1 group-active:scale-90 transition">
+                <i class="fa-solid fa-map-location-dot"></i>
+              </div>
+              <span class="text-[11px] font-bold text-slate-800 leading-tight">Peta GPS</span>
+              <span class="text-[9px] text-slate-500 font-semibold mt-0.5">Traceability</span>
+            </button>
+          </div>
         </div>
       </section>
 
@@ -2732,14 +2740,14 @@
   </div>
 
   <!-- ================= FLOATING ACTION BUTTON (MOBILE) ================= -->
-  <div class="lg:hidden fixed bottom-18 right-3.5 z-30 flex flex-col items-end gap-2 pointer-events-none">
+  <div class="lg:hidden fixed bottom-5 right-3.5 z-30 flex flex-col items-end gap-2 pointer-events-none">
     <a href="https://wa.me/628[REDACTED]7890?text=Halo%20Admin%20Bursa%20Limbah%2C%20saya%20ingin%20konsultasi%20transaksi" target="_blank" class="pointer-events-auto float-action-btn w-11 h-11 rounded-full bg-gradient-to-tr from-emerald-600 to-teal-500 text-white shadow-xl flex items-center justify-center text-lg active:scale-90 transition border-2 border-white" title="Chat WhatsApp Bursa Limbah">
       <i class="fa-brands fa-whatsapp text-xl"></i>
     </a>
   </div>
 
-  <!-- ================= BOTTOM NAVIGATION DOCK (MOBILE APP FEEL) ================= -->
-  <nav id="mobile-bottom-nav" class="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-xl border-t border-slate-200/90 shadow-[0_-8px_24px_rgba(0,0,0,0.08)] px-2 py-1 mobile-safe-bottom transition-all duration-300">
+  <!-- ================= BOTTOM NAVIGATION DOCK (DISIMPAN/DISEMBUNYIKAN UNTUK MODE STATIS) ================= -->
+  <nav id="mobile-bottom-nav" class="hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-xl border-t border-slate-200/90 shadow-[0_-8px_24px_rgba(0,0,0,0.08)] px-2 py-1 mobile-safe-bottom transition-all duration-300">
     <div class="grid grid-cols-5 items-end max-w-md mx-auto relative">
       
       <!-- 1. Beranda -->
