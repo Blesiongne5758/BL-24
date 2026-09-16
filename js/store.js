@@ -7,7 +7,31 @@ const STORAGE_KEY = "bursalimbah_state_v3";
 
 class BursaLimbahStore {
   constructor() {
+    this.apiBaseUrl = this.detectApiBaseUrl();
+    this.isBackendConnected = false;
     this.initStore();
+    this.checkBackendHealth();
+  }
+
+  detectApiBaseUrl() {
+    if (typeof window === 'undefined') return 'http://localhost:5000';
+    if (window.location.port === '5000' || (window.location.protocol.startsWith('http') && window.location.pathname.includes('/bursalimbah'))) {
+      return '';
+    }
+    return 'http://localhost:5000';
+  }
+
+  async checkBackendHealth() {
+    try {
+      const res = await fetch(`${this.apiBaseUrl}/api/health`, { method: 'GET' });
+      if (res.ok) {
+        const data = await res.json();
+        this.isBackendConnected = (data.database === 'connected');
+        console.log('[BursaLimbah Store] Terhubung ke MySQL Backend API:', data);
+      }
+    } catch (e) {
+      this.isBackendConnected = false;
+    }
   }
 
   initStore() {
@@ -287,6 +311,172 @@ class BursaLimbahStore {
       user,
       role: user.role
     };
+  }
+
+  // ================= MYSQL BACKEND INTEGRATION (ASYNC) =================
+  async loginUserAsync(identifier, password, expectedRole = null) {
+    try {
+      const res = await fetch(`${this.apiBaseUrl}/api/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ identifier, password, role: expectedRole })
+      });
+
+      const data = await res.json();
+
+      if (res.ok && data.success) {
+        const user = data.user;
+        const existingIdx = this.state.users.findIndex(u => u.id === user.id || (u.email && u.email.toLowerCase() === user.email.toLowerCase()));
+        if (existingIdx !== -1) {
+          this.state.users[existingIdx] = { ...this.state.users[existingIdx], ...user };
+        } else {
+          this.state.users.push(user);
+        }
+
+        if (user.role === "buyer") {
+          this.state.activeUserId = user.id;
+          this.state.authenticatedBuyerId = user.id;
+          this.state.currentRole = "buyer";
+        } else if (user.role === "seller") {
+          this.state.sellerUserId = user.id;
+          this.state.authenticatedSellerId = user.id;
+          this.state.currentRole = "seller";
+        } else if (user.role === "admin") {
+          this.state.adminUserId = user.id;
+          this.state.currentRole = "admin";
+        }
+
+        this.save();
+        return {
+          success: true,
+          user,
+          role: user.role,
+          isNewAccount: Boolean(data.isNewAccount),
+          source: 'mysql'
+        };
+      } else if (res.status === 401 || res.status === 403 || res.status === 409 || res.status === 400) {
+        return {
+          success: false,
+          message: data.message || "Email atau kata sandi tidak valid."
+        };
+      }
+    } catch (netErr) {
+      console.warn('[Store] Server MySQL offline, fallback ke penyimpanan lokal:', netErr.message);
+    }
+
+    const localRes = this.loginUser(identifier, password, expectedRole);
+    localRes.source = 'local';
+    return localRes;
+  }
+
+  async registerSellerAsync(sellerData) {
+    try {
+      const res = await fetch(`${this.apiBaseUrl}/api/auth/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...sellerData, role: 'seller' })
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        const user = data.user;
+        const existingIdx = this.state.users.findIndex(u => u.id === user.id);
+        if (existingIdx !== -1) {
+          this.state.users[existingIdx] = user;
+        } else {
+          this.state.users.push(user);
+        }
+        this.state.sellerUserId = user.id;
+        this.state.authenticatedSellerId = user.id;
+        this.state.currentRole = "seller";
+        this.save();
+        return { success: true, user, isNewAccount: true, source: 'mysql' };
+      } else if (data.message) {
+        return { success: false, message: data.message };
+      }
+    } catch (err) {
+      console.warn('[Store] Gagal register ke MySQL backend, fallback ke lokal:', err.message);
+    }
+
+    const newUser = this.registerSeller(sellerData);
+    return { success: true, user: newUser, isNewAccount: true, source: 'local' };
+  }
+
+  async registerBuyerAsync(buyerData) {
+    try {
+      const res = await fetch(`${this.apiBaseUrl}/api/auth/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...buyerData, role: 'buyer' })
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        const user = data.user;
+        const existingIdx = this.state.users.findIndex(u => u.id === user.id);
+        if (existingIdx !== -1) {
+          this.state.users[existingIdx] = user;
+        } else {
+          this.state.users.push(user);
+        }
+        this.state.activeUserId = user.id;
+        this.state.authenticatedBuyerId = user.id;
+        this.state.currentRole = "buyer";
+        this.save();
+        return { success: true, user, isNewAccount: true, source: 'mysql' };
+      } else if (data.message) {
+        return { success: false, message: data.message };
+      }
+    } catch (err) {
+      console.warn('[Store] Gagal register buyer ke MySQL, fallback ke lokal:', err.message);
+    }
+
+    const newUser = this.registerBuyer(buyerData);
+    return { success: true, user: newUser, isNewAccount: true, source: 'local' };
+  }
+
+  async loginWithGoogleAsync({ email, name, avatar, role = 'buyer' }) {
+    try {
+      const res = await fetch(`${this.apiBaseUrl}/api/auth/google`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, name, avatar, role })
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        const user = data.user;
+        const existingIdx = this.state.users.findIndex(u => u.id === user.id || (u.email && u.email.toLowerCase() === user.email.toLowerCase()));
+        if (existingIdx !== -1) {
+          this.state.users[existingIdx] = { ...this.state.users[existingIdx], ...user };
+        } else {
+          this.state.users.push(user);
+        }
+        if (user.role === 'buyer') {
+          this.state.activeUserId = user.id;
+          this.state.authenticatedBuyerId = user.id;
+          this.state.currentRole = 'buyer';
+        } else if (user.role === 'seller') {
+          this.state.sellerUserId = user.id;
+          this.state.authenticatedSellerId = user.id;
+          this.state.currentRole = 'seller';
+        } else if (user.role === 'admin') {
+          this.state.adminUserId = user.id;
+          this.state.currentRole = 'admin';
+        }
+        this.save();
+        return {
+          success: true,
+          user,
+          role: user.role,
+          isNewAccount: Boolean(data.isNewAccount),
+          source: 'mysql'
+        };
+      }
+    } catch (err) {
+      console.warn('[Store] Backend MySQL offline untuk Google Auth, fallback lokal');
+    }
+
+    const localRes = this.loginWithGoogle({ email, name, avatar, role });
+    localRes.source = 'local';
+    return localRes;
   }
 
   loginWithGoogle({ email, name, avatar, role = 'buyer' }) {

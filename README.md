@@ -90,23 +90,79 @@ Di bagian atas navigasi disediakan **Mode Selector** instan untuk simulasi demo:
 ## 🛠️ Struktur File Proyek
 ```text
 bursalimbah/
-├── Circulink_Waste_Trading_MVP_Blueprint.md  # Dokumen acuan bisnis MVP
+├── database/
+│   └── schema.sql                           # Skema database MySQL & initial seed users
+├── server/
+│   ├── server.js                            # Express REST API server untuk autentikasi MySQL
+│   ├── db.js                                # Koneksi pool MySQL2/promise
+│   ├── package.json                         # Dependensi backend Node.js
+│   └── .env                                 # Konfigurasi koneksi MySQL (host, port, user, db)
+├── api/                                     # Alternatif backend PHP (XAMPP/Laragon)
+│   ├── db.php                               # Koneksi PDO MySQL
+│   ├── login.php                            # Endpoint login pengguna
+│   ├── register.php                         # Endpoint pendaftaran (signup) pengguna
+│   └── google.php                           # Endpoint autentikasi Google
 ├── index.html                               # Halaman antarmuka utama aplikasi
 ├── css/
-│   └── style.css                            # Styling khusus tema Circulink, badge, map container
+│   └── style.css                            # Styling tema Bursa Limbah & komponen dinamis
 ├── js/
 │   ├── data.js                              # Initial seed data 10 kategori, produk, order, user
-│   ├── store.js                             # State management localStorage & business logic
-│   └── app.js                               # Controller interaksi UI, Leaflet map, filter & kalkulator
+│   ├── store.js                             # State management hybrid (MySQL API + LocalStorage fallback)
+│   └── app.js                               # Controller interaksi UI, filter, kurasi & autentikasi
 ├── start-website.bat                        # Launcher Windows 1-klik
 └── README.md                                # Dokumentasi lengkap proyek
 ```
 
 ---
 
+## 🗄️ Panduan Integrasi Database MySQL
+
+Platform Bursa Limbah dilengkapi dukungan database relasional **MySQL** untuk menangani **Pendaftaran (Signup)** dan **Login Pengguna** (Pembeli, Penjual, dan Admin) dengan enkripsi kata sandi `bcrypt`.
+
+### 1. Impor Skema Database
+Pastikan layanan MySQL Anda aktif (misalnya via XAMPP, Laragon, Docker, atau MySQL Server lokal port 3306), lalu jalankan file skema:
+```bash
+mysql -u root -p < database/schema.sql
+```
+*Atau buka phpMyAdmin (`http://localhost/phpmyadmin`), buat database `bursalimbah`, lalu impor file `database/schema.sql`.*
+
+Tabel `users` otomatis terisi 6 akun demo bawaan (password default: `[REDACTED]`).
+
+### 2. Menjalankan Backend Node.js (Express + MySQL)
+1. Masuk ke direktori `server`:
+   ```bash
+   cd server
+   npm install
+   ```
+2. Sesuaikan kredensial di file `.env` jika diperlukan:
+   ```env
+   PORT=5000
+   DB_HOST=localhost
+   DB_PORT=3306
+   DB_USER=root
+   DB_PASSWORD=
+   [REDACTED]
+   ```
+3. Jalankan server:
+   ```bash
+   npm start
+   ```
+4. Buka peramban pada `http://localhost:5000` — frontend dan API backend langsung aktif secara terintegrasi!
+
+### 3. Pilihan Alternatif via PHP (XAMPP / Laragon)
+Jika menggunakan web server Apache/XAMPP, letakkan folder `bursalimbah` di `htdocs` / `www`. Endpoint API di folder `api/` (`api/login.php`, `api/register.php`) siap digunakan langsung tanpa instalasi tambahan.
+
+### 4. Arsitektur Hybrid / Graceful Fallback
+Frontend di `js/store.js` dibangun secara cerdas:
+- Jika server MySQL aktif, autentikasi diproses secara penuh melalui database MySQL.
+- Jika server MySQL sedang offline, aplikasi otomatis beralih ke penyimpanan lokal (`localStorage`) sehingga presentasi demo tidak pernah terganggu (*zero downtime*).
+
+---
+
 ## 🌿 Rencana Pengembangan Berikutnya (Future Features)
 Sesuai roadmap blueprint tahap lanjutan:
 1. Integrasi gateway pembayaran riil (Midtrans / Xendit API).
-2. Autentikasi JWT / Laravel Sanctum backend.
+2. Autentikasi JWT / Bearer Token session.
 3. Fitur Tiket Timbang Digital (*Digital Weighing Ticket*) dengan scan barcode QR langsung oleh supir armada.
 4. Dashboard ESG & Penerbitan Sertifikat Daur Ulang resmi (*Certificate of Recycling*).
+

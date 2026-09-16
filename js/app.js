@@ -632,13 +632,13 @@ class BursaLimbahApp {
     this.quickLogin(demoEmail, demoPass, 'seller');
   }
 
-  quickLogin(identifier, password, role) {
+  async quickLogin(identifier, password, role) {
     const inputId = [REDACTED]'login-input-identifier');
     const inputPass = [REDACTED]'login-input-password');
     if (inputId) inputId.value = identifier;
     if (inputPass) inputPass.value = password;
 
-    const res = this.store.loginUser(identifier, password, role);
+    const res = await this.store.loginUserAsync(identifier, password, role);
     if (res.success) {
       this.triggerConfetti();
       if (res.isNewAccount) {
@@ -656,12 +656,12 @@ class BursaLimbahApp {
     }
   }
 
-  handleLoginFormSubmit(event) {
+  async handleLoginFormSubmit(event) {
     event.preventDefault();
     const identifier = [REDACTED]'login-input-identifier').value.trim();
     const password = [REDACTED]'login-input-password').value;
 
-    const res = this.store.loginUser(identifier, password, this.currentLoginTab);
+    const res = await this.store.loginUserAsync(identifier, password, this.currentLoginTab);
 
     const alertBox = [REDACTED]'login-alert-box');
     const alertMsg = [REDACTED]'login-alert-msg');
@@ -718,7 +718,7 @@ class BursaLimbahApp {
     }
   }
 
-  handleSellerRegister(event) {
+  async handleSellerRegister(event) {
     event.preventDefault();
     const company = [REDACTED]'reg-seller-company').value.trim();
     const name = [REDACTED]'reg-seller-name').value.trim();
@@ -743,7 +743,7 @@ class BursaLimbahApp {
       }
     }
 
-    const newUser = this.store.registerSeller({
+    const res = await this.store.registerSellerAsync({
       company,
       name,
       phone,
@@ -1365,7 +1365,7 @@ class BursaLimbahApp {
     this.renderRegisterTierOptions();
   }
 
-  handleBuyerRegister(event) {
+  async handleBuyerRegister(event) {
     event.preventDefault();
     const name = [REDACTED]'reg-buyer-name').value;
     const company = [REDACTED]'reg-buyer-company').value;
@@ -1373,7 +1373,7 @@ class BursaLimbahApp {
     const email = [REDACTED]'reg-buyer-email').value;
     const password = [REDACTED]'reg-buyer-password') ? [REDACTED]'reg-buyer-password').value : '[REDACTED]';
 
-    const newUser = this.store.registerBuyer({
+    const res = await this.store.registerBuyerAsync({
       name,
       company,
       phone,
@@ -2649,10 +2649,10 @@ class BursaLimbahApp {
     }
   }
 
-  proceedGoogleLogin(email, name, avatar) {
+  async proceedGoogleLogin(email, name, avatar) {
     this.closeGoogleLoginModal();
     const role = this.currentLoginTab || 'buyer';
-    const res = this.store.loginWithGoogle({ email, name, avatar, role });
+    const res = await this.store.loginWithGoogleAsync({ email, name, avatar, role });
 
     if (res.success) {
       this.triggerConfetti();
@@ -2672,7 +2672,7 @@ class BursaLimbahApp {
     }
   }
 
-  proceedCustomGoogleLogin() {
+  async proceedCustomGoogleLogin() {
     const input = [REDACTED]'custom-google-email');
     const email = input ? input.value.trim().toLowerCase() : '';
     if (!email || !email.includes('@')) {
@@ -2681,7 +2681,7 @@ class BursaLimbahApp {
     }
     const namePart = email.split('@')[0].replace(/[^a-zA-Z0-9]/g, ' ');
     const displayName = namePart.charAt(0).toUpperCase() + namePart.slice(1);
-    this.proceedGoogleLogin(email, displayName, null);
+    await this.proceedGoogleLogin(email, displayName, null);
   }
 
   // ================= MODAL PROFIL & VERIFIKASI IDENTITAS (KTP / NPWP OPSIONAL) =================
