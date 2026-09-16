@@ -302,8 +302,12 @@ class BursaLimbahApp {
             <span class="truncate max-w-[140px]">${user.company || user.name}</span>
           </div>
           <button onclick="app.setRole('buyer')" class="px-3 py-2 text-xs font-bold rounded-xl bg-brand-600 hover:bg-brand-700 text-white shadow-sm transition flex items-center space-x-1">
-            <i class="fa-solid fa-user"></i>
-            <span>Akun Pembeli</span>
+            <i class="fa-solid fa-store"></i>
+            <span>Bursa Pembeli</span>
+          </button>
+          <button onclick="app.showUserProfileModal()" title="Profil & Verifikasi Akun" class="px-2.5 py-2 text-xs font-bold rounded-xl bg-slate-100 hover:bg-emerald-50 hover:text-emerald-700 text-slate-700 border border-slate-300 transition flex items-center space-x-1 shadow-2xs">
+            <i class="fa-solid fa-id-card text-emerald-600"></i>
+            <span class="hidden md:inline">Profil</span>
           </button>
           <button onclick="app.logout()" title="Keluar dari akun" class="p-2 text-xs rounded-xl border border-slate-300 text-slate-600 hover:text-rose-600 hover:border-rose-300 hover:bg-rose-50 transition">
             <i class="fa-solid fa-right-from-bracket"></i>
@@ -320,6 +324,10 @@ class BursaLimbahApp {
           <button onclick="app.setRole('seller')" class="px-3 py-2 text-xs font-bold rounded-xl bg-slate-900 hover:bg-slate-800 text-white shadow-sm transition flex items-center space-x-1">
             <i class="fa-solid fa-boxes-stacked"></i>
             <span>Dashboard Penjual</span>
+          </button>
+          <button onclick="app.showUserProfileModal()" title="Profil & Verifikasi Akun" class="px-2.5 py-2 text-xs font-bold rounded-xl bg-slate-100 hover:bg-emerald-50 hover:text-emerald-700 text-slate-700 border border-slate-300 transition flex items-center space-x-1 shadow-2xs">
+            <i class="fa-solid fa-id-card text-emerald-600"></i>
+            <span class="hidden md:inline">Profil</span>
           </button>
           <button onclick="app.logout()" title="Keluar dari akun" class="p-2 text-xs rounded-xl border border-slate-300 text-slate-600 hover:text-rose-600 hover:border-rose-300 hover:bg-rose-50 transition">
             <i class="fa-solid fa-right-from-bracket"></i>
@@ -707,9 +715,9 @@ class BursaLimbahApp {
   handleMobileAccountNav() {
     const role = this.store.getCurrentRole();
     if (role === 'buyer' && this.store.isBuyerAuthenticated()) {
-      this.setRole('buyer');
+      this.showUserProfileModal();
     } else if (role === 'seller' && this.store.isSellerAuthenticated()) {
-      this.setRole('seller');
+      this.showUserProfileModal();
     } else if (role === 'admin' && this.store.isAdminAuthenticated()) {
       this.setRole('admin');
     } else {
@@ -2528,9 +2536,13 @@ class BursaLimbahApp {
     const modals = [
       'modal-product-detail',
       'modal-buyer-register',
+      'modal-seller-register',
+      'modal-register-choice',
       'modal-upload',
       'modal-checkout',
-      'modal-receipt'
+      'modal-receipt',
+      'modal-google-auth',
+      'modal-user-profile'
     ];
     modals.forEach(id => {
       const el = [REDACTED]id);
@@ -2543,6 +2555,275 @@ class BursaLimbahApp {
     if (this.activeModalMap) {
       this.activeModalMap.remove();
       this.activeModalMap = null;
+    }
+  }
+
+  // ================= LOGIN DENGAN GOOGLE =================
+  showGoogleLoginModal() {
+    const modal = [REDACTED]'modal-google-auth');
+    if (modal) {
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+  }
+
+  closeGoogleLoginModal() {
+    const modal = [REDACTED]'modal-google-auth');
+    if (modal) {
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+  }
+
+  proceedGoogleLogin(email, name, avatar) {
+    this.closeGoogleLoginModal();
+    const role = this.currentLoginTab || 'buyer';
+    const res = this.store.loginWithGoogle({ email, name, avatar, role });
+
+    if (res.success) {
+      this.updateNavUI();
+      if (res.role === 'buyer') {
+        this.setRole('buyer');
+      } else if (res.role === 'seller') {
+        this.setRole('seller');
+      }
+      this.showToast(`🎉 Berhasil masuk dengan Google (${email})!`, 'success');
+    } else {
+      this.showToast('Gagal masuk dengan Google. Silakan coba lagi.', 'error');
+    }
+  }
+
+  proceedCustomGoogleLogin() {
+    const input = [REDACTED]'custom-google-email');
+    const email = input ? input.value.trim().toLowerCase() : '';
+    if (!email || !email.includes('@')) {
+      this.showToast('Masukkan alamat email Google yang valid.', 'error');
+      return;
+    }
+    const namePart = email.split('@')[0].replace(/[^a-zA-Z0-9]/g, ' ');
+    const displayName = namePart.charAt(0).toUpperCase() + namePart.slice(1);
+    this.proceedGoogleLogin(email, displayName, null);
+  }
+
+  // ================= MODAL PROFIL & VERIFIKASI IDENTITAS (KTP / NPWP OPSIONAL) =================
+  showUserProfileModal() {
+    const user = this.store.getCurrentUser();
+    if (!user) {
+      this.showLoginPage();
+      return;
+    }
+
+    const modal = [REDACTED]'modal-user-profile');
+    if (!modal) return;
+
+    // Set Avatar & Info
+    const avatarWrap = [REDACTED]'prof-avatar-wrap');
+    const avatarInitial = [REDACTED]'prof-avatar-initial');
+    const displayName = [REDACTED]'prof-display-name');
+    const roleBadge = [REDACTED]'prof-role-badge');
+    const googleBadge = [REDACTED]'prof-google-badge');
+    const emailText = [REDACTED]'prof-email-text');
+    const verifiedIcon = [REDACTED]'prof-verified-badge-icon');
+    const verifyStatusPill = [REDACTED]'prof-verification-status-pill');
+    const verifyStatusText = [REDACTED]'prof-verification-status-text');
+
+    if (displayName) displayName.textContent = user.name || 'Pengguna Bursa Limbah';
+    if (emailText) emailText.textContent = user.email || '-';
+
+    // Inisial atau Foto
+    if (avatarWrap) {
+      if (user.avatar) {
+        avatarWrap.innerHTML = `<img src="${user.avatar}" alt="${user.name}" class="w-full h-full object-cover">`;
+      } else {
+        const initial = (user.name || 'U').charAt(0).toUpperCase();
+        avatarWrap.innerHTML = `<span id="prof-avatar-initial">${initial}</span>`;
+      }
+    }
+
+    // Role badge
+    if (roleBadge) {
+      const roleNames = { buyer: 'PEMBELI RESMI', seller: 'MITRA PENJUAL', admin: 'PENGELOLA UTAMA' };
+      roleBadge.textContent = roleNames[user.role] || user.role.toUpperCase();
+    }
+
+    // Google badge
+    if (googleBadge) {
+      if (user.authProvider === 'google') {
+        googleBadge.classList.remove('hidden');
+        googleBadge.classList.add('inline-flex');
+      } else {
+        googleBadge.classList.add('hidden');
+        googleBadge.classList.remove('inline-flex');
+      }
+    }
+
+    // Verification status badge
+    const isVerified = user.identityVerified === true || user.verificationStatus === 'verified';
+    if (verifiedIcon) {
+      verifiedIcon.style.display = isVerified ? 'flex' : 'none';
+    }
+    if (verifyStatusPill && verifyStatusText) {
+      if (isVerified) {
+        verifyStatusPill.className = 'mt-2 inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30';
+        verifyStatusText.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-400"></i> ${user.verifiedBadge || 'Mitra Terverifikasi Resmi'}`;
+      } else {
+        verifyStatusPill.className = 'mt-2 inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30';
+        verifyStatusText.innerHTML = `<i class="fa-solid fa-shield"></i> Belum Diverifikasi (Opsional)`;
+      }
+    }
+
+    // Isi Nilai Formulir Profil
+    const inputName = [REDACTED]'prof-input-name');
+    const inputCompany = [REDACTED]'prof-input-company');
+    const inputEmail = [REDACTED]'prof-input-email');
+    const inputPhone = [REDACTED]'prof-input-phone');
+    const inputLocation = [REDACTED]'prof-input-location');
+    const inputBank = [REDACTED]'prof-input-bank');
+
+    if (inputName) inputName.value = user.name || '';
+    if (inputCompany) inputCompany.value = user.company || '';
+    if (inputEmail) inputEmail.value = user.email || '';
+    if (inputPhone) inputPhone.value = user.phone || '';
+    if (inputLocation) inputLocation.value = user.location || '';
+    if (inputBank) inputBank.value = user.bankAccount || '';
+
+    // Isi Nilai Verifikasi Jika Ada
+    const inputKtp = [REDACTED]'verify-ktp-number');
+    const inputNpwp = [REDACTED]'verify-npwp-number');
+    if (inputKtp) inputKtp.value = user.ktpNumber || '';
+    if (inputNpwp) inputNpwp.value = user.npwpNumber || '';
+
+    // Rincian Tab Langganan jika Pembeli
+    const tierPill = [REDACTED]'prof-tier-pill');
+    const tierTitle = [REDACTED]'prof-tier-title');
+    const tierDesc = [REDACTED]'prof-tier-desc');
+    const tierBtnTab = [REDACTED]'prof-tab-btn-tier');
+
+    if (user.role === 'buyer') {
+      if (tierBtnTab) tierBtnTab.style.display = '';
+      const tier = this.store.getSubscriptionTierById(user.subscriptionTier || 'tier_starter');
+      if (tier) {
+        if (tierPill) tierPill.textContent = tier.name;
+        if (tierTitle) tierTitle.textContent = tier.name;
+        if (tierDesc) tierDesc.textContent = tier.description || `Melihat harga: ${tier.minPriceLimit ? 'Rp ' + Number(tier.minPriceLimit).toLocaleString('id-ID') : 'Rp 1'} s/d ${tier.maxPriceLimit ? 'Rp ' + Number(tier.maxPriceLimit).toLocaleString('id-ID') : 'Tanpa Batas'}.`;
+      }
+    } else {
+      if (tierBtnTab) tierBtnTab.style.display = 'none';
+    }
+
+    this.switchProfileTab('info');
+
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+  }
+
+  closeUserProfileModal() {
+    const modal = [REDACTED]'modal-user-profile');
+    if (modal) {
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+  }
+
+  switchProfileTab(tabName) {
+    const tabs = ['info', 'verify', 'tier'];
+    tabs.forEach(t => {
+      const btn = [REDACTED]`prof-tab-btn-${t}`);
+      const content = [REDACTED]`prof-tab-content-${t}`);
+      if (btn && content) {
+        if (t === tabName) {
+          btn.className = 'px-3.5 py-1.5 rounded-xl text-xs font-bold bg-white text-slate-900 shadow-sm transition shrink-0 flex items-center space-x-1.5';
+          content.classList.remove('hidden');
+        } else {
+          btn.className = 'px-3.5 py-1.5 rounded-xl text-xs font-semibold text-slate-300 hover:text-white hover:bg-white/10 transition shrink-0 flex items-center space-x-1.5';
+          content.classList.add('hidden');
+        }
+      }
+    });
+  }
+
+  handleSaveProfile(event) {
+    event.preventDefault();
+    const user = this.store.getCurrentUser();
+    if (!user) return;
+
+    const name = [REDACTED]'prof-input-name').value.trim();
+    const company = [REDACTED]'prof-input-company').value.trim();
+    const phone = [REDACTED]'prof-input-phone').value.trim();
+    const location = [REDACTED]'prof-input-location').value.trim();
+    const bankAccount = [REDACTED]'prof-input-bank').value.trim();
+
+    try {
+      this.store.updateUserProfile(user.id, { name, company, phone, location, bankAccount });
+      this.showToast('Data profil berhasil diperbarui!', 'success');
+      this.updateNavUI();
+      if (user.role === 'buyer') this.renderBuyerMarketplace();
+      if (user.role === 'seller') this.renderSellerDashboard();
+      this.closeUserProfileModal();
+    } catch (e) {
+      this.showToast(e.message, 'error');
+    }
+  }
+
+  handleVerifyTypeChange(type) {
+    const ktpGroup = [REDACTED]'verify-ktp-group');
+    const npwpGroup = [REDACTED]'verify-npwp-group');
+
+    if (type === 'ktp') {
+      if (ktpGroup) ktpGroup.classList.remove('hidden');
+      if (npwpGroup) npwpGroup.classList.add('hidden');
+    } else if (type === 'npwp') {
+      if (ktpGroup) ktpGroup.classList.add('hidden');
+      if (npwpGroup) npwpGroup.classList.remove('hidden');
+    } else if (type === 'both') {
+      if (ktpGroup) ktpGroup.classList.remove('hidden');
+      if (npwpGroup) npwpGroup.classList.remove('hidden');
+    }
+  }
+
+  handleVerifyFileSelect(input) {
+    if (input.files && input.files[0]) {
+      const file = input.files[0];
+      const dropzone = [REDACTED]'verify-dropzone-content');
+      const preview = [REDACTED]'verify-file-preview');
+      const nameEl = [REDACTED]'verify-file-name');
+      if (dropzone) dropzone.classList.add('hidden');
+      if (preview) {
+        preview.classList.remove('hidden');
+        preview.classList.add('flex');
+      }
+      if (nameEl) nameEl.textContent = file.name;
+    }
+  }
+
+  handleSubmitVerification(event) {
+    event.preventDefault();
+    const user = this.store.getCurrentUser();
+    if (!user) return;
+
+    const radios = document.getElementsByName('verify-doc-type');
+    let selectedType = 'ktp';
+    radios.forEach(r => { if (r.checked) selectedType = r.value; });
+
+    const ktpNumber = ([REDACTED]'verify-ktp-number') || {}).value || '';
+    const npwpNumber = ([REDACTED]'verify-npwp-number') || {}).value || '';
+
+    try {
+      this.store.submitUserVerification(user.id, {
+        type: selectedType,
+        ktpNumber: ktpNumber.trim(),
+        npwpNumber: npwpNumber.trim(),
+        docUrl: 'https://images.unsplash.com/photo-1589829545856-d10d557cf95f?auto=format&fit=crop&w=400&q=80'
+      });
+
+      this.triggerConfetti();
+      this.showToast('Selamat! Akun Anda kini resmi Terverifikasi (KTP/NPWP). Badge hijau telah aktif!', 'success');
+      this.updateNavUI();
+      if (user.role === 'buyer') this.renderBuyerMarketplace();
+      if (user.role === 'seller') this.renderSellerDashboard();
+      this.closeUserProfileModal();
+    } catch (e) {
+      this.showToast(e.message, 'error');
     }
   }
 

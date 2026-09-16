@@ -289,6 +289,101 @@ class BursaLimbahStore {
     };
   }
 
+  loginWithGoogle({ email, name, avatar, role = 'buyer' }) {
+    const cleanEmail = (email || '').trim().toLowerCase();
+    let user = this.state.users.find(u => u.email && u.email.toLowerCase() === cleanEmail);
+
+    let isNew = false;
+    if (!user) {
+      isNew = true;
+      const displayName = name || (cleanEmail.split('@')[0].replace(/[^a-zA-Z0-9]/g, ' '));
+      if (role === 'seller') {
+        user = this.registerSeller({
+          name: `${displayName} (Mitra Penjual)`,
+          email: cleanEmail,
+          phone: "+62 812-" + Math.floor(10000000 + Math.random() * 90000000),
+          company: `CV ${displayName} Sentra`,
+          password: [REDACTED]
+        });
+      } else {
+        user = this.registerBuyer({
+          name: `${displayName} (Pembeli)`,
+          email: cleanEmail,
+          phone: "+62 812-" + Math.floor(10000000 + Math.random() * 90000000),
+          company: `PT ${displayName} Daur Ulang`,
+          tierId: "tier_starter",
+          password: [REDACTED]
+        });
+      }
+    }
+
+    // Tandai akun Google
+    user.authProvider = 'google';
+    user.emailVerified = true;
+    if (avatar) user.avatar = avatar;
+
+    // Aktifkan sesi pengguna
+    if (user.role === 'buyer') {
+      this.state.activeUserId = user.id;
+      this.state.authenticatedBuyerId = user.id;
+      this.state.currentRole = 'buyer';
+    } else if (user.role === 'seller') {
+      this.state.sellerUserId = user.id;
+      this.state.authenticatedSellerId = user.id;
+      this.state.currentRole = 'seller';
+    } else if (user.role === 'admin') {
+      this.state.adminUserId = user.id;
+      this.state.currentRole = 'admin';
+    }
+
+    this.save();
+    return {
+      success: true,
+      user,
+      role: user.role,
+      isNewAccount: isNew
+    };
+  }
+
+  updateUserProfile(userId, data = {}) {
+    const user = this.state.users.find(u => u.id === userId);
+    if (!user) throw new Error("Pengguna tidak ditemukan.");
+
+    if (data.name) user.name = data.name;
+    if (data.company) user.company = data.company;
+    if (data.phone) user.phone = data.phone;
+    if (data.location) user.location = data.location;
+    if (data.bankAccount) user.bankAccount = data.bankAccount;
+    if (data.avatar) user.avatar = data.avatar;
+    if (data.nib) user.nib = data.nib;
+
+    this.save();
+    return user;
+  }
+
+  submitUserVerification(userId, verificationData = {}) {
+    const user = this.state.users.find(u => u.id === userId);
+    if (!user) throw new Error("Pengguna tidak ditemukan.");
+
+    const { type, ktpNumber, npwpNumber, docUrl } = verificationData;
+
+    user.verificationType = type || 'ktp';
+    if (ktpNumber) user.ktpNumber = ktpNumber;
+    if (npwpNumber) user.npwpNumber = npwpNumber;
+    if (docUrl) user.verificationDocUrl = docUrl;
+
+    // Otomatis verifikasi dengan badge resmi
+    user.identityVerified = true;
+    user.verificationStatus = 'verified';
+    user.verifiedAt = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+    user.verifiedBadge = (type === 'npwp' || (ktpNumber && npwpNumber)) 
+      ? 'Mitra Terverifikasi (KTP/NPWP)' 
+      : 'Mitra Terverifikasi (KTP)';
+
+    this.save();
+    return user;
+  }
+
   logout() {
     this.state.currentRole = "public";
     this.state.adminUserId = null;
