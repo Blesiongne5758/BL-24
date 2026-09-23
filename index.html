@@ -1539,8 +1539,8 @@
               <span>Ganti Tier</span>
             </button>
             <button onclick="app.showUserProfileModal()" class="px-3.5 py-2 rounded-xl text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 transition flex items-center space-x-1.5 shadow-2xs">
-              <i class="fa-solid fa-id-card text-emerald-600"></i>
-              <span>Profil Saya</span>
+              <i class="fa-solid fa-gear text-emerald-600"></i>
+              <span>Menu Pengaturan</span>
             </button>
             <button onclick="app.logout()" class="px-3.5 py-2 rounded-xl text-xs font-bold border border-slate-300 text-slate-600 hover:text-rose-700 hover:border-rose-300 hover:bg-rose-50 transition flex items-center space-x-1">
               <i class="fa-solid fa-right-from-bracket"></i>
@@ -1659,8 +1659,8 @@
               <span>+ Unggah Pasokan</span>
             </button>
             <button onclick="app.showUserProfileModal()" class="px-3.5 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-semibold text-xs border border-white/20 transition flex items-center space-x-1.5 shadow-xs">
-              <i class="fa-solid fa-id-card text-emerald-400"></i>
-              <span>Profil Saya</span>
+              <i class="fa-solid fa-gear text-emerald-400"></i>
+              <span>Menu Pengaturan</span>
             </button>
             <button onclick="app.logout()" class="px-3.5 py-2.5 rounded-xl bg-white/10 hover:bg-rose-600 text-white font-semibold text-xs border border-white/20 transition flex items-center space-x-1.5">
               <i class="fa-solid fa-right-from-bracket"></i>
@@ -2084,9 +2084,9 @@
     </div>
   </div>
 
-  <!-- ================= MODAL 2: PENDAFTARAN PEMBELI & PILIHAN 3-TIER ================= -->
+  <!-- ================= MODAL 2: PENDAFTARAN PEMBELI (CUKUP EMAIL, NAMA, WA, PASSWORD) ================= -->
   <div id="modal-buyer-register" class="fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-sm hidden items-center justify-center p-4 overflow-y-auto">
-    <div class="bg-white rounded-3xl max-w-xl w-full p-6 sm:p-8 shadow-2xl border border-slate-200 space-y-6">
+    <div class="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl border border-slate-200 space-y-6">
       
       <div class="flex items-center justify-between border-b border-slate-100 pb-4">
         <div class="flex items-center space-x-3">
@@ -2094,8 +2094,8 @@
             <i class="fa-solid fa-crown text-amber-300"></i>
           </div>
           <div>
-            <h3 class="text-lg font-bold text-slate-900">Daftar & Berlangganan Pembeli</h3>
-            <p class="text-xs text-slate-500">Pilih jenis paket berlangganan untuk membuka akses data bursa.</p>
+            <h3 class="text-lg font-bold text-slate-900">Pendaftaran Akun Pembeli</h3>
+            <p class="text-xs text-slate-500">Cukup isi data utama di bawah untuk langsung mengakses bursa.</p>
           </div>
         </div>
         <button onclick="app.closeModals()" class="text-slate-400 hover:text-slate-600 p-2 rounded-xl hover:bg-slate-100">
@@ -2104,48 +2104,45 @@
       </div>
 
       <form id="form-buyer-register" onsubmit="app.handleBuyerRegister(event)" class="space-y-4">
-        <div class="grid sm:grid-cols-2 gap-3">
-          <div>
-            <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Nama Lengkap Penanggung Jawab *</label>
-            <input type="text" id="reg-buyer-name" required placeholder="Contoh: Hendra Kusuma" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs focus:ring-2 focus:ring-brand-500 focus:outline-none">
-          </div>
-          <div>
-            <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Nama Pabrik / Perusahaan *</label>
-            <input type="text" id="reg-buyer-company" required placeholder="PT Daur Ulang Mandiri" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs focus:ring-2 focus:ring-brand-500 focus:outline-none">
-          </div>
-        </div>
-
-        <div class="grid sm:grid-cols-2 gap-3">
-          <div>
-            <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Nomor WhatsApp Aktif *</label>
-            <input type="tel" id="reg-buyer-phone" required placeholder="0812-xxxx-xxxx" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs focus:ring-2 focus:ring-brand-500 focus:outline-none">
-          </div>
-          <div>
-            <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Email Perusahaan *</label>
-            <input type="email" id="reg-buyer-email" required placeholder="pengadaan@perusahaan.co.id" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs focus:ring-2 focus:ring-brand-500 focus:outline-none">
+        <div>
+          <label class="block text-xs font-bold uppercase text-slate-700 mb-1">Alamat Email *</label>
+          <div class="relative">
+            <i class="fa-solid fa-envelope absolute left-3.5 top-3 text-slate-400 text-sm"></i>
+            <input type="email" id="reg-buyer-email" required placeholder="nama@perusahaan.co.id" class="w-full bg-slate-50 border border-slate-300 rounded-xl pl-10 pr-3.5 py-2.5 text-xs focus:ring-2 focus:ring-brand-500 focus:outline-none font-medium">
           </div>
         </div>
 
         <div>
-          <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Kata Sandi Akun *</label>
-          <input type="password" id="reg-buyer-password" required value="[REDACTED]" placeholder="Minimal 6 karakter" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs focus:ring-2 focus:ring-brand-500 focus:outline-none">
-          <p class="text-[10px] text-slate-400 mt-1">Digunakan untuk login kembali ke akun pembeli Anda.</p>
-        </div>
-
-        <!-- Pemilihan 3-Tier Berlangganan -->
-        <div>
-          <label class="block text-xs font-bold uppercase text-slate-700 mb-2 flex items-center justify-between">
-            <span>Pilih 1 dari 3 Jenis Paket Berlangganan:</span>
-            <span class="text-brand-600 font-normal text-[11px]"><i class="fa-solid fa-circle-check mr-1"></i>Akses Otomatis Aktif</span>
-          </label>
-          <div id="register-tier-cards" class="grid sm:grid-cols-3 gap-3">
-            <!-- Diisi otomatis oleh JavaScript app.renderRegisterTierOptions() -->
+          <label class="block text-xs font-bold uppercase text-slate-700 mb-1">Nama Lengkap *</label>
+          <div class="relative">
+            <i class="fa-solid fa-user absolute left-3.5 top-3 text-slate-400 text-sm"></i>
+            <input type="text" id="reg-buyer-name" required placeholder="Contoh: Hendra Kusuma" class="w-full bg-slate-50 border border-slate-300 rounded-xl pl-10 pr-3.5 py-2.5 text-xs focus:ring-2 focus:ring-brand-500 focus:outline-none font-medium">
           </div>
         </div>
 
-        <div class="p-3 bg-emerald-50 rounded-xl border border-emerald-200 text-[11px] text-emerald-800 flex items-start space-x-2">
-          <i class="fa-solid fa-shield-check text-emerald-600 mt-0.5"></i>
-          <span>Setelah mendaftar, akun langsung aktif dengan tier yang dipilih dan fitur <strong>Layar Chat Langsung ke Penjual</strong> dapat segera digunakan.</span>
+        <div>
+          <label class="block text-xs font-bold uppercase text-slate-700 mb-1">Nomor WhatsApp Aktif *</label>
+          <div class="relative">
+            <i class="fa-brands fa-whatsapp absolute left-3.5 top-3 text-emerald-600 text-sm"></i>
+            <input type="tel" id="reg-buyer-phone" required placeholder="0812-xxxx-xxxx" class="w-full bg-slate-50 border border-slate-300 rounded-xl pl-10 pr-3.5 py-2.5 text-xs focus:ring-2 focus:ring-brand-500 focus:outline-none font-medium">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold uppercase text-slate-700 mb-1">Kata Sandi (Password) *</label>
+          <div class="relative">
+            <i class="fa-solid fa-lock absolute left-3.5 top-3 text-slate-400 text-sm"></i>
+            <input type="password" id="reg-buyer-password" required value="[REDACTED]" placeholder="Minimal 6 karakter" class="w-full bg-slate-50 border border-slate-300 rounded-xl pl-10 pr-3.5 py-2.5 text-xs focus:ring-2 focus:ring-brand-500 focus:outline-none font-medium">
+          </div>
+          <p class="text-[10px] text-slate-400 mt-1">Digunakan untuk login kembali ke portal pembeli Anda.</p>
+        </div>
+
+        <!-- Info Pengaturan Lanjutan -->
+        <div class="p-3 bg-emerald-50 rounded-xl border border-emerald-200 text-[11px] text-emerald-800 flex items-start space-x-2.5">
+          <i class="fa-solid fa-gear text-emerald-600 mt-0.5 text-sm shrink-0"></i>
+          <span class="leading-relaxed">
+            Data lanjutan (<strong>Nama Perusahaan/Pabrik, Alamat Operasional, Rekening Bank, dan Pilihan Paket Langganan</strong>) dapat diisi dan diupdate kapan saja di <strong>Menu Pengaturan</strong> pada Dashboard Pembeli Anda.
+          </span>
         </div>
 
         <div class="flex items-center justify-between pt-2">
@@ -2156,9 +2153,9 @@
             <button type="button" onclick="app.closeModals()" class="px-4 py-2.5 rounded-xl border border-slate-300 text-slate-700 text-xs font-bold hover:bg-slate-50 transition">
               Batal
             </button>
-            <button type="submit" class="px-6 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold shadow-md transition flex items-center space-x-1.5">
+            <button type="submit" class="px-6 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold shadow-md transition flex items-center space-x-1.5 active:scale-95">
               <i class="fa-solid fa-check"></i>
-              <span>Daftar & Aktifkan</span>
+              <span>Daftar Pembeli</span>
             </button>
           </div>
         </div>
@@ -2166,9 +2163,9 @@
     </div>
   </div>
 
-  <!-- ================= MODAL 2B: PENDAFTARAN PENJUAL / PEMASOK LIMBAH ================= -->
+  <!-- ================= MODAL 2B: PENDAFTARAN PENJUAL (CUKUP EMAIL, NAMA, WA, PASSWORD) ================= -->
   <div id="modal-seller-register" class="fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-sm hidden items-center justify-center p-4 overflow-y-auto">
-    <div class="bg-white rounded-3xl max-w-xl w-full p-6 sm:p-8 shadow-2xl border border-slate-200 space-y-5">
+    <div class="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl border border-slate-200 space-y-5">
       
       <div class="flex items-center justify-between border-b border-slate-100 pb-4">
         <div class="flex items-center space-x-3">
@@ -2176,8 +2173,8 @@
             <i class="fa-solid fa-store text-emerald-400"></i>
           </div>
           <div>
-            <h3 class="text-lg font-bold text-slate-900">Daftar Jadi Mitra Penjual</h3>
-            <p class="text-xs text-slate-500">Pasang pasokan limbah dan terima pembayaran aman via escrow.</p>
+            <h3 class="text-lg font-bold text-slate-900">Pendaftaran Akun Penjual</h3>
+            <p class="text-xs text-slate-500">Daftar sebagai mitra penjual untuk memasang pasokan limbah.</p>
           </div>
         </div>
         <button onclick="app.closeModals()" class="text-slate-400 hover:text-slate-600 p-2 rounded-xl hover:bg-slate-100">
@@ -2186,48 +2183,45 @@
       </div>
 
       <form id="form-seller-register" onsubmit="app.handleSellerRegister(event)" class="space-y-4">
-        <div class="grid sm:grid-cols-2 gap-3">
-          <div>
-            <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Nama Usaha / Pemasok *</label>
-            <input type="text" id="reg-seller-company" required placeholder="Sentra Limbah Berkah" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs focus:ring-2 focus:ring-brand-500 focus:outline-none">
-          </div>
-          <div>
-            <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Nama Penanggung Jawab *</label>
-            <input type="text" id="reg-seller-name" required placeholder="Bambang Supriyanto" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs focus:ring-2 focus:ring-brand-500 focus:outline-none">
-          </div>
-        </div>
-
-        <div class="grid sm:grid-cols-2 gap-3">
-          <div>
-            <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Nomor WhatsApp Aktif *</label>
-            <input type="tel" id="reg-seller-phone" required placeholder="0813-xxxx-xxxx" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs focus:ring-2 focus:ring-brand-500 focus:outline-none">
-          </div>
-          <div>
-            <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Email Penjual *</label>
-            <input type="email" id="reg-seller-email" required placeholder="kontak@sentralimbah.id" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs focus:ring-2 focus:ring-brand-500 focus:outline-none">
-          </div>
-        </div>
-
-        <div class="grid sm:grid-cols-2 gap-3">
-          <div>
-            <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Lokasi Gudang / Kota *</label>
-            <input type="text" id="reg-seller-location" required placeholder="Bekasi, Jawa Barat" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs focus:ring-2 focus:ring-brand-500 focus:outline-none">
-          </div>
-          <div>
-            <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Rekening Bank Pencairan *</label>
-            <input type="text" id="reg-seller-bank" required placeholder="BCA 123-456-7890 a.n Bambang" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs focus:ring-2 focus:ring-brand-500 focus:outline-none">
+        <div>
+          <label class="block text-xs font-bold uppercase text-slate-700 mb-1">Alamat Email *</label>
+          <div class="relative">
+            <i class="fa-solid fa-envelope absolute left-3.5 top-3 text-slate-400 text-sm"></i>
+            <input type="email" id="reg-seller-email" required placeholder="kontak@sentralimbah.id" class="w-full bg-slate-50 border border-slate-300 rounded-xl pl-10 pr-3.5 py-2.5 text-xs focus:ring-2 focus:ring-brand-500 focus:outline-none font-medium">
           </div>
         </div>
 
         <div>
-          <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Kata Sandi Akun *</label>
-          <input type="password" id="reg-seller-password" required value="[REDACTED]" placeholder="Minimal 6 karakter" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs focus:ring-2 focus:ring-brand-500 focus:outline-none">
+          <label class="block text-xs font-bold uppercase text-slate-700 mb-1">Nama Lengkap *</label>
+          <div class="relative">
+            <i class="fa-solid fa-user absolute left-3.5 top-3 text-slate-400 text-sm"></i>
+            <input type="text" id="reg-seller-name" required placeholder="Contoh: Bambang Supriyanto" class="w-full bg-slate-50 border border-slate-300 rounded-xl pl-10 pr-3.5 py-2.5 text-xs focus:ring-2 focus:ring-brand-500 focus:outline-none font-medium">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold uppercase text-slate-700 mb-1">Nomor WhatsApp Aktif *</label>
+          <div class="relative">
+            <i class="fa-brands fa-whatsapp absolute left-3.5 top-3 text-emerald-600 text-sm"></i>
+            <input type="tel" id="reg-seller-phone" required placeholder="0813-xxxx-xxxx" class="w-full bg-slate-50 border border-slate-300 rounded-xl pl-10 pr-3.5 py-2.5 text-xs focus:ring-2 focus:ring-brand-500 focus:outline-none font-medium">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold uppercase text-slate-700 mb-1">Kata Sandi (Password) *</label>
+          <div class="relative">
+            <i class="fa-solid fa-lock absolute left-3.5 top-3 text-slate-400 text-sm"></i>
+            <input type="password" id="reg-seller-password" required value="[REDACTED]" placeholder="Minimal 6 karakter" class="w-full bg-slate-50 border border-slate-300 rounded-xl pl-10 pr-3.5 py-2.5 text-xs focus:ring-2 focus:ring-brand-500 focus:outline-none font-medium">
+          </div>
           <p class="text-[10px] text-slate-400 mt-1">Digunakan untuk login kembali ke dashboard penjual Anda.</p>
         </div>
 
-        <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 text-[11px] text-slate-600 flex items-start space-x-2">
-          <i class="fa-solid fa-circle-info text-brand-600 mt-0.5"></i>
-          <span>Sebagai penjual, Anda dapat langsung mengunggah pasokan limbah, melampirkan foto eviden tera, dan menerima pesanan aman.</span>
+        <!-- Info Pengaturan Lanjutan -->
+        <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 text-[11px] text-slate-700 flex items-start space-x-2.5">
+          <i class="fa-solid fa-gear text-emerald-600 mt-0.5 text-sm shrink-0"></i>
+          <span class="leading-relaxed">
+            Data lanjutan (<strong>Nama Usaha/Pemasok, Lokasi Gudang/Kota, dan Rekening Bank Pencairan</strong>) dapat diisi dan diupdate kapan saja di <strong>Menu Pengaturan</strong> pada Dashboard Penjual Anda.
+          </span>
         </div>
 
         <div class="flex items-center justify-between pt-2">
@@ -2238,9 +2232,9 @@
             <button type="button" onclick="app.closeModals()" class="px-4 py-2.5 rounded-xl border border-slate-300 text-slate-700 text-xs font-bold hover:bg-slate-50 transition">
               Batal
             </button>
-            <button type="submit" class="px-6 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold shadow-md transition flex items-center space-x-1.5">
+            <button type="submit" class="px-6 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold shadow-md transition flex items-center space-x-1.5 active:scale-95">
               <i class="fa-solid fa-check"></i>
-              <span>Daftar Jadi Penjual</span>
+              <span>Daftar Penjual</span>
             </button>
           </div>
         </div>
@@ -2420,8 +2414,8 @@
         <!-- Navigation Tabs inside Profile -->
         <div class="flex items-center space-x-2 mt-6 pt-4 border-t border-slate-700/60 overflow-x-auto no-scrollbar">
           <button id="prof-tab-btn-info" onclick="app.switchProfileTab('info')" class="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-white text-slate-900 shadow-sm transition shrink-0 flex items-center space-x-1.5">
-            <i class="fa-solid fa-id-card text-emerald-600"></i>
-            <span>Data Profil</span>
+            <i class="fa-solid fa-gear text-emerald-600"></i>
+            <span>Pengaturan Profil & Usaha</span>
           </button>
           <button id="prof-tab-btn-verify" onclick="app.switchProfileTab('verify')" class="px-3.5 py-1.5 rounded-xl text-xs font-semibold text-slate-300 hover:text-white hover:bg-white/10 transition shrink-0 flex items-center space-x-1.5">
             <i class="fa-solid fa-shield-halved text-amber-400"></i>
