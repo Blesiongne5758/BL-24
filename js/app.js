@@ -1072,6 +1072,22 @@ class BursaLimbahApp {
     if (totalDisplay) totalDisplay.textContent = this.formatRupiah(total);
     if (dpDisplay) dpDisplay.textContent = isDp ? this.formatRupiah(dp) : this.formatRupiah(total);
     if (remDisplay) remDisplay.textContent = isDp ? this.formatRupiah(remaining) : "Rp 0 (Pelunasan Penuh)";
+
+    const modalTitle = [REDACTED]'mob-calc-title');
+    const dpLabel = [REDACTED]'mob-calc-dp-label');
+    const remRow = [REDACTED]'mob-calc-remaining-row');
+
+    if (modalTitle) {
+      modalTitle.textContent = isDp ? `Simulasi DP ${dpPercent}% & Rekber Escrow` : "Simulasi Nilai & Rekber Escrow";
+    }
+    if (dpLabel) {
+      dpLabel.innerHTML = isDp
+        ? `<i class="fa-solid fa-shield-halved mr-1 text-[10px]"></i> DP ${dpPercent}% Rekber Escrow:`
+        : `<i class="fa-solid fa-shield-halved mr-1 text-[10px]"></i> Alokasi Rekber Escrow:`;
+    }
+    if (remRow) {
+      remRow.style.display = isDp ? 'flex' : 'none';
+    }
   }
 
   consultDpWa() {
