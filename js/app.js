@@ -289,7 +289,39 @@ class BursaLimbahApp {
       }
     }
 
-    // Perbarui Navigasi
+    // ===== PERBARUI TAB AKUN DI BOTTOM NAV MOBILE =====
+    const bnavGrid = [REDACTED]'bnav-grid');
+    const bnavAkun = [REDACTED]'bnav-akun');
+    const bnavAkunIcon = [REDACTED]'bnav-akun-icon');
+    const bnavAkunLabel = [REDACTED]'bnav-akun-label');
+    const isDashboardRole = ['buyer', 'seller', 'admin'].includes(role);
+
+    if (bnavGrid) {
+      bnavGrid.className = `max-w-md mx-auto grid ${isDashboardRole ? 'grid-cols-5' : 'grid-cols-4'} items-center text-center`;
+    }
+
+    if (bnavAkun) {
+      if (isDashboardRole) {
+        bnavAkun.classList.remove('hidden');
+        bnavAkun.classList.add('flex');
+        // Set ikon dan label sesuai peran
+        if (role === 'buyer') {
+          if (bnavAkunIcon) bnavAkunIcon.className = 'fa-solid fa-crown text-lg mb-0.5 text-amber-500';
+          if (bnavAkunLabel) bnavAkunLabel.textContent = 'Pembeli';
+        } else if (role === 'seller') {
+          if (bnavAkunIcon) bnavAkunIcon.className = 'fa-solid fa-store text-lg mb-0.5 text-emerald-600';
+          if (bnavAkunLabel) bnavAkunLabel.textContent = 'Penjual';
+        } else if (role === 'admin') {
+          if (bnavAkunIcon) bnavAkunIcon.className = 'fa-solid fa-user-shield text-lg mb-0.5 text-indigo-500';
+          if (bnavAkunLabel) bnavAkunLabel.textContent = 'Admin';
+        }
+      } else {
+        bnavAkun.classList.add('hidden');
+        bnavAkun.classList.remove('flex');
+      }
+    }
+
+    // ===== PERBARUI NAVIGASI =====
     this.updateNavUI();
 
     // Muat ulang data tampilan yang aktif
@@ -918,6 +950,17 @@ class BursaLimbahApp {
 
     // Scroll halus ke puncak halaman
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  // Navigasi ke dashboard saat ini saat tab Akun di bottom nav ditekan
+  bnavGoToDashboard() {
+    const role = this.store.getCurrentRole();
+    if (role === 'buyer' || role === 'seller' || role === 'admin') {
+      // Sudah di dashboard yang benar — scroll ke atas
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } else {
+      this.showToast('Silakan masuk ke akun terlebih dahulu.', 'info');
+    }
   }
 
   navigateToSection(sectionId) {
