@@ -1382,7 +1382,117 @@
 
       </div> <!-- /#tab-simulation -->
 
-    </div>
+      <!-- ================= TAB BAWAH A: CARI (PENCARIAN LIMBAH) ================= -->
+      <div id="tab-cari" class="app-tab-pane hidden max-w-4xl mx-auto px-4 py-6 space-y-4">
+        <div class="text-center mb-4">
+          <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-300 mb-2">
+            <i class="fa-solid fa-magnifying-glass text-emerald-600"></i>
+            <span>Temukan Pasokan Limbah</span>
+          </div>
+          <h2 class="text-2xl font-extrabold text-slate-900 tracking-tight">Cari Limbah</h2>
+          <p class="text-slate-500 text-xs mt-1">Ketik nama bahan, kategori, atau lokasi untuk menemukan pasokan</p>
+        </div>
+        <!-- Search Box -->
+        <div class="relative">
+          <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
+          <input id="cari-keyword" type="search" placeholder="Contoh: kardus, logam bekas, Surabaya..." 
+            oninput="app.renderCariResults()" 
+            class="w-full pl-11 pr-4 py-3 rounded-2xl border border-slate-300 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 text-sm outline-none bg-white shadow-xs transition" />
+        </div>
+        <!-- Filter Kategori Cepat -->
+        <div class="flex gap-2 flex-wrap">
+          <button onclick="app.setCariFilter('')" class="cari-filter-btn px-3 py-1 rounded-full text-xs font-bold bg-emerald-600 text-white transition active:scale-95">Semua</button>
+          <button onclick="app.setCariFilter('Kertas')" class="cari-filter-btn px-3 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-700 hover:bg-emerald-100 hover:text-emerald-800 transition active:scale-95">Kertas</button>
+          <button onclick="app.setCariFilter('Logam')" class="cari-filter-btn px-3 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-700 hover:bg-emerald-100 hover:text-emerald-800 transition active:scale-95">Logam</button>
+          <button onclick="app.setCariFilter('Plastik')" class="cari-filter-btn px-3 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-700 hover:bg-emerald-100 hover:text-emerald-800 transition active:scale-95">Plastik</button>
+          <button onclick="app.setCariFilter('Organik')" class="cari-filter-btn px-3 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-700 hover:bg-emerald-100 hover:text-emerald-800 transition active:scale-95">Organik</button>
+          <button onclick="app.setCariFilter('Elektronik')" class="cari-filter-btn px-3 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-700 hover:bg-emerald-100 hover:text-emerald-800 transition active:scale-95">Elektronik</button>
+        </div>
+        <!-- Hasil Cari -->
+        <div id="cari-results" class="space-y-3">
+          <p class="text-center text-slate-400 text-sm py-8">Ketik kata kunci untuk mencari pasokan limbah</p>
+        </div>
+      </div> <!-- /#tab-cari -->
+
+      <!-- ================= TAB BAWAH B: EVENT (KEGIATAN & LELANG) ================= -->
+      <div id="tab-event" class="app-tab-pane hidden max-w-4xl mx-auto px-4 py-6 space-y-4">
+        <div class="text-center mb-4">
+          <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-violet-100 text-violet-800 border border-violet-300 mb-2">
+            <i class="fa-solid fa-calendar-star text-violet-600"></i>
+            <span>Kegiatan & Lelang</span>
+          </div>
+          <h2 class="text-2xl font-extrabold text-slate-900 tracking-tight">Event Bursa Limbah</h2>
+          <p class="text-slate-500 text-xs mt-1">Ikuti lelang, pameran, dan kegiatan transaksi limbah terkurasi</p>
+        </div>
+        <!-- Grid Event Cards -->
+        <div id="tab-event-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <p class="text-center text-slate-400 text-sm py-8 col-span-full">Memuat data event...</p>
+        </div>
+      </div> <!-- /#tab-event -->
+
+      <!-- ================= TAB BAWAH C: PESAN (INBOX) ================= -->
+      <div id="tab-pesan" class="app-tab-pane hidden max-w-2xl mx-auto px-4 py-6 space-y-4">
+        <div class="text-center mb-4">
+          <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-blue-100 text-blue-800 border border-blue-300 mb-2">
+            <i class="fa-solid fa-comment-dots text-blue-600"></i>
+            <span>Kotak Masuk</span>
+          </div>
+          <h2 class="text-2xl font-extrabold text-slate-900 tracking-tight">Pesan</h2>
+          <p class="text-slate-500 text-xs mt-1">Chat & notifikasi transaksi Bursa Limbah</p>
+        </div>
+        <div id="tab-pesan-list" class="space-y-2">
+          <!-- Pesan Selamat Datang -->
+          <div class="flex items-start gap-3 p-4 rounded-2xl bg-emerald-50 border border-emerald-200">
+            <div class="w-10 h-10 rounded-full bg-emerald-600 flex items-center justify-center flex-shrink-0">
+              <i class="fa-solid fa-leaf text-white text-sm"></i>
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center justify-between mb-0.5">
+                <span class="text-xs font-bold text-slate-800">Admin Bursa Limbah</span>
+                <span class="text-[10px] text-slate-400">Sekarang</span>
+              </div>
+              <p class="text-xs text-slate-600 leading-relaxed">Selamat datang di Bursa Limbah! Temukan pasokan limbah terbaik & hubungi penjual melalui WhatsApp. Butuh bantuan? Chat kami di sini.</p>
+            </div>
+          </div>
+          <!-- Notif: Daftar & Berlangganan -->
+          <div class="flex items-start gap-3 p-4 rounded-2xl bg-amber-50 border border-amber-200">
+            <div class="w-10 h-10 rounded-full bg-amber-500 flex items-center justify-center flex-shrink-0">
+              <i class="fa-solid fa-crown text-white text-sm"></i>
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center justify-between mb-0.5">
+                <span class="text-xs font-bold text-slate-800">Notifikasi Berlangganan</span>
+                <span class="text-[10px] text-slate-400">Hari ini</span>
+              </div>
+              <p class="text-xs text-slate-600 leading-relaxed">Daftar sebagai Pembeli untuk melihat harga lengkap, lokasi GPS, dan nomor WhatsApp penjual terverifikasi.</p>
+              <button onclick="app.switchAppTab('sub')" class="mt-2 px-3 py-1 rounded-lg bg-amber-500 hover:bg-amber-600 text-white text-[10px] font-bold transition active:scale-95">
+                Lihat Paket Berlangganan →
+              </button>
+            </div>
+          </div>
+          <!-- Chat langsung shortcut -->
+          <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200 text-center">
+            <i class="fa-brands fa-whatsapp text-3xl text-emerald-500 mb-2 block"></i>
+            <p class="text-xs font-bold text-slate-700 mb-1">Chat Langsung via WhatsApp</p>
+            <p class="text-xs text-slate-500 mb-3">Hubungi tim admin untuk konsultasi transaksi, verifikasi penjual, atau pertanyaan umum</p>
+            <a href="https://wa.me/628[REDACTED]7890?text=Halo%20Admin%20Bursa%20Limbah%2C%20saya%20ingin%20bertanya" target="_blank" 
+               class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition active:scale-95">
+              <i class="fa-brands fa-whatsapp"></i>
+              <span>Buka WhatsApp</span>
+            </a>
+          </div>
+        </div>
+      </div> <!-- /#tab-pesan -->
+
+      <!-- ================= TAB BAWAH D: SAYA (PROFIL & AKUN) ================= -->
+      <div id="tab-saya" class="app-tab-pane hidden max-w-lg mx-auto px-4 py-6 space-y-4">
+        <div id="tab-saya-content">
+          <!-- Diisi dinamis oleh renderTabSaya() di app.js -->
+          <p class="text-center text-slate-400 text-sm py-8">Memuat profil...</p>
+        </div>
+      </div> <!-- /#tab-saya -->
+
+    </div> <!-- /#view-public -->
 
     <!-- ================= TAMPILAN 2: PORTAL PEMBELI (BUYER) ================= -->
     <div id="view-buyer" class="tab-content hidden max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-24 lg:pb-8 space-y-8">
@@ -2868,40 +2978,35 @@
   <!-- ================= DOCKED BOTTOM NAVIGATION BAR (MOBILE APP) ================= -->
   <nav id="mobile-app-bottom-nav" class="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-xl border-t border-slate-200/90 shadow-[0_-4px_25px_rgba(0,0,0,0.08)] py-1.5 px-2">
     <div id="bnav-grid" class="max-w-md mx-auto grid grid-cols-4 items-center text-center">
-      <!-- 1. Home -->
-      <button type="button" onclick="app.switchAppTab('home')" id="bnav-home" class="bnav-item flex flex-col items-center justify-center py-1 text-emerald-700 font-bold active:scale-90 transition cursor-pointer">
-        <i class="fa-solid fa-house text-lg mb-0.5"></i>
-        <span class="text-[10px] leading-tight">Home</span>
-        <span class="bnav-indicator w-1 h-1 bg-emerald-600 rounded-full mt-0.5 transition-all"></span>
-      </button>
 
-      <!-- 2. Mulai Jual -->
-      <button type="button" onclick="app.switchAppTab('sell')" id="bnav-sell" class="bnav-item flex flex-col items-center justify-center py-1 text-slate-500 font-medium active:scale-90 transition cursor-pointer">
-        <i class="fa-solid fa-circle-plus text-lg mb-0.5 text-emerald-600"></i>
-        <span class="text-[10px] leading-tight">Mulai Jual</span>
+      <!-- 1. Cari -->
+      <button type="button" onclick="app.switchBottomTab('cari')" id="bnav-cari" class="bnav-item flex flex-col items-center justify-center py-1 text-slate-500 font-medium active:scale-90 transition cursor-pointer">
+        <i class="fa-solid fa-magnifying-glass text-lg mb-0.5"></i>
+        <span class="text-[10px] leading-tight">Cari</span>
         <span class="bnav-indicator w-1 h-1 bg-emerald-600 rounded-full mt-0.5 transition-all opacity-0"></span>
       </button>
 
-      <!-- 3. Berlangganan -->
-      <button type="button" onclick="app.switchAppTab('sub')" id="bnav-sub" class="bnav-item flex flex-col items-center justify-center py-1 text-slate-500 font-medium active:scale-90 transition cursor-pointer">
-        <i class="fa-solid fa-crown text-lg mb-0.5 text-amber-500"></i>
-        <span class="text-[10px] leading-tight">Berlangganan</span>
+      <!-- 2. Event -->
+      <button type="button" onclick="app.switchBottomTab('event')" id="bnav-event" class="bnav-item flex flex-col items-center justify-center py-1 text-slate-500 font-medium active:scale-90 transition cursor-pointer">
+        <i class="fa-solid fa-calendar-star text-lg mb-0.5 text-violet-500"></i>
+        <span class="text-[10px] leading-tight">Event</span>
         <span class="bnav-indicator w-1 h-1 bg-emerald-600 rounded-full mt-0.5 transition-all opacity-0"></span>
       </button>
 
-      <!-- 4. Simulasi -->
-      <button type="button" onclick="app.switchAppTab('sim')" id="bnav-sim" class="bnav-item flex flex-col items-center justify-center py-1 text-slate-500 font-medium active:scale-90 transition cursor-pointer">
-        <i class="fa-solid fa-calculator text-lg mb-0.5 text-blue-500"></i>
-        <span class="text-[10px] leading-tight">Simulasi</span>
+      <!-- 3. Pesan -->
+      <button type="button" onclick="app.switchBottomTab('pesan')" id="bnav-pesan" class="bnav-item flex flex-col items-center justify-center py-1 text-slate-500 font-medium active:scale-90 transition cursor-pointer">
+        <i class="fa-solid fa-comment-dots text-lg mb-0.5 text-blue-500"></i>
+        <span class="text-[10px] leading-tight">Pesan</span>
+        <span id="bnav-pesan-badge" class="bnav-indicator w-1 h-1 bg-emerald-600 rounded-full mt-0.5 transition-all opacity-0"></span>
+      </button>
+
+      <!-- 4. Saya -->
+      <button type="button" onclick="app.switchBottomTab('saya')" id="bnav-saya" class="bnav-item flex flex-col items-center justify-center py-1 text-slate-500 font-medium active:scale-90 transition cursor-pointer">
+        <i class="fa-solid fa-circle-user text-lg mb-0.5 text-emerald-600"></i>
+        <span class="text-[10px] leading-tight">Saya</span>
         <span class="bnav-indicator w-1 h-1 bg-emerald-600 rounded-full mt-0.5 transition-all opacity-0"></span>
       </button>
 
-      <!-- 5. Akun Dashboard (tersembunyi pada publik, tampil di buyer/seller/admin) -->
-      <button type="button" id="bnav-akun" onclick="app.bnavGoToDashboard()" class="bnav-item hidden flex-col items-center justify-center py-1 text-brand-700 font-bold active:scale-90 transition cursor-pointer active">
-        <i id="bnav-akun-icon" class="fa-solid fa-user-circle text-lg mb-0.5"></i>
-        <span id="bnav-akun-label" class="text-[10px] leading-tight">Akun</span>
-        <span class="bnav-indicator w-1 h-1 bg-brand-600 rounded-full mt-0.5 transition-all"></span>
-      </button>
     </div>
   </nav>
 

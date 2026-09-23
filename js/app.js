@@ -289,36 +289,16 @@ class BursaLimbahApp {
       }
     }
 
-    // ===== PERBARUI TAB AKUN DI BOTTOM NAV MOBILE =====
-    const bnavGrid = [REDACTED]'bnav-grid');
-    const bnavAkun = [REDACTED]'bnav-akun');
-    const bnavAkunIcon = [REDACTED]'bnav-akun-icon');
-    const bnavAkunLabel = [REDACTED]'bnav-akun-label');
-    const isDashboardRole = ['buyer', 'seller', 'admin'].includes(role);
-
-    if (bnavGrid) {
-      bnavGrid.className = `max-w-md mx-auto grid ${isDashboardRole ? 'grid-cols-5' : 'grid-cols-4'} items-center text-center`;
-    }
-
-    if (bnavAkun) {
-      if (isDashboardRole) {
-        bnavAkun.classList.remove('hidden');
-        bnavAkun.classList.add('flex');
-        // Set ikon dan label sesuai peran
-        if (role === 'buyer') {
-          if (bnavAkunIcon) bnavAkunIcon.className = 'fa-solid fa-crown text-lg mb-0.5 text-amber-500';
-          if (bnavAkunLabel) bnavAkunLabel.textContent = 'Pembeli';
-        } else if (role === 'seller') {
-          if (bnavAkunIcon) bnavAkunIcon.className = 'fa-solid fa-store text-lg mb-0.5 text-emerald-600';
-          if (bnavAkunLabel) bnavAkunLabel.textContent = 'Penjual';
-        } else if (role === 'admin') {
-          if (bnavAkunIcon) bnavAkunIcon.className = 'fa-solid fa-user-shield text-lg mb-0.5 text-indigo-500';
-          if (bnavAkunLabel) bnavAkunLabel.textContent = 'Admin';
+    // ===== PERBARUI STATE BOTTOM NAV BARU (Cari/Event/Pesan/Saya) =====
+    // Saat masuk ke role dashboard, hapus highlight aktif di bottom nav baru
+    if (['buyer', 'seller', 'admin', 'login'].includes(role)) {
+      ['cari', 'event', 'pesan', 'saya'].forEach(k => {
+        const btn = [REDACTED]`bnav-${k}`);
+        if (btn) {
+          btn.className = 'bnav-item flex flex-col items-center justify-center py-1 text-slate-500 font-medium active:scale-90 transition cursor-pointer';
+          btn.removeAttribute('aria-current');
         }
-      } else {
-        bnavAkun.classList.add('hidden');
-        bnavAkun.classList.remove('flex');
-      }
+      });
     }
 
     // ===== PERBARUI NAVIGASI =====
@@ -902,8 +882,9 @@ class BursaLimbahApp {
       this.setRole('public', false);
     }
 
-    // Tampilkan panel tab yang dipilih dan sembunyikan yang lain
-    ['tab-home', 'tab-sell', 'tab-subscription', 'tab-simulation'].forEach(id => {
+    // Tampilkan panel tab yang dipilih dan sembunyikan yang lain (termasuk tab bottom nav)
+    ['tab-home', 'tab-sell', 'tab-subscription', 'tab-simulation',
+     'tab-cari', 'tab-event', 'tab-pesan', 'tab-saya'].forEach(id => {
       const pane = [REDACTED]id);
       if (pane) {
         if (id === activeTabId) {
@@ -911,6 +892,15 @@ class BursaLimbahApp {
         } else {
           pane.classList.add('hidden');
         }
+      }
+    });
+
+    // Reset highlight tombol bottom nav baru
+    ['cari', 'event', 'pesan', 'saya'].forEach(k => {
+      const btn = [REDACTED]`bnav-${k}`);
+      if (btn) {
+        btn.className = 'bnav-item flex flex-col items-center justify-center py-1 text-slate-500 font-medium active:scale-90 transition cursor-pointer';
+        btn.removeAttribute('aria-current');
       }
     });
 
@@ -961,6 +951,261 @@ class BursaLimbahApp {
     } else {
       this.showToast('Silakan masuk ke akun terlebih dahulu.', 'info');
     }
+  }
+
+  // ===== NAVIGASI BOTTOM NAV BARU: Cari / Event / Pesan / Saya =====
+  switchBottomTab(tabKey) {
+    this.currentBottomTab = tabKey;
+
+    // Pastikan view-public aktif
+    if (this.store.getCurrentRole() !== 'public') {
+      this.setRole('public', false);
+    }
+
+    // Sembunyikan semua tab pane (termasuk tab atas dan tab bawah)
+    const allPanes = ['tab-home', 'tab-sell', 'tab-subscription', 'tab-simulation',
+                      'tab-cari', 'tab-event', 'tab-pesan', 'tab-saya'];
+    allPanes.forEach(id => {
+      const el = [REDACTED]id);
+      if (el) el.classList.add('hidden');
+    });
+
+    // Tampilkan tab yang dipilih
+    const activePane = [REDACTED]`tab-${tabKey}`);
+    if (activePane) activePane.classList.remove('hidden');
+
+    // Update highlight tombol bottom nav
+    const bnavKeys = ['cari', 'event', 'pesan', 'saya'];
+    bnavKeys.forEach(k => {
+      const btn = [REDACTED]`bnav-${k}`);
+      if (btn) {
+        if (k === tabKey) {
+          btn.className = 'bnav-item flex flex-col items-center justify-center py-1 text-emerald-700 font-bold active:scale-90 transition cursor-pointer active';
+          btn.setAttribute('aria-current', 'page');
+        } else {
+          btn.className = 'bnav-item flex flex-col items-center justify-center py-1 text-slate-500 font-medium active:scale-90 transition cursor-pointer';
+          btn.removeAttribute('aria-current');
+        }
+      }
+    });
+
+    // Render konten tab
+    if (tabKey === 'event') this.renderTabEvent();
+    if (tabKey === 'saya') this.renderTabSaya();
+    if (tabKey === 'cari') this.renderCariResults();
+
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  // Render tab Event — menampilkan daftar event dari store
+  renderTabEvent() {
+    const grid = [REDACTED]'tab-event-grid');
+    if (!grid) return;
+    const events = this.store.getEvents ? this.store.getEvents() : [];
+    if (!events.length) {
+      grid.innerHTML = `<p class="text-center text-slate-400 text-sm py-10 col-span-full">
+        <i class="fa-solid fa-calendar-xmark text-3xl text-slate-300 block mb-2"></i>
+        Belum ada event yang dijadwalkan
+      </p>`;
+      return;
+    }
+    grid.innerHTML = events.map(ev => `
+      <div class="rounded-2xl border border-violet-200 bg-gradient-to-br from-violet-50 to-white p-4 shadow-xs flex flex-col gap-2">
+        <div class="flex items-center gap-2">
+          <span class="w-9 h-9 rounded-xl bg-violet-600 flex items-center justify-center flex-shrink-0">
+            <i class="fa-solid fa-calendar-star text-white text-sm"></i>
+          </span>
+          <div class="flex-1 min-w-0">
+            <h3 class="text-sm font-extrabold text-slate-800 truncate">${ev.name}</h3>
+            <span class="text-[10px] text-violet-700 font-semibold">${ev.date || ''} ${ev.location ? '• ' + ev.location : ''}</span>
+          </div>
+        </div>
+        ${ev.description ? `<p class="text-xs text-slate-600 leading-relaxed">${ev.description}</p>` : ''}
+        <div class="flex items-center justify-between mt-auto pt-1 border-t border-violet-100">
+          <span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${ev.status === 'Aktif' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'}">${ev.status || 'Mendatang'}</span>
+          ${ev.waLink ? `<a href="${ev.waLink}" target="_blank" class="text-[10px] font-bold text-emerald-700 flex items-center gap-1 hover:underline"><i class="fa-brands fa-whatsapp"></i> Daftar</a>` : ''}
+        </div>
+      </div>
+    `).join('');
+  }
+
+  // Render tab Saya — login/profil/akun sesuai role
+  renderTabSaya() {
+    const container = [REDACTED]'tab-saya-content');
+    if (!container) return;
+    const role = this.store.getCurrentRole();
+    const user = this.store.getCurrentUser();
+
+    if (role === 'buyer' && user) {
+      const tier = this.store.getUserSubscriptionTier ? this.store.getUserSubscriptionTier(user) : { name: '-' };
+      container.innerHTML = `
+        <div class="rounded-2xl bg-gradient-to-br from-emerald-900 to-emerald-700 p-5 text-white text-center mb-4">
+          <div class="w-16 h-16 rounded-full bg-white/20 flex items-center justify-center mx-auto mb-2">
+            <i class="fa-solid fa-crown text-amber-300 text-2xl"></i>
+          </div>
+          <h3 class="font-extrabold text-lg">${user.company || user.name}</h3>
+          <p class="text-emerald-200 text-xs">${user.email || ''}</p>
+          <span class="inline-block mt-2 px-3 py-0.5 rounded-full bg-amber-400/20 border border-amber-300/40 text-amber-200 text-[10px] font-bold">${tier.name}</span>
+        </div>
+        <div class="space-y-2">
+          <button onclick="app.setRole('buyer')" class="w-full flex items-center gap-3 p-3 rounded-2xl bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 transition active:scale-98 text-left">
+            <i class="fa-solid fa-store text-emerald-600 text-lg w-7 text-center"></i>
+            <span class="text-sm font-bold text-slate-800">Portal Pembeli</span>
+            <i class="fa-solid fa-chevron-right text-slate-400 text-xs ml-auto"></i>
+          </button>
+          <button onclick="app.showBuyerRegisterModal()" class="w-full flex items-center gap-3 p-3 rounded-2xl bg-amber-50 border border-amber-200 hover:bg-amber-100 transition active:scale-98 text-left">
+            <i class="fa-solid fa-crown text-amber-500 text-lg w-7 text-center"></i>
+            <span class="text-sm font-bold text-slate-800">Upgrade Berlangganan</span>
+            <i class="fa-solid fa-chevron-right text-slate-400 text-xs ml-auto"></i>
+          </button>
+          <button onclick="app.logout()" class="w-full flex items-center gap-3 p-3 rounded-2xl bg-rose-50 border border-rose-200 hover:bg-rose-100 transition active:scale-98 text-left">
+            <i class="fa-solid fa-right-from-bracket text-rose-500 text-lg w-7 text-center"></i>
+            <span class="text-sm font-bold text-rose-700">Keluar</span>
+          </button>
+        </div>`;
+    } else if (role === 'seller' && user) {
+      container.innerHTML = `
+        <div class="rounded-2xl bg-gradient-to-br from-slate-900 to-emerald-900 p-5 text-white text-center mb-4">
+          <div class="w-16 h-16 rounded-full bg-white/20 flex items-center justify-center mx-auto mb-2">
+            <i class="fa-solid fa-store text-emerald-300 text-2xl"></i>
+          </div>
+          <h3 class="font-extrabold text-lg">${user.name}</h3>
+          <p class="text-slate-300 text-xs">${user.email || ''}</p>
+          <span class="inline-block mt-2 px-3 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-400/40 text-emerald-200 text-[10px] font-bold">${user.verifiedBadge || 'Pemasok Terverifikasi'}</span>
+        </div>
+        <div class="space-y-2">
+          <button onclick="app.setRole('seller')" class="w-full flex items-center gap-3 p-3 rounded-2xl bg-slate-50 border border-slate-200 hover:bg-slate-100 transition active:scale-98 text-left">
+            <i class="fa-solid fa-boxes-stacked text-emerald-600 text-lg w-7 text-center"></i>
+            <span class="text-sm font-bold text-slate-800">Dashboard Penjual</span>
+            <i class="fa-solid fa-chevron-right text-slate-400 text-xs ml-auto"></i>
+          </button>
+          <button onclick="app.showUploadModal()" class="w-full flex items-center gap-3 p-3 rounded-2xl bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 transition active:scale-98 text-left">
+            <i class="fa-solid fa-circle-plus text-emerald-600 text-lg w-7 text-center"></i>
+            <span class="text-sm font-bold text-slate-800">Unggah Pasokan Baru</span>
+            <i class="fa-solid fa-chevron-right text-slate-400 text-xs ml-auto"></i>
+          </button>
+          <button onclick="app.logout()" class="w-full flex items-center gap-3 p-3 rounded-2xl bg-rose-50 border border-rose-200 hover:bg-rose-100 transition active:scale-98 text-left">
+            <i class="fa-solid fa-right-from-bracket text-rose-500 text-lg w-7 text-center"></i>
+            <span class="text-sm font-bold text-rose-700">Keluar</span>
+          </button>
+        </div>`;
+    } else if (role === 'admin') {
+      container.innerHTML = `
+        <div class="rounded-2xl bg-gradient-to-br from-slate-950 to-indigo-950 p-5 text-white text-center mb-4">
+          <div class="w-16 h-16 rounded-full bg-white/10 flex items-center justify-center mx-auto mb-2">
+            <i class="fa-solid fa-user-shield text-amber-300 text-2xl"></i>
+          </div>
+          <h3 class="font-extrabold text-lg">Pengelola</h3>
+          <span class="inline-block mt-2 px-3 py-0.5 rounded-full bg-amber-400/20 border border-amber-300/40 text-amber-200 text-[10px] font-bold">ADMIN</span>
+        </div>
+        <div class="space-y-2">
+          <button onclick="app.setRole('admin')" class="w-full flex items-center gap-3 p-3 rounded-2xl bg-slate-50 border border-slate-200 hover:bg-slate-100 transition active:scale-98 text-left">
+            <i class="fa-solid fa-user-shield text-indigo-600 text-lg w-7 text-center"></i>
+            <span class="text-sm font-bold text-slate-800">Pusat Pengelola</span>
+            <i class="fa-solid fa-chevron-right text-slate-400 text-xs ml-auto"></i>
+          </button>
+          <button onclick="app.logout()" class="w-full flex items-center gap-3 p-3 rounded-2xl bg-rose-50 border border-rose-200 hover:bg-rose-100 transition active:scale-98 text-left">
+            <i class="fa-solid fa-right-from-bracket text-rose-500 text-lg w-7 text-center"></i>
+            <span class="text-sm font-bold text-rose-700">Keluar</span>
+          </button>
+        </div>`;
+    } else {
+      // Belum login
+      container.innerHTML = `
+        <div class="rounded-2xl bg-gradient-to-br from-slate-100 to-white border border-slate-200 p-6 text-center mb-4">
+          <div class="w-16 h-16 rounded-full bg-slate-200 flex items-center justify-center mx-auto mb-3">
+            <i class="fa-solid fa-circle-user text-slate-400 text-3xl"></i>
+          </div>
+          <h3 class="font-extrabold text-lg text-slate-800">Belum Masuk</h3>
+          <p class="text-slate-500 text-xs mt-1">Masuk ke akun untuk mengakses fitur lengkap</p>
+        </div>
+        <div class="space-y-2">
+          <button onclick="app.showLoginPage('buyer')" class="w-full flex items-center gap-3 p-3 rounded-2xl bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 transition active:scale-98 text-left">
+            <i class="fa-solid fa-crown text-amber-500 text-lg w-7 text-center"></i>
+            <div>
+              <p class="text-sm font-bold text-slate-800">Masuk sebagai Pembeli</p>
+              <p class="text-[10px] text-slate-500">Akses harga, GPS & kontak penjual</p>
+            </div>
+            <i class="fa-solid fa-chevron-right text-slate-400 text-xs ml-auto"></i>
+          </button>
+          <button onclick="app.showLoginPage('seller')" class="w-full flex items-center gap-3 p-3 rounded-2xl bg-slate-50 border border-slate-200 hover:bg-slate-100 transition active:scale-98 text-left">
+            <i class="fa-solid fa-store text-emerald-600 text-lg w-7 text-center"></i>
+            <div>
+              <p class="text-sm font-bold text-slate-800">Masuk sebagai Penjual</p>
+              <p class="text-[10px] text-slate-500">Kelola pasokan & statistik penjualan</p>
+            </div>
+            <i class="fa-solid fa-chevron-right text-slate-400 text-xs ml-auto"></i>
+          </button>
+          <button onclick="app.switchAppTab('sub')" class="w-full flex items-center gap-3 p-3 rounded-2xl bg-amber-50 border border-amber-200 hover:bg-amber-100 transition active:scale-98 text-left">
+            <i class="fa-solid fa-star text-amber-500 text-lg w-7 text-center"></i>
+            <div>
+              <p class="text-sm font-bold text-slate-800">Lihat Paket Berlangganan</p>
+              <p class="text-[10px] text-slate-500">Mulai dari Rp 150.000/bulan</p>
+            </div>
+            <i class="fa-solid fa-chevron-right text-slate-400 text-xs ml-auto"></i>
+          </button>
+        </div>`;
+    }
+  }
+
+  // Render hasil pencarian di tab Cari
+  renderCariResults() {
+    const keyword = ([REDACTED]'cari-keyword')?.value || '').toLowerCase().trim();
+    const resultsEl = [REDACTED]'cari-results');
+    if (!resultsEl) return;
+
+    const allPostings = this.store.getPostings ? this.store.getPostings() : [];
+    const filter = this.currentCariFilter || '';
+
+    let filtered = allPostings.filter(p => {
+      const matchKeyword = !keyword ||
+        (p.title || '').toLowerCase().includes(keyword) ||
+        (p.category || '').toLowerCase().includes(keyword) ||
+        (p.location || '').toLowerCase().includes(keyword) ||
+        (p.description || '').toLowerCase().includes(keyword);
+      const matchFilter = !filter || (p.category || '').toLowerCase().includes(filter.toLowerCase());
+      return matchKeyword && matchFilter;
+    });
+
+    if (!filtered.length) {
+      resultsEl.innerHTML = `<p class="text-center text-slate-400 text-sm py-10">
+        <i class="fa-solid fa-search-minus text-3xl text-slate-300 block mb-2"></i>
+        Tidak ada hasil untuk "${keyword || filter}"
+      </p>`;
+      return;
+    }
+
+    resultsEl.innerHTML = filtered.map(p => `
+      <div class="flex items-start gap-3 p-3 rounded-2xl bg-white border border-slate-200 shadow-xs hover:border-emerald-300 transition cursor-pointer" onclick="app.showProductDetail('${p.id}')">
+        <div class="w-12 h-12 rounded-xl bg-emerald-100 flex items-center justify-center flex-shrink-0 text-emerald-700 font-bold text-lg overflow-hidden">
+          ${p.imageUrl ? `<img src="${p.imageUrl}" class="w-full h-full object-cover rounded-xl" onerror="this.style.display='none'" />` : '<i class="fa-solid fa-recycle text-xl"></i>'}
+        </div>
+        <div class="flex-1 min-w-0">
+          <h4 class="text-sm font-bold text-slate-800 truncate">${p.title}</h4>
+          <p class="text-[10px] text-slate-500">${p.category || '-'} • ${p.location || '-'}</p>
+          <p class="text-xs font-bold text-emerald-700 mt-0.5">${this.formatRupiah(p.pricePerUnit || 0)}<span class="text-[10px] font-normal text-slate-500">/${p.unit || 'kg'}</span></p>
+        </div>
+        <span class="px-2 py-0.5 rounded-full text-[9px] font-bold ${p.verified ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'} flex-shrink-0 mt-1">
+          ${p.verified ? '✓ Terverifikasi' : 'Pending'}
+        </span>
+      </div>
+    `).join('');
+  }
+
+  // Set filter kategori di tab Cari
+  setCariFilter(category) {
+    this.currentCariFilter = category;
+    // Update highlight tombol filter
+    document.querySelectorAll('.cari-filter-btn').forEach(btn => {
+      const btnText = btn.textContent.trim();
+      const isActive = category === '' ? btnText === 'Semua' : btnText === category;
+      if (isActive) {
+        btn.className = 'cari-filter-btn px-3 py-1 rounded-full text-xs font-bold bg-emerald-600 text-white transition active:scale-95';
+      } else {
+        btn.className = 'cari-filter-btn px-3 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-700 hover:bg-emerald-100 hover:text-emerald-800 transition active:scale-95';
+      }
+    });
+    this.renderCariResults();
   }
 
   navigateToSection(sectionId) {
