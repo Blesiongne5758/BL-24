@@ -393,6 +393,134 @@ const INITIAL_SUBSCRIPTION_TIERS = [
   }
 ];
 
+/**
+ * 3-Tier Sumber Limbah — Profil Formulir Adaptif
+ * Mengatur opsi dropdown, field yang tampil, placeholder, dan default value per tier
+ */
+const WASTE_SOURCE_TIERS = [
+  {
+    id: "source_household",
+    name: "Limbah Rumah Tangga",
+    emoji: "🏠",
+    label: "Rumah Tangga / Perorangan",
+    description: "Pengepul perorangan, bank sampah, warga RT/RW",
+    icon: "fa-house-chimney",
+    color: "emerald",
+    containers: [
+      "Karung Plastik",
+      "Ember / Tong (20L)",
+      "Kantong Plastik Besar",
+      "Goni / Karung Goni",
+      "Kardus Ikat",
+      "Galon Bekas"
+    ],
+    units: ["Kg", "Liter", "Pcs"],
+    conditions: [
+      { value: "Campur", label: "Campur (Belum Dipilah)" },
+      { value: "Sudah Dipilah", label: "Sudah Dipilah per Jenis" },
+      { value: "Bersih", label: "Bersih (Sudah Dicuci)" }
+    ],
+    schedules: [
+      { value: "Dijemput Kapan Saja", label: "Dijemput Kapan Saja (Fleksibel)" },
+      { value: "Pengambilan Mingguan", label: "Pengambilan Rutin Mingguan" },
+      { value: "Setor ke Bank Sampah", label: "Setor Mandiri ke Bank Sampah" }
+    ],
+    defaultUnit: "Kg",
+    defaultMOQ: 5,
+    defaultPrice: 3000,
+    defaultQty: 50,
+    showFields: { grade: false, b3: false, gps: false, nib: false, tpsPermit: false },
+    placeholders: {
+      title: "Contoh: Botol Plastik PET Bersih dari Perumahan",
+      origin: "Contoh: Perumahan Griya Indah RT 05/RW 03, Depok",
+      city: "Contoh: Depok",
+      grade: ""
+    }
+  },
+  {
+    id: "source_medium_industry",
+    name: "Limbah Industri Menengah",
+    emoji: "🏢",
+    label: "Industri Menengah / UMKM",
+    description: "Bengkel, percetakan, restoran, manufaktur skala menengah",
+    icon: "fa-building",
+    color: "blue",
+    containers: [
+      "Drum Plastik (200L)",
+      "Jerigen (20L - 30L)",
+      "Karung Jumbo",
+      "Bal Press Padat",
+      "Pallet Kayu",
+      "Bak Truk Pickup"
+    ],
+    units: ["Kg", "Liter", "Ton", "Pcs"],
+    conditions: [
+      { value: "Bersih", label: "Bersih (Tanpa Campuran / Siap Olah)" },
+      { value: "Campur", label: "Campur (Perlu Pemilahan / Sortir)" },
+      { value: "Terpress", label: "Terpress (Bal Padat Siap Muat)" },
+      { value: "Cacah", label: "Cacah (Flakes / Crushed)" }
+    ],
+    schedules: [
+      { value: "Siap Angkut (H+1 s/d H+3)", label: "Siap Angkut (H+1 - H+3)" },
+      { value: "Pengambilan Rutin Mingguan", label: "Pengambilan Rutin Mingguan" },
+      { value: "Kontrak Pasokan Berkala Bulanan", label: "Kontrak Pasokan Berkala" }
+    ],
+    defaultUnit: "Kg",
+    defaultMOQ: 50,
+    defaultPrice: 6000,
+    defaultQty: 500,
+    showFields: { grade: true, b3: true, gps: true, nib: true, tpsPermit: false },
+    placeholders: {
+      title: "Contoh: Serbuk Besi Bubut dari Bengkel CNC",
+      origin: "Contoh: Bengkel CNC Presisi Jaya, Jl. Raya Industri No. 12",
+      city: "Contoh: Tangerang",
+      grade: "Contoh: Grade B, Kadar Air < 5%"
+    }
+  },
+  {
+    id: "source_large_industry",
+    name: "Limbah Industri Besar",
+    emoji: "🏭",
+    label: "Industri Besar / Korporat",
+    description: "Pabrik, kawasan industri, kontraktor proyek besar",
+    icon: "fa-industry",
+    color: "amber",
+    containers: [
+      "IBC Tank (1000L)",
+      "Drum Besi (200L)",
+      "Curah / Bak Truk Fuso",
+      "Kontainer 20ft",
+      "Bal Press Jumbo",
+      "Karung Jumbo (FIBC)"
+    ],
+    units: ["Ton", "Kg", "Liter"],
+    conditions: [
+      { value: "Bersih", label: "Bersih (Siap Olah Langsung)" },
+      { value: "Terpress", label: "Terpress (Bal Padat Siap Muat)" },
+      { value: "Baled", label: "Baled (Terikat Rapi Standar Ekspor)" },
+      { value: "Cacah", label: "Cacah (Flakes / Crushed)" },
+      { value: "Campur", label: "Campur (Perlu Sortir)" }
+    ],
+    schedules: [
+      { value: "Siap Angkut Segera (H+0)", label: "Siap Angkut Segera (H+0)" },
+      { value: "Terjadwal Crane/Forklift (H+2)", label: "Terjadwal Crane/Forklift (H+2)" },
+      { value: "Kontrak Pasokan Berkala Bulanan", label: "Kontrak Pasokan Berkala Bulanan" },
+      { value: "Wajib Manifest KLHK (B3)", label: "Wajib Manifest KLHK (Limbah B3)" }
+    ],
+    defaultUnit: "Ton",
+    defaultMOQ: 500,
+    defaultPrice: 9500,
+    defaultQty: 5000,
+    showFields: { grade: true, b3: true, gps: true, nib: true, tpsPermit: true },
+    placeholders: {
+      title: "Contoh: Besi Scrap WF Bongkaran Pabrik (Grade Super A)",
+      origin: "Contoh: PT Krakatau Industrial Estate, Cilegon",
+      city: "Contoh: Cilegon",
+      grade: "Contoh: FFA < 3%, Kadar Air < 1.5%, Tebal 10mm"
+    }
+  }
+];
+
 const INITIAL_SETTINGS = {
   appName: "BURSA LIMBAH",
   tagline: "Limbah Terverifikasi. Transaksi Tepercaya.",
@@ -402,7 +530,8 @@ const INITIAL_SETTINGS = {
   escrowAccountHolder: "PT BURSA LIMBAH Transaksi Sirkular (Rekening Bersama Escrow)",
   escrowBankBranch: "KCP Sentra Bisnis Pulogadung, Jakarta",
   // Struktur Biaya & Jasa Logistik
-  downPaymentPercent: 30, // 30% DP
+  dpEnabled: false, // Status DP saat ini: SET OFF (Nonaktif) sesuai instruksi
+  downPaymentPercent: 30, // Persentase DP jika diaktifkan
   handlingFeePerTransaction: 10000, // Biaya Penanganan
   appFeePerTransaction: 5000, // Fee Aplikasi
   shippingServiceEnabled: true, // Jasa Pengiriman
@@ -526,6 +655,9 @@ const INITIAL_PRODUCTS = [
     pickupSchedule: "Siap Angkut Segera (H+0)",
     status: "approved",
     listingStatus: "tersedia",
+    sourceType: "source_medium_industry",
+    nib: "9120003847291",
+    tpsPermit: null,
     isB3: false,
     b3PermitNumber: null,
     evidences: [
@@ -585,6 +717,9 @@ const INITIAL_PRODUCTS = [
     pickupSchedule: "Terjadwal H+2 Muat Crane",
     status: "approved",
     listingStatus: "tersedia",
+    sourceType: "source_large_industry",
+    nib: "9120005541829",
+    tpsPermit: "SK.KLHK/TPS/2026/8912",
     isB3: false,
     b3PermitNumber: null,
     evidences: [
@@ -644,6 +779,9 @@ const INITIAL_PRODUCTS = [
     pickupSchedule: "Siap Angkut Segera",
     status: "approved",
     listingStatus: "tersedia",
+    sourceType: "source_household",
+    nib: null,
+    tpsPermit: null,
     isB3: false,
     b3PermitNumber: null,
     evidences: [
@@ -1506,5 +1644,161 @@ const INITIAL_CHATS = [
     text: "Halo PT Hijau Lestari! Benar sekali, dokumen ISCC dan hasil uji lab FFA < 2.8% sudah terlampir lengkap. Armada bisa datang di jam kerja 08:00 - 16:00 WIB.",
     timestamp: "10:20 WIB",
     date: "Hari Ini"
+  }
+];
+
+/**
+ * Daftar Data Agenda & Event Bursa Limbah
+ */
+const INITIAL_EVENTS = [
+  {
+    id: "evt_1",
+    title: "Workshop Pengelolaan & Monetisasi Minyak Jelantah (UCO) untuk Biodiesel",
+    category: "workshop",
+    categoryLabel: "Workshop",
+    date: "2026-09-22",
+    day: "22",
+    monthYear: "Sep 2026",
+    time: "09.00 – 15.00 WIB",
+    location: "Balai Kartini, Jakarta Selatan",
+    image: "https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&w=800&q=80",
+    description: "Pelajari standar sertifikasi ISCC, teknik pengujian kadar FFA, dan cara terhubung langsung dengan pembeli ekspor biodiesel berkualitas tinggi.",
+    priceLabel: "Gratis (Terbatas 80 Kursi)",
+    isFree: true,
+    status: "published"
+  },
+  {
+    id: "evt_2",
+    title: "Business Matching: Pengepul Limbah Logam Jawa Timur × Smelter Nasional",
+    category: "business-matching",
+    categoryLabel: "Business Matching",
+    date: "2026-10-05",
+    day: "05",
+    monthYear: "Okt 2026",
+    time: "08.00 – 17.00 WIB",
+    location: "Hotel Grand Mercure, Surabaya",
+    image: "https://images.unsplash.com/photo-1556761175-b413da4baf72?auto=format&fit=crop&w=800&q=80",
+    description: "Forum pertemuan terstruktur antara 50+ pengepul besi, tembaga, dan aluminium dengan 12 smelter dan pabrik peleburan logam nasional.",
+    priceLabel: "Rp 150.000 / peserta",
+    isFree: false,
+    status: "published"
+  },
+  {
+    id: "evt_3",
+    title: "Webinar: Update Regulasi Limbah B3 PP No. 22/2021 & Implikasinya bagi Pengepul",
+    category: "webinar",
+    categoryLabel: "Webinar Online",
+    date: "2026-10-10",
+    day: "10",
+    monthYear: "Okt 2026",
+    time: "13.00 – 15.30 WIB",
+    location: "Zoom Meeting (Online)",
+    image: "https://images.unsplash.com/photo-1591115765373-5207764f72e7?auto=format&fit=crop&w=800&q=80",
+    description: "Narasumber: Direktur PSLB3 KLHK. Pahami persyaratan izin pengumpulan, manifest elektronik, dan sanksi terbaru bagi pengepul limbah B3 tidak terdaftar.",
+    priceLabel: "Gratis — Daftar via WhatsApp",
+    isFree: true,
+    status: "published"
+  },
+  {
+    id: "evt_4",
+    title: "INDONESIA RECYCLE EXPO 2026 — Pameran Daur Ulang & Ekonomi Sirkular Nasional",
+    category: "pameran",
+    categoryLabel: "Pameran & Expo",
+    date: "2026-11-20",
+    day: "20",
+    monthYear: "Nov 2026",
+    time: "3 Hari (20–22 Nov)",
+    location: "JIExpo Kemayoran, Jakarta Pusat",
+    image: "https://images.unsplash.com/photo-1511578314322-379afb476865?auto=format&fit=crop&w=800&q=80",
+    description: "300+ booth dari pabrik daur ulang, pengepul, dan produsen mesin cacah plastik. Bursa Limbah hadir sebagai platform digital resmi mitra Expo.",
+    priceLabel: "Pengunjung Umum: Gratis",
+    isFree: true,
+    status: "published"
+  },
+  {
+    id: "evt_5",
+    title: "Seminar Nasional: Peluang Bisnis Ekonomi Sirkular Indonesia 2026 – 2030",
+    category: "seminar",
+    categoryLabel: "Seminar",
+    date: "2026-11-14",
+    day: "14",
+    monthYear: "Nov 2026",
+    time: "09.00 – 16.00 WIB",
+    location: "Grand Ballroom Trans Luxury Hotel, Bandung",
+    image: "https://images.unsplash.com/photo-1475721027785-f74eccf877e2?auto=format&fit=crop&w=800&q=80",
+    description: "Pembicara dari Kementerian LHK, BRIN, dan pelaku industri daur ulang papan atas. Bahas peta jalan ekonomi sirkular dan peluang bisnis limbah bernilai tinggi.",
+    priceLabel: "Rp 350.000 / orang",
+    isFree: false,
+    status: "published"
+  },
+  {
+    id: "evt_6",
+    title: "Workshop: Cara Upload Pasokan Limbah Bermutu Tinggi di Bursa Limbah (Foto & GPS)",
+    category: "workshop",
+    categoryLabel: "Workshop",
+    date: "2026-10-29",
+    day: "29",
+    monthYear: "Okt 2026",
+    time: "10.00 – 14.00 WIB",
+    location: "Kantor Bursa Limbah, Kuningan, Jakarta",
+    image: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?auto=format&fit=crop&w=800&q=80",
+    description: "Panduan langsung dari tim kurator: teknik foto eviden 3 sisi, kalibrasi timbangan digital, pengambilan titik GPS gudang, dan cara mengisi manifest digital.",
+    priceLabel: "Gratis untuk Mitra Penjual",
+    isFree: true,
+    status: "published"
+  }
+];
+
+/**
+ * Antrean Permohonan Verifikasi & Approval Langganan Pembeli
+ */
+const INITIAL_SUBSCRIPTION_REQUESTS = [
+  {
+    id: "sub_req_1",
+    userId: "user_buyer_1",
+    userName: "PT Hijau Semesta Industri",
+    company: "PT Hijau Semesta Industri",
+    email: "procurement@hijausemesta.co.id",
+    phone: "+62 812-9988-7766",
+    tierId: "tier_pro",
+    tierName: "Paket Bisnis Pro",
+    monthlyFee: 249000,
+    paymentProof: "https://images.unsplash.com/photo-1554224155-6726b3ff858f?auto=format&fit=crop&w=800&q=80",
+    paymentMethod: "Transfer Bank BCA Rekber",
+    requestedAt: "2026-09-23 14:30 WIB",
+    status: "pending", // 'pending' | 'approved' | 'rejected'
+    approvedAt: null
+  },
+  {
+    id: "sub_req_2",
+    userId: "user_buyer_2",
+    userName: "CV Berkah Daur Ulang Mandiri",
+    company: "CV Berkah Daur Ulang",
+    email: "admin@berkahdaurulang.com",
+    phone: "+62 813-7766-5544",
+    tierId: "tier_enterprise",
+    tierName: "Paket Korporat Enterprise",
+    monthlyFee: 499000,
+    paymentProof: "https://images.unsplash.com/photo-1554224155-6726b3ff858f?auto=format&fit=crop&w=800&q=80",
+    paymentMethod: "Transfer Bank Mandiri",
+    requestedAt: "2026-09-23 11:15 WIB",
+    status: "pending",
+    approvedAt: null
+  },
+  {
+    id: "sub_req_3",
+    userId: "user_buyer_3",
+    userName: "PT Daur Jaya Nusantara",
+    company: "PT Daur Jaya Nusantara",
+    email: "finance@daurjaya.co.id",
+    phone: "+62 811-2233-4455",
+    tierId: "tier_starter",
+    tierName: "Paket Gratis (Starter)",
+    monthlyFee: 0,
+    paymentProof: null,
+    paymentMethod: "Pendaftaran Gratis",
+    requestedAt: "2026-09-22 09:00 WIB",
+    status: "approved",
+    approvedAt: "2026-09-22 09:05 WIB"
   }
 ];

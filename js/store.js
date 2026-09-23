@@ -42,9 +42,11 @@ class BursaLimbahStore {
         products: [...INITIAL_PRODUCTS],
         orders: [...INITIAL_ORDERS],
         users: [...INITIAL_USERS],
-        settings: { ...INITIAL_SETTINGS },
+        settings: { ...INITIAL_SETTINGS, dpEnabled: false },
         buyerRequests: [...INITIAL_BUYER_REQUESTS],
         chats: [...INITIAL_CHATS],
+        events: (typeof INITIAL_EVENTS !== 'undefined' ? [...INITIAL_EVENTS] : []),
+        subscriptionRequests: (typeof INITIAL_SUBSCRIPTION_REQUESTS !== 'undefined' ? [...INITIAL_SUBSCRIPTION_REQUESTS] : []),
         currentRole: "public", // 'public', 'buyer', 'seller', 'admin'
         activeUserId: null,
         sellerUserId: null,
@@ -93,6 +95,18 @@ class BursaLimbahStore {
         if (!this.state.chats || this.state.chats.length === 0) {
           this.state.chats = [...INITIAL_CHATS];
         }
+        // Sinkronisasi data Event & Agenda
+        if (!this.state.events || this.state.events.length === 0) {
+          this.state.events = (typeof INITIAL_EVENTS !== 'undefined' ? [...INITIAL_EVENTS] : []);
+        }
+        // Sinkronisasi antrean Permohonan Langganan Pembeli
+        if (!this.state.subscriptionRequests || this.state.subscriptionRequests.length === 0) {
+          this.state.subscriptionRequests = (typeof INITIAL_SUBSCRIPTION_REQUESTS !== 'undefined' ? [...INITIAL_SUBSCRIPTION_REQUESTS] : []);
+        }
+        // Status DP saat ini: SET OFF (Nonaktif) secara default
+        if (this.state.settings.dpEnabled === undefined) {
+          this.state.settings.dpEnabled = false;
+        }
 
         // Keamanan: Jika peran saat ini memerlukan login namun belum ada sesi valid, kembalikan ke public
         if (this.state.currentRole === "admin" && !this.isAdminAuthenticated()) {
@@ -119,7 +133,10 @@ class BursaLimbahStore {
               listingStatus: this.state.products[idx].listingStatus || ip.listingStatus,
               isB3: typeof this.state.products[idx].isB3 !== 'undefined' ? this.state.products[idx].isB3 : ip.isB3,
               b3PermitNumber: this.state.products[idx].b3PermitNumber || ip.b3PermitNumber,
-              city: this.state.products[idx].city || ip.city
+              city: this.state.products[idx].city || ip.city,
+              sourceType: this.state.products[idx].sourceType || ip.sourceType,
+              nib: this.state.products[idx].nib || ip.nib,
+              tpsPermit: this.state.products[idx].tpsPermit || ip.tpsPermit
             };
           } else {
             this.state.products.push({ ...ip });
@@ -665,11 +682,14 @@ class BursaLimbahStore {
     return null;
   }
 
-  registerBuyer({ name, email, phone, company, tierId, password }) {
+  registerBuyer({ name, email, phone, company, tierId, password, subscriptionActive }) {
     const newId = "user_buyer_" + Date.now();
     const chosenTierId = tierId || "tier_starter";
     const nextMonth = new Date();
     nextMonth.setMonth(nextMonth.getMonth() + 1);
+
+    const isStarter = chosenTierId === "tier_starter";
+    const isSubActive = subscriptionActive !== undefined ? Boolean(subscriptionActive) : isStarter;
 
     const newUser = {
       id: newId,
@@ -679,7 +699,7 @@ class BursaLimbahStore {
       phone: phone || "+62 812-0000-0000",
       company: company || "Perusahaan Pembeli",
       location: "Indonesia",
-      subscriptionActive: true,
+      subscriptionActive: isSubActive,
       subscriptionTier: chosenTierId,
       subscriptionExpiry: nextMonth.toISOString().split("T")[0],
       password: [REDACTED]
@@ -841,6 +861,15 @@ class BursaLimbahStore {
     return (typeof MVP_HOT_CATEGORIES !== 'undefined') ? MVP_HOT_CATEGORIES : [];
   }
 
+  getSourceTiers() {
+    return (typeof WASTE_SOURCE_TIERS !== 'undefined') ? WASTE_SOURCE_TIERS : [];
+  }
+
+  getSourceTierById(id) {
+    const tiers = this.getSourceTiers();
+    return tiers.find(t => t.id === id) || null;
+  }
+
   getCategoryById(id) {
     return (this.state.categories || INITIAL_CATEGORIES).find(c => c.id === id);
   }
@@ -918,6 +947,10 @@ class BursaLimbahStore {
       listingStatus: productData.listingStatus || "Tersedia",
       isB3: Boolean(productData.isB3),
       b3PermitNumber: productData.b3PermitNumber || null,
+      // Sumber Limbah (3-Tier):
+      sourceType: productData.sourceType || null,
+      nib: productData.nib || null,
+      tpsPermit: productData.tpsPermit || null,
       origin: productData.origin,
       city: productData.city || this.extractCity(productData.address || productData.origin),
       address: productData.address,
@@ -1061,14 +1094,15 @@ class BursaLimbahStore {
 
     const quantity = product.volume > 0 ? product.volume : product.weight;
     const totalPrice = product.totalPrice || (quantity * product.offerPrice);
+    const isDp = this.isDpEnabled();
     const dpPercent = settings.downPaymentPercent || 30;
-    const downPaymentAmount = Math.round(totalPrice * (dpPercent / 100));
+    const downPaymentAmount = isDp ? Math.round(totalPrice * (dpPercent / 100)) : totalPrice;
     const handlingFee = settings.handlingFeePerTransaction || 10000;
     const appFee = settings.appFeePerTransaction || 5000;
     const isDelivery = shippingMethod === 'BURSA LIMBAH_delivery';
     const finalShippingFee = isDelivery ? (Number(shippingFee) || settings.shippingFlatFee || 250000) : 0;
     const totalPaidNow = downPaymentAmount + handlingFee + appFee + finalShippingFee;
-    const remainingPayment = totalPrice - downPaymentAmount;
+    const remainingPayment = isDp ? totalPrice - downPaymentAmount : 0;
 
     // Snapshot data bank pengelola saat transaksi dibuat
     const escrowBankInfo = {
@@ -1096,8 +1130,8 @@ class BursaLimbahStore {
       unit: product.unit,
       unitPrice: product.offerPrice,
       totalPrice,
-      downPaymentRate: dpPercent,
-      downPaymentAmount,
+      downPaymentRate: isDp ? dpPercent : 0,
+      downPaymentAmount: isDp ? downPaymentAmount : 0,
       handlingFee,
       appFee,
       shippingMethod: isDelivery ? 'Jasa Pengiriman Mitra BURSA LIMBAH' : 'Armada Mandiri Pembeli',
@@ -1105,7 +1139,7 @@ class BursaLimbahStore {
       totalPaidNow,
       remainingPayment,
       escrowBankInfo,
-      paymentStatus: "DP Terbayar (30%)",
+      paymentStatus: isDp ? `DP Terbayar (${dpPercent}%)` : "Lunas via Rekber (100%)",
       bookingStatus: "Jadwal Pengambilan Armada",
       pickupDate: pickupDate || new Date(Date.now() + 3 * 86400000).toISOString().split("T")[0],
       createdAt: now,
@@ -1142,8 +1176,21 @@ class BursaLimbahStore {
     return null;
   }
 
-  // ================= SETTINGS =================
+  // ================= SETTINGS & DP CONFIGURATION =================
   getSettings() {
+    return this.state.settings;
+  }
+
+  isDpEnabled() {
+    return Boolean(this.state.settings && this.state.settings.dpEnabled === true);
+  }
+
+  setDpSettings(enabled, percent) {
+    this.state.settings.dpEnabled = Boolean(enabled);
+    if (percent !== undefined && percent !== null) {
+      this.state.settings.downPaymentPercent = Number(percent) || 30;
+    }
+    this.save();
     return this.state.settings;
   }
 
@@ -1151,6 +1198,151 @@ class BursaLimbahStore {
     this.state.settings = { ...this.state.settings, ...newSettings };
     this.save();
     return this.state.settings;
+  }
+
+  // ================= EVENT & AGENDA MANAGEMENT =================
+  getEvents(category = 'semua') {
+    if (!this.state.events || this.state.events.length === 0) {
+      this.state.events = (typeof INITIAL_EVENTS !== 'undefined' ? [...INITIAL_EVENTS] : []);
+      this.save();
+    }
+    if (!category || category === 'semua') {
+      return this.state.events;
+    }
+    return this.state.events.filter(e => e.category === category);
+  }
+
+  getEventById(id) {
+    const events = this.getEvents('semua');
+    return events.find(e => e.id === id) || null;
+  }
+
+  addEvent(eventData) {
+    const newId = "evt_" + Date.now();
+    const dateObj = new Date(eventData.date || Date.now());
+    const day = String(dateObj.getDate()).padStart(2, '0');
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+    const monthYear = `${months[dateObj.getMonth()]} ${dateObj.getFullYear()}`;
+
+    const newEvent = {
+      id: newId,
+      title: eventData.title || "Agenda Baru Bursa Limbah",
+      category: eventData.category || "workshop",
+      categoryLabel: eventData.categoryLabel || "Workshop",
+      date: eventData.date || new Date().toISOString().split('T')[0],
+      day: eventData.day || day,
+      monthYear: eventData.monthYear || monthYear,
+      time: eventData.time || "09.00 – 15.00 WIB",
+      location: eventData.location || "Jakarta",
+      image: eventData.image || "https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&w=800&q=80",
+      description: eventData.description || "",
+      priceLabel: eventData.priceLabel || (eventData.isFree ? "Gratis" : "Berbayar"),
+      isFree: Boolean(eventData.isFree),
+      status: eventData.status || "published",
+      createdAt: new Date().toISOString()
+    };
+    if (!this.state.events) this.state.events = [];
+    this.state.events.unshift(newEvent);
+    this.save();
+    return newEvent;
+  }
+
+  updateEvent(id, updatedData) {
+    const events = this.getEvents('semua');
+    const idx = events.findIndex(e => e.id === id);
+    if (idx !== -1) {
+      if (updatedData.date && (!updatedData.day || !updatedData.monthYear)) {
+        const dateObj = new Date(updatedData.date);
+        updatedData.day = String(dateObj.getDate()).padStart(2, '0');
+        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+        updatedData.monthYear = `${months[dateObj.getMonth()]} ${dateObj.getFullYear()}`;
+      }
+      events[idx] = { ...events[idx], ...updatedData };
+      this.state.events = events;
+      this.save();
+      return events[idx];
+    }
+    return null;
+  }
+
+  deleteEvent(id) {
+    const events = this.getEvents('semua');
+    this.state.events = events.filter(e => e.id !== id);
+    this.save();
+    return true;
+  }
+
+  // ================= SUBSCRIPTION APPROVAL MANAGEMENT =================
+  getSubscriptionRequests(status = 'all') {
+    if (!this.state.subscriptionRequests) {
+      this.state.subscriptionRequests = (typeof INITIAL_SUBSCRIPTION_REQUESTS !== 'undefined' ? [...INITIAL_SUBSCRIPTION_REQUESTS] : []);
+      this.save();
+    }
+    if (status === 'all') {
+      return this.state.subscriptionRequests;
+    }
+    return this.state.subscriptionRequests.filter(r => r.status === status);
+  }
+
+  getPendingSubscriptionRequestsCount() {
+    return this.getSubscriptionRequests('pending').length;
+  }
+
+  createSubscriptionRequest(requestData) {
+    const newId = "sub_req_" + Date.now();
+    const tier = this.getSubscriptionTierById(requestData.tierId);
+    const newRequest = {
+      id: newId,
+      userId: requestData.userId || (this.getCurrentUser() ? this.getCurrentUser().id : 'user_buyer_' + Date.now()),
+      userName: requestData.userName || (this.getCurrentUser() ? this.getCurrentUser().name : "Pembeli Baru"),
+      company: requestData.company || (this.getCurrentUser() ? this.getCurrentUser().company : "-"),
+      email: requestData.email || "",
+      phone: requestData.phone || "",
+      tierId: requestData.tierId || "tier_pro",
+      tierName: tier ? tier.name : "Paket Bisnis Pro",
+      monthlyFee: tier ? tier.monthlyFee : 249000,
+      paymentProof: requestData.paymentProof || "https://images.unsplash.com/photo-1554224155-6726b3ff858f?auto=format&fit=crop&w=800&q=80",
+      paymentMethod: requestData.paymentMethod || "Transfer Rekening Bersama Escrow",
+      requestedAt: new Date().toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'short' }) + ' WIB',
+      status: "pending",
+      approvedAt: null
+    };
+    if (!this.state.subscriptionRequests) this.state.subscriptionRequests = [];
+    this.state.subscriptionRequests.unshift(newRequest);
+    this.save();
+    return newRequest;
+  }
+
+  approveSubscriptionRequest(requestId) {
+    const requests = this.getSubscriptionRequests('all');
+    const req = requests.find(r => r.id === requestId);
+    if (!req) return { success: false, message: "Permohonan tidak ditemukan" };
+
+    req.status = "approved";
+    req.approvedAt = new Date().toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'short' }) + ' WIB';
+
+    // Perbarui status paket langganan pengguna
+    let user = this.state.users.find(u => u.id === req.userId || u.email === req.email);
+    if (user) {
+      user.subscriptionTier = req.tierId;
+      user.subscriptionActive = true;
+      const nextMonth = new Date();
+      nextMonth.setMonth(nextMonth.getMonth() + 1);
+      user.subscriptionExpiry = nextMonth.toISOString().split('T')[0];
+    }
+    this.save();
+    return { success: true, request: req, user };
+  }
+
+  rejectSubscriptionRequest(requestId, reason = "Bukti transfer tidak valid atau belum masuk rekening") {
+    const requests = this.getSubscriptionRequests('all');
+    const req = requests.find(r => r.id === requestId);
+    if (!req) return { success: false, message: "Permohonan tidak ditemukan" };
+
+    req.status = "rejected";
+    req.rejectReason = reason;
+    this.save();
+    return { success: true, request: req };
   }
 
   // ================= STATISTIK DASHBOARD =================

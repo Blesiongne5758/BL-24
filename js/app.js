@@ -10,6 +10,8 @@ class BursaLimbahApp {
     this.currentBuyerTab = 'market';
     this.currentAdminTab = 'verification';
     this.currentLoginTab = 'buyer';
+    this.currentAppTab = 'home'; // 'home', 'sell', 'sub', 'sim'
+    this.currentAdminSubFilter = 'all'; // 'all', 'pending', 'approved'
     this.publicPostingFilter = 'all'; // 'all', 'supply', 'demand'
     this.selectedRegisterTier = 'tier_pro'; // Default dipilih di modal registrasi
     this.currentChatProduct = null;
@@ -24,16 +26,19 @@ class BursaLimbahApp {
     this.populateSelectCategories();
     this.renderPublicPostings();
     this.renderPublicSubscriptionTiers();
+    this.renderEvents('semua');
 
     // Set peran awal dari data store
     const currentRole = this.store.getCurrentRole();
     this.setRole(currentRole, false);
+    this.switchAppTab('home');
 
     // Render tampilan modul awal
     this.renderBuyerMarketplace();
     this.renderSellerDashboard();
     this.renderAdminDashboard();
     this.updateAdminPendingBadge();
+    this.updateAdminSubPendingBadge();
     this.updateChatUnreadBadge();
     this.updateNavUI();
   }
@@ -845,9 +850,86 @@ class BursaLimbahApp {
     }
   }
 
+  // ================= NAVIGASI TAB MVP MOBILE APP (HOME, JUAL, BERLANGGANAN, SIMULASI) =================
+  switchAppTab(tabKey) {
+    const key = (tabKey || 'home').toLowerCase();
+    const tabMap = {
+      home: 'tab-home',
+      sell: 'tab-sell',
+      sub: 'tab-subscription',
+      subscription: 'tab-subscription',
+      sim: 'tab-simulation',
+      simulation: 'tab-simulation'
+    };
+    const activeTabId = tabMap[key] || 'tab-home';
+    const normalizedKey = (key === 'subscription' ? 'sub' : (key === 'simulation' ? 'sim' : key));
+    this.currentAppTab = normalizedKey;
+
+    // Pastikan view-public aktif jika sedang di peran lain
+    if (this.store.getCurrentRole() !== 'public') {
+      this.setRole('public', false);
+    }
+
+    // Tampilkan panel tab yang dipilih dan sembunyikan yang lain
+    ['tab-home', 'tab-sell', 'tab-subscription', 'tab-simulation'].forEach(id => {
+      const pane = [REDACTED]id);
+      if (pane) {
+        if (id === activeTabId) {
+          pane.classList.remove('hidden');
+        } else {
+          pane.classList.add('hidden');
+        }
+      }
+    });
+
+    // Perbarui status tombol navigasi bawah mobile
+    const bottomNavKeys = ['home', 'sell', 'sub', 'sim'];
+    bottomNavKeys.forEach(k => {
+      const bnavBtn = [REDACTED]`bnav-${k}`);
+      if (bnavBtn) {
+        if (k === normalizedKey) {
+          bnavBtn.className = 'bnav-item flex flex-col items-center justify-center py-1 text-emerald-700 font-bold active:scale-90 transition cursor-pointer active';
+          bnavBtn.setAttribute('aria-current', 'page');
+        } else {
+          bnavBtn.className = 'bnav-item flex flex-col items-center justify-center py-1 text-slate-500 font-medium active:scale-90 transition cursor-pointer';
+          bnavBtn.removeAttribute('aria-current');
+        }
+      }
+
+      // Perbarui status tombol header desktop
+      const dnavBtn = [REDACTED]`dnav-${k}`);
+      if (dnavBtn) {
+        if (k === normalizedKey) {
+          dnavBtn.className = 'px-3.5 py-2 rounded-xl text-xs font-bold bg-emerald-50 text-emerald-800 border border-emerald-200 transition shadow-2xs flex items-center gap-1.5 cursor-pointer';
+        } else {
+          dnavBtn.className = 'px-3.5 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition flex items-center gap-1.5 cursor-pointer';
+        }
+      }
+    });
+
+    // Jika masuk ke tab Jual, pastikan dropdown kategori terisi dan aktifkan default tier
+    if (normalizedKey === 'sell') {
+      this.populateSelectCategories();
+      const src = [REDACTED]'up-source-type');
+      if (src && !src.value) {
+        this.selectSourceTier('source_household');
+      }
+    }
+
+    // Scroll halus ke puncak halaman
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
   navigateToSection(sectionId) {
     if (this.store.getCurrentRole() !== 'public') {
       this.setRole('public', false);
+    }
+    if (sectionId === 'kalkulator') {
+      this.switchAppTab('sim');
+    } else if (sectionId === 'tarif') {
+      this.switchAppTab('sub');
+    } else {
+      this.switchAppTab('home');
     }
     setTimeout(() => {
       const el = [REDACTED]sectionId);
@@ -981,12 +1063,15 @@ class BursaLimbahApp {
     }
 
     const total = price * qty;
-    const dp = Math.round(total * 0.3);
-    const remaining = total - dp;
+    const isDp = this.store.isDpEnabled();
+    const settings = this.store.getSettings();
+    const dpPercent = settings.downPaymentPercent || 30;
+    const dp = isDp ? Math.round(total * (dpPercent / 100)) : total;
+    const remaining = isDp ? total - dp : 0;
 
     if (totalDisplay) totalDisplay.textContent = this.formatRupiah(total);
-    if (dpDisplay) dpDisplay.textContent = this.formatRupiah(dp);
-    if (remDisplay) remDisplay.textContent = this.formatRupiah(remaining);
+    if (dpDisplay) dpDisplay.textContent = isDp ? this.formatRupiah(dp) : this.formatRupiah(total);
+    if (remDisplay) remDisplay.textContent = isDp ? this.formatRupiah(remaining) : "Rp 0 (Pelunasan Penuh)";
   }
 
   consultDpWa() {
@@ -998,8 +1083,11 @@ class BursaLimbahApp {
     const qty = slider ? parseInt(slider.value, 10).toLocaleString('id-ID') : '2.500';
     const dpDisplay = [REDACTED]'mob-calc-dp-val');
     const dpVal = dpDisplay ? dpDisplay.textContent : 'Rp7.875.000';
+    const isDp = this.store.isDpEnabled();
 
-    const msg = `Halo Admin Bursa Limbah, saya ingin konsultasi simulasi DP 30% Rekening Bersama Escrow untuk ${commName} sebanyak ${qty} ${unit} (Estimasi DP: ${dpVal}). Mohon info panduan booking & verifikasinya.`;
+    const msg = isDp
+      ? `Halo Admin Bursa Limbah, saya ingin konsultasi simulasi DP 30% Rekening Bersama Escrow untuk ${commName} sebanyak ${qty} ${unit} (Estimasi DP: ${dpVal}). Mohon info panduan booking & verifikasinya.`
+      : `Halo Admin Bursa Limbah, saya ingin konsultasi pemesanan Rekening Bersama Escrow untuk ${commName} sebanyak ${qty} ${unit} (Nilai Transaksi: ${dpVal}). Mohon info panduan booking & verifikasinya.`;
     window.open(`https://wa.me/628[REDACTED]7890?text=${encodeURIComponent(msg)}`, '_blank');
   }
 
@@ -1019,9 +1107,15 @@ class BursaLimbahApp {
     }
   }
 
-  // ================= FILTER EVENT =================
-  filterEvents(category) {
-    // Update active state on filter pills
+  // ================= EVENT & AGENDA RENDERING (DINAMIS DARI STORE) =================
+  renderEvents(category = 'semua') {
+    const grid = [REDACTED]'event-cards-grid');
+    if (!grid) return;
+
+    const events = this.store.getEvents('semua').filter(e => e.status === 'published');
+    const filtered = category === 'semua' ? events : events.filter(e => e.category === category);
+
+    // Update active filter pills
     const pills = document.querySelectorAll('#event-filter-pills .event-filter-btn');
     pills.forEach(btn => {
       const isActive = btn.getAttribute('data-filter') === category;
@@ -1032,27 +1126,62 @@ class BursaLimbahApp {
       }
     });
 
-    // Show/hide event cards
-    const cards = document.querySelectorAll('#event-cards-grid .event-card');
-    let visibleCount = 0;
-    cards.forEach(card => {
-      const cardCategory = card.getAttribute('data-category');
-      const show = category === 'semua' || cardCategory === category;
-      card.style.display = show ? '' : 'none';
-      if (show) visibleCount++;
-    });
-
-    // Show empty state if no cards visible
-    const grid = [REDACTED]'event-cards-grid');
-    const existingEmpty = [REDACTED]'event-empty-state');
-    if (existingEmpty) existingEmpty.remove();
-    if (visibleCount === 0) {
-      const empty = document.createElement('div');
-      empty.id = 'event-empty-state';
-      empty.className = 'col-span-3 text-center py-16 text-slate-400';
-      empty.innerHTML = `<i class="fa-solid fa-calendar-xmark text-4xl mb-3 block text-indigo-200"></i><p class="text-sm font-semibold">Belum ada event untuk kategori ini.</p><p class="text-xs mt-1">Pantau terus untuk update event berikutnya!</p>`;
-      grid.appendChild(empty);
+    if (filtered.length === 0) {
+      grid.innerHTML = `
+        <div id="event-empty-state" class="col-span-full text-center py-16 text-slate-400">
+          <i class="fa-solid fa-calendar-xmark text-4xl mb-3 block text-indigo-300"></i>
+          <p class="text-sm font-semibold">Belum ada agenda event untuk kategori ini.</p>
+          <p class="text-xs mt-1">Pantau terus untuk update agenda kegiatan berikutnya!</p>
+        </div>
+      `;
+      return;
     }
+
+    grid.innerHTML = filtered.map(evt => {
+      const categoryBadgeColors = {
+        workshop: 'bg-violet-600 text-white',
+        seminar: 'bg-rose-600 text-white',
+        pameran: 'bg-orange-500 text-white',
+        'business-matching': 'bg-emerald-600 text-white',
+        webinar: 'bg-blue-600 text-white'
+      };
+      const badgeClass = categoryBadgeColors[evt.category] || 'bg-indigo-600 text-white';
+
+      return `
+        <article class="event-card bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 group" data-category="${evt.category}">
+          <div class="relative">
+            <img src="${evt.image}" alt="${evt.title}" class="w-full h-44 object-cover group-hover:scale-105 transition-transform duration-300" onerror="this.src='https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&w=800&q=80'">
+            <div class="absolute top-3 left-3">
+              <span class="px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider ${badgeClass} shadow">${evt.categoryLabel || evt.category}</span>
+            </div>
+            <div class="absolute top-3 right-3 bg-white/90 backdrop-blur-sm rounded-xl px-2.5 py-1.5 text-center shadow-sm">
+              <div class="text-lg font-black text-indigo-700 leading-none">${evt.day}</div>
+              <div class="text-[10px] font-bold text-slate-500 uppercase">${evt.monthYear}</div>
+            </div>
+          </div>
+          <div class="p-5 flex flex-col flex-1">
+            <div class="flex items-center gap-2 text-[10px] text-slate-500 font-semibold mb-2">
+              <i class="fa-solid fa-location-dot text-indigo-400"></i>
+              <span class="truncate">${evt.location}</span>
+              ${evt.time ? `<span class="text-slate-300">|</span><i class="fa-solid fa-clock text-indigo-400"></i><span>${evt.time}</span>` : ''}
+            </div>
+            <h3 class="text-sm font-extrabold text-slate-900 mb-1.5 leading-snug">${evt.title}</h3>
+            <p class="text-xs text-slate-500 flex-1 leading-relaxed line-clamp-3">${evt.description}</p>
+            <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
+              <div class="flex items-center gap-1.5 text-[11px] font-semibold ${evt.isFree ? 'text-emerald-700' : 'text-amber-700'}">
+                <i class="fa-solid fa-ticket ${evt.isFree ? 'text-emerald-500' : 'text-amber-500'}"></i>
+                <span>${evt.priceLabel}</span>
+              </div>
+              <button onclick="app.showToast('Selamat! Pendaftaran untuk ${evt.title.replace(/'/g, "\\'")} berhasil dicatat.', 'success')" class="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-[11px] font-bold transition shadow-sm">Daftar →</button>
+            </div>
+          </div>
+        </article>
+      `;
+    }).join('');
+  }
+
+  filterEvents(category) {
+    this.renderEvents(category);
   }
 
   subscribeEventNotification() {
@@ -1474,16 +1603,18 @@ class BursaLimbahApp {
             </div>
           </div>
 
-          <!-- Tombol Aksi: Simulasi DP 30% & Buka Akses -->
+          <!-- Tombol Aksi: Simulasi DP & Buka Akses -->
           <div class="p-4 pt-0 space-y-2">
-            <div class="grid grid-cols-2 gap-1.5">
+            <div class="grid ${this.store.isDpEnabled() ? 'grid-cols-2' : 'grid-cols-1'} gap-1.5">
+              ${this.store.isDpEnabled() ? `
               <button onclick="app.openMobileDpSimulator({ category: '${item.category || item.categoryId || 'jelantah'}', qty: ${item.volume || item.weight || 2500}, title: '${(item.title || '').replace(/'/g, "\\'")}' })" class="py-2 px-2.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 text-[11px] font-bold transition flex items-center justify-center space-x-1 active:scale-95 shadow-2xs">
                 <i class="fa-solid fa-calculator text-amber-600"></i>
                 <span>Simulasi DP</span>
               </button>
+              ` : ''}
               <button onclick="app.showProductDetail('${item.id}')" class="py-2 px-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200 text-[11px] font-bold transition flex items-center justify-center space-x-1 active:scale-95">
                 <i class="fa-solid fa-eye text-emerald-600"></i>
-                <span>Detail</span>
+                <span>Detail Pasokan</span>
               </button>
             </div>
             <button onclick="app.showBuyerRegisterModal()" class="w-full py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white text-xs font-bold shadow-xs transition flex items-center justify-center space-x-1.5 active:scale-95">
@@ -1649,21 +1780,44 @@ class BursaLimbahApp {
     const email = [REDACTED]'reg-buyer-email').value;
     const password = [REDACTED]'reg-buyer-password') ? [REDACTED]'reg-buyer-password').value : '[REDACTED]';
 
+    const chosenTierId = this.selectedRegisterTier || 'tier_starter';
+    const isPaidTier = chosenTierId !== 'tier_starter';
+
     const res = await this.store.registerBuyerAsync({
       name,
       company,
       phone,
       email,
       password,
-      tierId: this.selectedRegisterTier
+      tierId: chosenTierId,
+      subscriptionActive: !isPaidTier
     });
 
-    const tier = this.store.getSubscriptionTierById(this.selectedRegisterTier);
+    const tier = this.store.getSubscriptionTierById(chosenTierId);
+
+    if (isPaidTier) {
+      const buyerUser = (res && res.user) ? res.user : this.store.getCurrentUser();
+      this.store.createSubscriptionRequest({
+        userId: buyerUser ? buyerUser.id : undefined,
+        userName: name,
+        company: company || name,
+        email,
+        phone,
+        tierId: chosenTierId,
+        paymentProof: "https://images.unsplash.com/photo-1554224155-6726b3ff858f?auto=format&fit=crop&w=800&q=80"
+      });
+      this.updateAdminSubPendingBadge();
+    }
 
     this.closeModals();
     this.setRole('buyer', false);
     this.triggerConfetti();
-    this.showToast(`Selamat datang ${name}! Akun Pembeli aktif dengan ${tier.name}.`, 'success');
+
+    if (isPaidTier) {
+      this.showToast(`Pendaftaran berhasil! Permohonan paket ${tier ? tier.name : 'Berlangganan'} telah dikirim ke Admin untuk verifikasi pembayaran manual.`, 'info');
+    } else {
+      this.showToast(`Selamat datang ${name}! Akun Pembeli aktif dengan ${tier ? tier.name : 'Paket Starter'}.`, 'success');
+    }
   }
 
   // ================= 4. KATALOG PEMBELI: PENGECEKAN TIER RENTANG HARGA & FITUR =================
@@ -1739,6 +1893,15 @@ class BursaLimbahApp {
                 <span class="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-brand-600/90 backdrop-blur-sm text-white">
                   ${p.categoryName}
                 </span>
+                ${p.sourceType ? `
+                  <span class="px-2 py-0.5 rounded-md text-[10px] font-bold backdrop-blur-sm ${
+                    p.sourceType === 'source_household' ? 'bg-emerald-600/90 text-white' :
+                    p.sourceType === 'source_medium_industry' ? 'bg-blue-600/90 text-white' :
+                    'bg-amber-600/90 text-white'
+                  }">
+                    ${p.sourceType === 'source_household' ? '🏠 Rumah Tangga' : p.sourceType === 'source_medium_industry' ? '🏢 Industri Menengah' : '🏭 Industri Besar'}
+                  </span>
+                ` : ''}
               </div>
 
               <div class="absolute top-2 right-2">
@@ -1780,10 +1943,17 @@ class BursaLimbahApp {
                     <span class="font-bold text-emerald-700 font-mono">${this.formatRupiah(p.totalPrice)}</span>
                   </div>
 
+                  ${this.store.isDpEnabled() ? `
                   <div class="text-[10px] text-brand-700 font-semibold pt-0.5 flex justify-between">
-                    <span>DP 30%: ${this.formatRupiah(Math.round(p.totalPrice * 0.3))}</span>
-                    <span>Penanganan: Rp10rb</span>
+                    <span>DP ${(this.store.getSettings().downPaymentPercent || 30)}%: ${this.formatRupiah(Math.round(p.totalPrice * ((this.store.getSettings().downPaymentPercent || 30) / 100)))}</span>
+                    <span>Penanganan: ${this.formatRupiah(this.store.getSettings().handlingFeePerTransaction || 10000)}</span>
                   </div>
+                  ` : `
+                  <div class="text-[10px] text-emerald-700 font-semibold pt-0.5 flex justify-between">
+                    <span>Pelunasan Penuh (Tanpa DP)</span>
+                    <span>Penanganan: ${this.formatRupiah(this.store.getSettings().handlingFeePerTransaction || 10000)}</span>
+                  </div>
+                  `}
                 ` : `
                   <div class="space-y-1.5">
                     <div class="flex items-center justify-between text-xs">
@@ -1823,7 +1993,7 @@ class BursaLimbahApp {
             ${!isBooked && access.canViewPrice ? `
               <button onclick="app.initiateCheckout('${p.id}')" class="w-full py-2.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold shadow transition flex items-center justify-center space-x-1">
                 <i class="fa-solid fa-cart-check"></i>
-                <span>Pesan DP 30% Rekening Bersama</span>
+                <span>${this.store.isDpEnabled() ? `Pesan DP ${(this.store.getSettings().downPaymentPercent || 30)}% Rekening Bersama` : 'Pesan Pasokan Rekening Bersama'}</span>
               </button>
             ` : !isBooked && !access.canViewPrice ? `
               <button onclick="app.showBuyerRegisterModal()" class="w-full py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 text-xs font-bold shadow transition flex items-center justify-center space-x-1">
@@ -1858,10 +2028,18 @@ class BursaLimbahApp {
 
     container.innerHTML = `
       <div class="p-6 border-b border-slate-100 flex items-center justify-between">
-        <div>
-          <div class="flex items-center space-x-2">
+          <div class="flex items-center space-x-2 flex-wrap gap-y-1">
             <span class="text-xs font-bold font-mono px-2 py-0.5 rounded bg-brand-100 text-brand-800">${p.code}</span>
             <span class="text-xs font-semibold px-2 py-0.5 rounded bg-slate-100 text-slate-700">${p.categoryName}</span>
+            ${p.sourceType ? `
+              <span class="text-xs font-bold px-2.5 py-0.5 rounded-full ${
+                p.sourceType === 'source_household' ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' :
+                p.sourceType === 'source_medium_industry' ? 'bg-blue-100 text-blue-800 border border-blue-300' :
+                'bg-amber-100 text-amber-900 border border-amber-300'
+              }">
+                ${p.sourceType === 'source_household' ? '🏠 Limbah Rumah Tangga' : p.sourceType === 'source_medium_industry' ? '🏢 Industri Menengah' : '🏭 Industri Besar'}
+              </span>
+            ` : ''}
           </div>
           <h3 class="text-lg font-bold text-slate-900 mt-1">${p.title}</h3>
         </div>
@@ -1952,6 +2130,29 @@ class BursaLimbahApp {
             </div>
 
             <div class="divide-y divide-slate-200">
+              ${p.sourceType ? `
+              <div class="py-1.5 flex justify-between items-center">
+                <span class="text-slate-500">Sumber Limbah:</span>
+                <span class="font-bold ${
+                  p.sourceType === 'source_household' ? 'text-emerald-700' :
+                  p.sourceType === 'source_medium_industry' ? 'text-blue-700' : 'text-amber-800'
+                }">
+                  ${p.sourceType === 'source_household' ? '🏠 Rumah Tangga / Perorangan' : p.sourceType === 'source_medium_industry' ? '🏢 Industri Menengah / UMKM' : '🏭 Industri Besar / Pabrik'}
+                </span>
+              </div>
+              ` : ''}
+              ${p.nib ? `
+              <div class="py-1.5 flex justify-between items-center">
+                <span class="text-slate-500">Nomor Induk Berusaha (NIB):</span>
+                <span class="font-mono font-bold text-blue-800 bg-blue-50 px-2 py-0.5 rounded border border-blue-200 text-[11px]">${p.nib}</span>
+              </div>
+              ` : ''}
+              ${p.tpsPermit ? `
+              <div class="py-1.5 flex justify-between items-center">
+                <span class="text-slate-500">No. Izin TPS / KLHK:</span>
+                <span class="font-mono font-bold text-amber-800 bg-amber-50 px-2 py-0.5 rounded border border-amber-200 text-[11px]">${p.tpsPermit}</span>
+              </div>
+              ` : ''}
               <div class="py-1.5 flex justify-between">
                 <span class="text-slate-500">1. Komoditas / Jenis:</span>
                 <span class="font-semibold text-slate-900">${p.categoryName}</span>
@@ -2016,13 +2217,20 @@ class BursaLimbahApp {
                 </div>
 
                 <div class="space-y-1.5 text-xs border-t border-slate-800 pt-2 font-mono">
+                  ${this.store.isDpEnabled() ? `
                   <div class="flex justify-between text-slate-300">
-                    <span>DP 30% Escrow:</span>
-                    <span class="font-bold text-brand-400">${this.formatRupiah(Math.round(p.totalPrice * 0.3))}</span>
+                    <span>DP ${(this.store.getSettings().downPaymentPercent || 30)}% Escrow:</span>
+                    <span class="font-bold text-brand-400">${this.formatRupiah(Math.round(p.totalPrice * ((this.store.getSettings().downPaymentPercent || 30) / 100)))}</span>
                   </div>
+                  ` : `
+                  <div class="flex justify-between text-emerald-400 font-semibold">
+                    <span>Sistem Transaksi:</span>
+                    <span>Pelunasan Penuh Rekening Bersama</span>
+                  </div>
+                  `}
                   <div class="flex justify-between text-slate-300">
                     <span>Biaya Penanganan:</span>
-                    <span>Rp10.000</span>
+                    <span>${this.formatRupiah(this.store.getSettings().handlingFeePerTransaction || 10000)}</span>
                   </div>
                 </div>
               ` : `
@@ -2071,7 +2279,7 @@ class BursaLimbahApp {
               ${access.canViewPrice ? `
                 <button onclick="app.closeModals(); app.initiateCheckout('${p.id}')" class="flex-1 py-2.5 rounded-xl bg-brand-500 hover:bg-brand-400 text-slate-950 font-bold text-xs transition flex items-center justify-center space-x-1.5">
                   <i class="fa-solid fa-cart-check"></i>
-                  <span>Pesan DP 30%</span>
+                  <span>${this.store.isDpEnabled() ? `Pesan DP ${(this.store.getSettings().downPaymentPercent || 30)}%` : 'Pesan Pasokan'}</span>
                 </button>
               ` : `
                 <button onclick="app.closeModals(); app.showBuyerRegisterModal()" class="flex-1 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs transition flex items-center justify-center space-x-1.5">
@@ -2286,7 +2494,7 @@ class BursaLimbahApp {
   // ================= 7. KONTROL ADMIN: ATUR 3-TIER & BATAS RENTANG NILAI JUAL =================
   switchAdminTab(tab) {
     this.currentAdminTab = tab;
-    const tabs = ['verification', 'orders', 'tiers', 'settings'];
+    const tabs = ['verification', 'orders', 'subscriptions', 'events', 'tiers', 'settings'];
     tabs.forEach(t => {
       const btn = [REDACTED]`admin-tab-btn-${t}`);
       const content = [REDACTED]`admin-content-${t}`);
@@ -2305,8 +2513,335 @@ class BursaLimbahApp {
 
     if (tab === 'verification') this.renderAdminPendingTable();
     if (tab === 'orders') this.renderAdminOrdersTable();
+    if (tab === 'subscriptions') this.renderAdminSubscriptionRequestsTable();
+    if (tab === 'events') this.renderAdminEventsTable();
     if (tab === 'tiers') this.renderAdminTierForms();
     if (tab === 'settings') this.populateAdminSettings();
+  }
+
+  // ================= 7B. APPROVAL BERLANGGANAN PEMBELI (ADMIN CONTROL) =================
+  filterAdminSubscriptionRequests(status) {
+    this.currentAdminSubFilter = status;
+    const buttons = ['all', 'pending', 'approved'];
+    buttons.forEach(b => {
+      const el = [REDACTED]`sub-filter-${b}`);
+      if (el) {
+        if (b === status) {
+          el.className = 'sub-filter-btn px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-600 text-white transition';
+        } else {
+          el.className = 'sub-filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-white text-slate-600 border border-slate-300 hover:bg-slate-50 transition';
+        }
+      }
+    });
+    this.renderAdminSubscriptionRequestsTable();
+  }
+
+  updateAdminSubPendingBadge() {
+    const count = this.store.getPendingSubscriptionRequestsCount();
+    const tabBadge = [REDACTED]'admin-tab-sub-pending-badge');
+    const filterCount = [REDACTED]'sub-pending-count');
+    if (tabBadge) {
+      tabBadge.textContent = count;
+      tabBadge.classList.toggle('hidden', count === 0);
+    }
+    if (filterCount) {
+      filterCount.textContent = count;
+    }
+  }
+
+  renderAdminSubscriptionRequestsTable() {
+    const container = [REDACTED]'admin-subscriptions-table-container');
+    if (!container) return;
+
+    const filter = this.currentAdminSubFilter || 'all';
+    const requests = this.store.getSubscriptionRequests(filter);
+
+    if (requests.length === 0) {
+      container.innerHTML = `
+        <div class="text-center py-12 text-slate-400 bg-slate-50 rounded-2xl border border-slate-200">
+          <i class="fa-solid fa-clipboard-check text-3xl mb-2 text-slate-300"></i>
+          <p class="text-xs font-bold">Tidak ada permohonan langganan ${filter === 'pending' ? 'yang menunggu verifikasi' : ''}.</p>
+        </div>
+      `;
+      return;
+    }
+
+    container.innerHTML = `
+      <table class="w-full text-left text-xs">
+        <thead class="bg-slate-50 text-slate-500 uppercase text-[10px] border-b border-slate-200">
+          <tr>
+            <th class="p-3">Pemohon &amp; Perusahaan</th>
+            <th class="p-3">Paket Langganan</th>
+            <th class="p-3">Tarif Bulanan</th>
+            <th class="p-3">Metode &amp; Bukti</th>
+            <th class="p-3">Waktu Pengajuan</th>
+            <th class="p-3">Status</th>
+            <th class="p-3 text-right">Aksi Approval</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100">
+          ${requests.map(r => `
+            <tr class="hover:bg-slate-50/70 transition">
+              <td class="p-3">
+                <div class="font-bold text-slate-900">${r.userName}</div>
+                <div class="text-[11px] text-slate-500">${r.company} • ${r.phone || r.email}</div>
+              </td>
+              <td class="p-3">
+                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-300">
+                  ${r.tierName}
+                </span>
+              </td>
+              <td class="p-3 font-mono font-bold text-slate-800">${this.formatRupiah(r.monthlyFee)}/bln</td>
+              <td class="p-3">
+                <div class="text-slate-700 font-medium">${r.paymentMethod}</div>
+                ${r.paymentProof ? `
+                  <a href="${r.paymentProof}" target="_blank" class="inline-flex items-center gap-1 text-[11px] text-brand-600 hover:text-brand-700 underline font-semibold mt-0.5">
+                    <i class="fa-solid fa-receipt"></i> Bukti Bayar
+                  </a>
+                ` : `<span class="text-slate-400 text-[10px]">-</span>`}
+              </td>
+              <td class="p-3 text-slate-500 text-[11px] font-mono">${r.requestedAt}</td>
+              <td class="p-3">
+                ${r.status === 'approved' 
+                  ? `<span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">Disetujui</span>`
+                  : r.status === 'rejected'
+                  ? `<span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800 border border-rose-300">Ditolak</span>`
+                  : `<span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-300 animate-pulse">Menunggu Verifikasi</span>`
+                }
+              </td>
+              <td class="p-3 text-right">
+                ${r.status === 'pending' ? `
+                  <div class="flex items-center justify-end gap-1.5">
+                    <button onclick="app.approveSubscription('${r.id}')" class="px-2.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] shadow-sm flex items-center gap-1 active:scale-95 transition">
+                      <i class="fa-solid fa-check"></i>
+                      <span>Setujui</span>
+                    </button>
+                    <button onclick="app.rejectSubscription('${r.id}')" class="px-2.5 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-bold text-[11px] flex items-center gap-1 active:scale-95 transition">
+                      <i class="fa-solid fa-xmark"></i>
+                      <span>Tolak</span>
+                    </button>
+                  </div>
+                ` : `
+                  <span class="text-slate-400 text-[11px] font-semibold">${r.approvedAt ? 'Diproses: ' + r.approvedAt : 'Selesai'}</span>
+                `}
+              </td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    `;
+  }
+
+  approveSubscription(requestId) {
+    const res = this.store.approveSubscriptionRequest(requestId);
+    if (res.success) {
+      this.updateAdminSubPendingBadge();
+      this.renderAdminSubscriptionRequestsTable();
+      this.renderBuyerMarketplace();
+      this.showToast(`Langganan ${res.request.userName} (${res.request.tierName}) berhasil disetujui &amp; akun telah diaktifkan!`, "success");
+    } else {
+      this.showToast(res.message || "Gagal menyetujui langganan.", "error");
+    }
+  }
+
+  rejectSubscription(requestId) {
+    const res = this.store.rejectSubscriptionRequest(requestId);
+    if (res.success) {
+      this.updateAdminSubPendingBadge();
+      this.renderAdminSubscriptionRequestsTable();
+      this.showToast(`Permohonan langganan ${res.request.userName} ditolak.`, "warning");
+    } else {
+      this.showToast(res.message || "Gagal menolak permohonan.", "error");
+    }
+  }
+
+  // ================= 7C. MANAJEMEN EVENT & AGENDA (ADMIN CONTROL) =================
+  renderAdminEventsTable() {
+    const container = [REDACTED]'admin-events-table-container');
+    if (!container) return;
+
+    const events = this.store.getEvents('semua');
+    if (events.length === 0) {
+      container.innerHTML = `
+        <div class="text-center py-12 text-slate-400 bg-slate-50 rounded-2xl border border-slate-200">
+          <i class="fa-solid fa-calendar-plus text-3xl mb-2 text-indigo-300"></i>
+          <p class="text-xs font-bold">Belum ada agenda event terdaftar.</p>
+          <button onclick="app.showAddEventModal()" class="mt-3 px-3 py-1.5 bg-indigo-600 text-white rounded-lg text-xs font-bold">Tambah Event Pertama</button>
+        </div>
+      `;
+      return;
+    }
+
+    container.innerHTML = `
+      <table class="w-full text-left text-xs">
+        <thead class="bg-slate-50 text-slate-500 uppercase text-[10px] border-b border-slate-200">
+          <tr>
+            <th class="p-3">Agenda Event</th>
+            <th class="p-3">Kategori</th>
+            <th class="p-3">Tanggal &amp; Waktu</th>
+            <th class="p-3">Lokasi</th>
+            <th class="p-3">Tiket / Biaya</th>
+            <th class="p-3">Status</th>
+            <th class="p-3 text-right">Aksi</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100">
+          ${events.map(e => `
+            <tr class="hover:bg-slate-50/70 transition">
+              <td class="p-3">
+                <div class="flex items-center space-x-3">
+                  <img src="${e.image}" alt="${e.title}" class="w-10 h-10 rounded-xl object-cover border border-slate-200 shrink-0" onerror="this.src='https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&w=800&q=80'">
+                  <div>
+                    <div class="font-bold text-slate-900 leading-tight">${e.title}</div>
+                    <div class="text-[11px] text-slate-400 line-clamp-1">${e.description}</div>
+                  </div>
+                </div>
+              </td>
+              <td class="p-3">
+                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-50 text-indigo-800 border border-indigo-200">
+                  ${e.categoryLabel || e.category}
+                </span>
+              </td>
+              <td class="p-3 font-mono text-[11px]">
+                <div class="font-bold text-slate-800">${e.day} ${e.monthYear}</div>
+                <div class="text-slate-400">${e.time || '-'}</div>
+              </td>
+              <td class="p-3 text-slate-600 text-[11px] max-w-[150px] truncate">${e.location}</td>
+              <td class="p-3 font-semibold ${e.isFree ? 'text-emerald-700' : 'text-slate-800'}">${e.priceLabel}</td>
+              <td class="p-3">
+                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold ${e.status === 'published' ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : 'bg-slate-200 text-slate-700'}">
+                  ${e.status === 'published' ? 'Publik' : 'Draf'}
+                </span>
+              </td>
+              <td class="p-3 text-right space-x-1">
+                <button onclick="app.showEditEventModal('${e.id}')" class="px-2.5 py-1.5 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-[11px] transition">
+                  <i class="fa-solid fa-pen-to-square"></i>
+                </button>
+                <button onclick="app.deleteEvent('${e.id}')" class="px-2.5 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-[11px] transition">
+                  <i class="fa-solid fa-trash"></i>
+                </button>
+              </td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    `;
+  }
+
+  showAddEventModal() {
+    const modal = [REDACTED]'modal-admin-event');
+    if (!modal) return;
+    [REDACTED]'modal-admin-event-title').textContent = "Tambah Event Baru";
+    [REDACTED]'form-admin-event').reset();
+    [REDACTED]'evt-id').value = "";
+    [REDACTED]'evt-date').value = new Date().toISOString().split('T')[0];
+    [REDACTED]'evt-image').value = "https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&w=800&q=80";
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+  }
+
+  showEditEventModal(id) {
+    const e = this.store.getEventById(id);
+    if (!e) return;
+    const modal = [REDACTED]'modal-admin-event');
+    if (!modal) return;
+
+    [REDACTED]'modal-admin-event-title').textContent = "Edit Event &amp; Agenda";
+    [REDACTED]'evt-id').value = e.id;
+    [REDACTED]'evt-title').value = e.title;
+    [REDACTED]'evt-category').value = e.category;
+    [REDACTED]'evt-status').value = e.status || "published";
+    [REDACTED]'evt-date').value = e.date || "";
+    [REDACTED]'evt-time').value = e.time || "";
+    [REDACTED]'evt-location').value = e.location || "";
+    [REDACTED]'evt-price-label').value = e.priceLabel || "";
+    [REDACTED]'evt-image').value = e.image || "";
+    [REDACTED]'evt-desc').value = e.description || "";
+
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+  }
+
+  handleSaveEvent(event) {
+    event.preventDefault();
+    const id = [REDACTED]'evt-id').value;
+    const title = [REDACTED]'evt-title').value.trim();
+    const category = [REDACTED]'evt-category').value;
+    const status = [REDACTED]'evt-status').value;
+    const date = [REDACTED]'evt-date').value;
+    const time = [REDACTED]'evt-time').value.trim();
+    const location = [REDACTED]'evt-location').value.trim();
+    const priceLabel = [REDACTED]'evt-price-label').value.trim();
+    const image = [REDACTED]'evt-image').value.trim() || 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&w=800&q=80';
+    const description = [REDACTED]'evt-desc').value.trim();
+
+    const categoryLabels = {
+      workshop: 'Workshop',
+      seminar: 'Seminar',
+      pameran: 'Pameran & Expo',
+      'business-matching': 'Business Matching',
+      webinar: 'Webinar Online'
+    };
+
+    const isFree = priceLabel.toLowerCase().includes('gratis') || priceLabel === '0';
+
+    const eventPayload = {
+      title,
+      category,
+      categoryLabel: categoryLabels[category] || category,
+      status,
+      date,
+      time,
+      location,
+      priceLabel: priceLabel || (isFree ? 'Gratis' : 'Berbayar'),
+      isFree,
+      image,
+      description
+    };
+
+    if (id) {
+      this.store.updateEvent(id, eventPayload);
+      this.showToast(`Event "${title}" berhasil diperbarui!`, "success");
+    } else {
+      this.store.addEvent(eventPayload);
+      this.showToast(`Event "${title}" berhasil dipublikasikan!`, "success");
+    }
+
+    this.closeModals();
+    this.renderAdminEventsTable();
+    this.renderEvents('semua');
+  }
+
+  deleteEvent(id) {
+    if (confirm("Apakah Anda yakin ingin menghapus agenda event ini?")) {
+      this.store.deleteEvent(id);
+      this.renderAdminEventsTable();
+      this.renderEvents('semua');
+      this.showToast("Event berhasil dihapus.", "success");
+    }
+  }
+
+  // ================= 7D. PENGATURAN DP & STATUS TOGGLE (ADMIN CONTROL) =================
+  handleDpToggleChange(checked) {
+    const badge = [REDACTED]'setting-dp-status-badge');
+    const label = [REDACTED]'setting-dp-toggle-label');
+    const percentGroup = [REDACTED]'setting-dp-percent-group');
+
+    if (checked) {
+      if (badge) {
+        badge.className = 'px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300';
+        badge.textContent = 'AKTIF (DP ESCROW)';
+      }
+      if (label) label.textContent = 'Fitur DP Aktif: Pembeli wajib bayar uang muka ke Rekber';
+      if (percentGroup) percentGroup.classList.remove('opacity-60');
+    } else {
+      if (badge) {
+        badge.className = 'px-2.5 py-1 rounded-full text-[11px] font-bold bg-rose-100 text-rose-800 border border-rose-200';
+        badge.textContent = 'NONAKTIF (SET OFF)';
+      }
+      if (label) label.textContent = 'Fitur DP Saat Ini Dinonaktifkan (Pelunasan Penuh)';
+      if (percentGroup) percentGroup.classList.add('opacity-60');
+    }
   }
 
   renderAdminTierForms() {
@@ -2377,7 +2912,7 @@ class BursaLimbahApp {
 
     this.renderPublicSubscriptionTiers();
     this.renderBuyerMarketplace();
-    this.showToast("Batas rentang nilai jual & hak akses 3-tier berhasil diperbarui oleh Admin!", "success");
+    this.showToast("Batas rentang nilai jual &amp; hak akses 3-tier berhasil diperbarui oleh Admin!", "success");
   }
 
   // ================= 8. ADMIN KURASI & DASHBOARD =================
@@ -2390,7 +2925,10 @@ class BursaLimbahApp {
 
     this.renderAdminPendingTable();
     this.renderAdminOrdersTable();
+    this.renderAdminSubscriptionRequestsTable();
+    this.renderAdminEventsTable();
     this.renderAdminTierForms();
+    this.updateAdminSubPendingBadge();
   }
 
   updateAdminPendingBadge() {
@@ -2438,6 +2976,15 @@ class BursaLimbahApp {
               <td class="p-3">
                 <div class="font-bold text-slate-900">${p.title}</div>
                 <div class="text-[11px] text-slate-500">${p.categoryName} • ${p.origin}</div>
+                ${p.sourceType ? `
+                  <span class="inline-block mt-0.5 text-[9px] font-bold px-1.5 py-0.2 rounded ${
+                    p.sourceType === 'source_household' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
+                    p.sourceType === 'source_medium_industry' ? 'bg-blue-50 text-blue-700 border border-blue-200' :
+                    'bg-amber-50 text-amber-800 border border-amber-200'
+                  }">
+                    ${p.sourceType === 'source_household' ? '🏠 Rumah Tangga' : p.sourceType === 'source_medium_industry' ? '🏢 Industri Menengah' : '🏭 Industri Besar'}
+                  </span>
+                ` : ''}
               </td>
               <td class="p-3 text-slate-800">${p.sellerName}</td>
               <td class="p-3 font-mono font-bold text-emerald-700">${this.formatRupiah(p.totalPrice)}</td>
@@ -2515,24 +3062,38 @@ class BursaLimbahApp {
     const s = this.store.getSettings();
     const handling = [REDACTED]'setting-handling');
     const dp = [REDACTED]'setting-dp');
+    const dpEnabledCheckbox = [REDACTED]'setting-dp-enabled');
     if (handling) handling.value = s.handlingFeePerTransaction || 10000;
     if (dp) dp.value = s.downPaymentPercent || 30;
+    if (dpEnabledCheckbox) {
+      dpEnabledCheckbox.checked = !!s.dpEnabled;
+      this.handleDpToggleChange(!!s.dpEnabled);
+    }
   }
 
   saveAdminSettings(event) {
     event.preventDefault();
     const handling = Number([REDACTED]'setting-handling').value) || 10000;
     const dp = Number([REDACTED]'setting-dp').value) || 30;
+    const dpEnabled = [REDACTED]'setting-dp-enabled')?.checked || false;
 
+    this.store.setDpSettings(dpEnabled, dp);
     this.store.updateSettings({
-      handlingFeePerTransaction: handling,
-      downPaymentPercent: dp
+      handlingFeePerTransaction: handling
     });
 
-    this.showToast("Biaya penanganan dan DP Escrow berhasil diperbarui!", "success");
+    this.setupCalculator();
+    if (this.currentRole === 'buyer') {
+      this.renderBuyerMarketplace();
+    } else if (this.currentRole === 'public') {
+      this.renderPublicMarketplace();
+    }
+
+    const statusText = dpEnabled ? `diaktifkan (DP ${dp}%)` : 'dinonaktifkan (SET OFF)';
+    this.showToast(`Pengaturan berhasil disimpan! Fitur DP ${statusText}.`, "success");
   }
 
-  // ================= 9. TRANSAKSI CHECKOUT DP 30% REKENING BERSAMA =================
+  // ================= 9. TRANSAKSI CHECKOUT DP / REKENING BERSAMA =================
   initiateCheckout(productId) {
     const p = this.store.getProductById(productId);
     if (!p) return;
@@ -2544,13 +3105,14 @@ class BursaLimbahApp {
       return;
     }
 
+    const isDp = this.store.isDpEnabled();
     const settings = this.store.getSettings();
     const totalPrice = p.totalPrice;
     const dpPercent = settings.downPaymentPercent || 30;
-    const dpAmount = Math.round(totalPrice * (dpPercent / 100));
+    const dpAmount = isDp ? Math.round(totalPrice * (dpPercent / 100)) : totalPrice;
     const handlingFee = settings.handlingFeePerTransaction || 10000;
     const totalPaidNow = dpAmount + handlingFee;
-    const remaining = totalPrice - dpAmount;
+    const remaining = isDp ? totalPrice - dpAmount : 0;
 
     const modal = [REDACTED]'modal-checkout');
     const container = [REDACTED]'modal-checkout-content');
@@ -2559,7 +3121,7 @@ class BursaLimbahApp {
     container.innerHTML = `
       <div class="p-6 border-b border-slate-100 flex items-center justify-between">
         <div>
-          <h3 class="text-lg font-bold text-slate-900">Pemesanan Pasokan Limbah (DP 30%)</h3>
+          <h3 class="text-lg font-bold text-slate-900">${isDp ? `Pemesanan Pasokan Limbah (DP ${dpPercent}%)` : 'Pemesanan Pasokan Limbah'}</h3>
           <p class="text-xs text-slate-500">Rekening bersama BURSA LIMBAH mengunci pasokan hingga armada Anda tiba.</p>
         </div>
         <button onclick="app.closeModals()" class="text-slate-400 hover:text-slate-600 p-2 rounded-xl hover:bg-slate-100">
@@ -2581,22 +3143,36 @@ class BursaLimbahApp {
         </div>
 
         <div class="space-y-2.5 bg-white p-4 rounded-2xl border border-slate-200 text-xs font-mono">
+          ${isDp ? `
           <div class="flex justify-between items-center text-slate-600">
-            <span>Uang Muka (DP 30%):</span>
+            <span>Uang Muka (DP ${dpPercent}%):</span>
             <span class="font-bold text-slate-900">${this.formatRupiah(dpAmount)}</span>
           </div>
+          ` : `
+          <div class="flex justify-between items-center text-slate-600">
+            <span>Nilai Pasokan Limbah:</span>
+            <span class="font-bold text-slate-900">${this.formatRupiah(totalPrice)}</span>
+          </div>
+          `}
           <div class="flex justify-between items-center text-slate-600">
             <span>Biaya Penanganan Sistem (Flat):</span>
-            <span class="font-bold text-slate-900">Rp10.000</span>
+            <span class="font-bold text-slate-900">${this.formatRupiah(handlingFee)}</span>
           </div>
           <div class="flex justify-between items-center text-emerald-700 pt-2 border-t border-slate-100 text-sm">
             <span class="font-sans font-bold">Total Pembayaran Sekarang:</span>
             <span class="font-extrabold text-base">${this.formatRupiah(totalPaidNow)}</span>
           </div>
+          ${isDp ? `
           <div class="flex justify-between items-center text-slate-500 text-[11px] pt-1">
-            <span>Sisa Pelunasan di Gudang (70%):</span>
+            <span>Sisa Pelunasan di Gudang (${100 - dpPercent}%):</span>
             <span>${this.formatRupiah(remaining)}</span>
           </div>
+          ` : `
+          <div class="flex justify-between items-center text-emerald-600 text-[11px] pt-1">
+            <span>Status Transaksi:</span>
+            <span class="font-bold">Pelunasan Penuh (Tanpa Sisa Tagihan)</span>
+          </div>
+          `}
         </div>
 
         <div>
@@ -2615,7 +3191,7 @@ class BursaLimbahApp {
           </button>
           <button onclick="app.confirmBooking('${p.id}')" class="px-6 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold shadow-md transition flex items-center space-x-1.5">
             <i class="fa-solid fa-lock"></i>
-            <span>Bayar DP & Kunci Pasokan</span>
+            <span>${isDp ? 'Bayar DP & Kunci Pasokan' : 'Bayar & Kunci Pasokan'}</span>
           </button>
         </div>
       </div>
@@ -2827,6 +3403,15 @@ class BursaLimbahApp {
               <td class="p-3">
                 <div class="font-bold text-slate-900">${p.title}</div>
                 <div class="text-[11px] text-slate-500">${p.categoryName}</div>
+                ${p.sourceType ? `
+                  <span class="inline-block mt-0.5 text-[9px] font-bold px-1.5 py-0.2 rounded ${
+                    p.sourceType === 'source_household' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
+                    p.sourceType === 'source_medium_industry' ? 'bg-blue-50 text-blue-700 border border-blue-200' :
+                    'bg-amber-50 text-amber-800 border border-amber-200'
+                  }">
+                    ${p.sourceType === 'source_household' ? '🏠 Rumah Tangga' : p.sourceType === 'source_medium_industry' ? '🏢 Industri Menengah' : '🏭 Industri Besar'}
+                  </span>
+                ` : ''}
               </td>
               <td class="p-3">${p.volume > 0 ? p.volume + ' L' : p.weight + ' Kg'}</td>
               <td class="p-3 font-mono">${this.formatRupiah(p.offerPrice)}</td>
@@ -2848,22 +3433,194 @@ class BursaLimbahApp {
     `;
   }
 
+  selectSourceTier(tierId) {
+    const tier = (typeof WASTE_SOURCE_TIERS !== 'undefined' ? WASTE_SOURCE_TIERS : []).find(t => t.id === tierId);
+    if (!tier) return;
+
+    const sourceInput = [REDACTED]'up-source-type');
+    if (sourceInput) sourceInput.value = tierId;
+
+    // Highlight kartu yang dipilih
+    const cards = [
+      { id: 'source-card-household', tierId: 'source_household', ring: 'ring-emerald-500/30', border: 'border-emerald-500', bg: 'bg-emerald-50/40' },
+      { id: 'source-card-medium', tierId: 'source_medium_industry', ring: 'ring-blue-500/30', border: 'border-blue-500', bg: 'bg-blue-50/40' },
+      { id: 'source-card-large', tierId: 'source_large_industry', ring: 'ring-amber-500/30', border: 'border-amber-500', bg: 'bg-amber-50/40' }
+    ];
+
+    cards.forEach(c => {
+      const el = [REDACTED]c.id);
+      if (!el) return;
+      el.classList.remove('ring-4', 'ring-emerald-500/30', 'ring-blue-500/30', 'ring-amber-500/30', 'border-emerald-500', 'border-blue-500', 'border-amber-500', 'bg-emerald-50/40', 'bg-blue-50/40', 'bg-amber-50/40');
+      if (c.tierId === tierId) {
+        el.classList.add('ring-4', c.ring, c.border, c.bg);
+        el.classList.remove('border-slate-200', 'bg-white');
+      } else {
+        el.classList.add('border-slate-200', 'bg-white');
+      }
+    });
+
+    // Tampilkan pesan panduan / hint
+    const hint = [REDACTED]'up-source-hint');
+    const hintText = [REDACTED]'up-source-hint-text');
+    if (hint && hintText) {
+      hint.classList.remove('hidden');
+      if (tierId === 'source_household') {
+        hint.className = 'mt-2 text-center text-[11px] text-emerald-700 font-semibold bg-emerald-50 py-1.5 px-3 rounded-xl border border-emerald-200';
+        hintText.innerHTML = `Mode <strong>${tier.name}</strong> aktif: Pengisian disederhanakan untuk perorangan/bank sampah (wadah kecil, MOQ 5 Kg, tanpa izin industri).`;
+      } else if (tierId === 'source_medium_industry') {
+        hint.className = 'mt-2 text-center text-[11px] text-blue-700 font-semibold bg-blue-50 py-1.5 px-3 rounded-xl border border-blue-200';
+        hintText.innerHTML = `Mode <strong>${tier.name}</strong> aktif: Opsi wadah drum/jerigen, field NIB UMKM, dan MOQ standar 50 Kg.`;
+      } else {
+        hint.className = 'mt-2 text-center text-[11px] text-amber-800 font-semibold bg-amber-50 py-1.5 px-3 rounded-xl border border-amber-200';
+        hintText.innerHTML = `Mode <strong>${tier.name}</strong> aktif: Skala pabrik/korporat dengan wadah kontainer/IBC, verifikasi NIB & No. Izin TPS/KLHK, dan tonnase MOQ 500 Kg.`;
+      }
+    }
+
+    // Tampilkan field formulir
+    const formFields = [REDACTED]'up-form-fields');
+    if (formFields) formFields.classList.remove('hidden');
+
+    // Populate Wadah Kemasan Dinamis
+    const containerSelect = [REDACTED]'up-container-type');
+    if (containerSelect && tier.containers) {
+      containerSelect.innerHTML = tier.containers.map(c => `<option value="${c}">${c}</option>`).join('');
+    }
+
+    // Populate Satuan Dinamis
+    const unitSelect = [REDACTED]'up-unit');
+    if (unitSelect && tier.units) {
+      unitSelect.innerHTML = tier.units.map(u => `<option value="${u}">${u}</option>`).join('');
+      unitSelect.value = tier.defaultUnit;
+    }
+
+    // Populate Kondisi Fisik Dinamis
+    const condSelect = [REDACTED]'up-condition');
+    if (condSelect && tier.conditions) {
+      condSelect.innerHTML = tier.conditions.map(c => `<option value="${c.value}">${c.label}</option>`).join('');
+    }
+
+    // Populate Jadwal Pengambilan Dinamis
+    const schedSelect = [REDACTED]'up-pickup-schedule');
+    if (schedSelect && tier.schedules) {
+      schedSelect.innerHTML = tier.schedules.map(s => `<option value="${s.value}">${s.label}</option>`).join('');
+    }
+
+    // Placeholder & Nilai Bawaan
+    const titleInput = [REDACTED]'up-title');
+    if (titleInput && tier.placeholders.title) titleInput.placeholder = tier.placeholders.title;
+
+    const originInput = [REDACTED]'up-origin');
+    if (originInput && tier.placeholders.origin) originInput.placeholder = tier.placeholders.origin;
+
+    const cityInput = [REDACTED]'up-city');
+    if (cityInput && tier.placeholders.city) cityInput.placeholder = tier.placeholders.city;
+
+    const qtyInput = [REDACTED]'up-qty');
+    if (qtyInput) qtyInput.value = tier.defaultQty;
+
+    const priceInput = [REDACTED]'up-price');
+    if (priceInput) priceInput.value = tier.defaultPrice;
+
+    const minOrderInput = [REDACTED]'up-min-order');
+    if (minOrderInput) minOrderInput.value = tier.defaultMOQ;
+
+    const minOrderUnit = [REDACTED]'up-min-order-unit');
+    if (minOrderUnit) minOrderUnit.textContent = tier.defaultUnit;
+
+    this.calculateUploadTotal();
+
+    // Toggle Kondisional: Grade
+    const gradeBox = [REDACTED]'up-grade-box');
+    const gradeInput = [REDACTED]'up-grade');
+    if (gradeBox && gradeInput) {
+      if (tier.showFields.grade) {
+        gradeBox.classList.remove('hidden');
+        gradeInput.placeholder = tier.placeholders.grade || 'Grade Standar Industri';
+        if (gradeInput.value.includes('Rumah Tangga') || !gradeInput.value) {
+          gradeInput.value = '';
+        }
+      } else {
+        gradeBox.classList.add('hidden');
+        gradeInput.value = 'Limbah Rumah Tangga (Non-Spesifikasi)';
+      }
+    }
+
+    // Toggle Kondisional: Limbah B3
+    const b3Section = [REDACTED]'up-b3-section');
+    const b3Check = [REDACTED]'up-is-b3');
+    const b3PermitBox = [REDACTED]'up-b3-permit-box');
+    if (b3Section) {
+      if (tier.showFields.b3) {
+        b3Section.classList.remove('hidden');
+      } else {
+        b3Section.classList.add('hidden');
+        if (b3Check) b3Check.checked = false;
+        if (b3PermitBox) b3PermitBox.classList.add('hidden');
+      }
+    }
+
+    // Toggle Kondisional: NIB & TPS (Industri)
+    const indFields = [REDACTED]'up-industry-fields');
+    const nibBox = [REDACTED]'up-nib-box');
+    const tpsBox = [REDACTED]'up-tps-box');
+    if (indFields) {
+      const showAnyInd = tier.showFields.nib || tier.showFields.tpsPermit;
+      indFields.classList.toggle('hidden', !showAnyInd);
+      if (nibBox) nibBox.classList.toggle('hidden', !tier.showFields.nib);
+      if (tpsBox) tpsBox.classList.toggle('hidden', !tier.showFields.tpsPermit);
+    }
+
+    // Toggle Kondisional: GPS
+    const coordsBox = [REDACTED]'up-coords-box');
+    const locGrid = [REDACTED]'up-location-grid');
+    if (coordsBox) {
+      if (tier.showFields.gps) {
+        coordsBox.classList.remove('hidden');
+        if (locGrid) {
+          locGrid.classList.remove('grid-cols-2');
+          locGrid.classList.add('grid-cols-3');
+        }
+      } else {
+        coordsBox.classList.add('hidden');
+        if (locGrid) {
+          locGrid.classList.remove('grid-cols-3');
+          locGrid.classList.add('grid-cols-2');
+        }
+      }
+    }
+  }
+
+  resetUploadForm() {
+    const sourceInput = [REDACTED]'up-source-type');
+    if (sourceInput) sourceInput.value = '';
+
+    ['source-card-household', 'source-card-medium', 'source-card-large'].forEach(id => {
+      const el = [REDACTED]id);
+      if (el) {
+        el.classList.remove('ring-4', 'ring-emerald-500/30', 'ring-blue-500/30', 'ring-amber-500/30', 'border-emerald-500', 'border-blue-500', 'border-amber-500', 'bg-emerald-50/40', 'bg-blue-50/40', 'bg-amber-50/40');
+        el.classList.add('border-slate-200', 'bg-white');
+      }
+    });
+
+    const hint = [REDACTED]'up-source-hint');
+    if (hint) hint.classList.add('hidden');
+
+    const formFields = [REDACTED]'up-form-fields');
+    if (formFields) formFields.classList.add('hidden');
+  }
+
   showUploadModal() {
-    if (!this.store.isSellerAuthenticated()) {
-      this.closeModals();
-      this.showLoginPage('seller');
-      this.showToast("Silakan masuk ke akun Penjual terlebih dahulu untuk mengunggah pasokan limbah.", "warning");
-      return;
-    }
-    const modal = [REDACTED]'modal-upload');
-    if (modal) {
-      modal.classList.remove('hidden');
-      modal.classList.add('flex');
-    }
+    this.switchAppTab('sell');
   }
 
   handleUploadProduct(event) {
     event.preventDefault();
+    const sourceType = [REDACTED]'up-source-type') ? [REDACTED]'up-source-type').value : null;
+    if (!sourceType) {
+      this.showToast("Pilih salah satu Sumber Limbah terlebih dahulu (Rumah Tangga, Industri Menengah, atau Industri Besar).", "warning");
+      return;
+    }
+
     const title = [REDACTED]'up-title').value;
     const catId = [REDACTED]'up-category').value;
     const containerType = [REDACTED]'up-container-type').value;
@@ -2874,12 +3631,16 @@ class BursaLimbahApp {
     const origin = [REDACTED]'up-origin').value;
     const city = [REDACTED]'up-city') ? [REDACTED]'up-city').value.trim() : '';
     const address = [REDACTED]'up-address').value;
-    const coords = [REDACTED]'up-coords').value.split(',');
+    const coords = [REDACTED]'up-coords') ? [REDACTED]'up-coords').value.split(',') : ['-6.2088', '106.8456'];
+
+    // Atribut Sumber Limbah & Legalitas:
+    const nib = [REDACTED]'up-nib') ? [REDACTED]'up-nib').value.trim() : null;
+    const tpsPermit = [REDACTED]'up-tps-permit') ? [REDACTED]'up-tps-permit').value.trim() : null;
 
     // 10 Atribut Wajib Tambahan:
     const condition = [REDACTED]'up-condition') ? [REDACTED]'up-condition').value : 'Bersih';
-    const grade = [REDACTED]'up-grade') ? [REDACTED]'up-grade').value.trim() : 'Grade Standar Industri';
-    const minOrder = [REDACTED]'up-min-order') ? Number([REDACTED]'up-min-order').value) : 100;
+    const grade = [REDACTED]'up-grade') ? [REDACTED]'up-grade').value.trim() : 'Limbah Rumah Tangga';
+    const minOrder = [REDACTED]'up-min-order') ? Number([REDACTED]'up-min-order').value) : 10;
     const minOrderUnit = [REDACTED]'up-min-order-unit') ? [REDACTED]'up-min-order-unit').textContent.trim() : unit;
     const pickupSchedule = [REDACTED]'up-pickup-schedule') ? [REDACTED]'up-pickup-schedule').value : 'Siap Angkut Segera (H+0 s/d H+1)';
     const listingStatus = [REDACTED]'up-listing-status') ? [REDACTED]'up-listing-status').value : 'Tersedia';
@@ -2908,7 +3669,10 @@ class BursaLimbahApp {
       weight: unit === 'Liter' ? 0 : qty,
       volume: unit === 'Liter' ? qty : 0,
       unit,
-      // 10 Atribut Wajib:
+      // Sumber Limbah & Atribut:
+      sourceType,
+      nib,
+      tpsPermit,
       condition,
       grade,
       minimumOrder: minOrder,
@@ -2920,8 +3684,8 @@ class BursaLimbahApp {
       origin,
       city: city || this.store.extractCity(address || origin),
       address,
-      lat: coords[0] ? parseFloat(coords[0].trim()) : -6.2088,
-      lng: coords[1] ? parseFloat(coords[1].trim()) : 106.8456,
+      lat: (coords && coords[0]) ? parseFloat(coords[0].trim()) : -6.2088,
+      lng: (coords && coords[1]) ? parseFloat(coords[1].trim()) : 106.8456,
       offerPrice: price,
       totalPrice: qty * price,
       evidences: [
@@ -2932,8 +3696,14 @@ class BursaLimbahApp {
     });
 
     this.closeModals();
+    this.resetUploadForm();
     this.showToast("Pasokan limbah berhasil didaftarkan! Menunggu verifikasi tim pengelola.", "success");
-    this.renderSellerDashboard();
+    if (this.store.isSellerAuthenticated()) {
+      this.renderSellerDashboard();
+      this.setRole('seller', false);
+    } else {
+      this.switchAppTab('home');
+    }
     this.updateAdminPendingBadge();
   }
 
@@ -2956,7 +3726,9 @@ class BursaLimbahApp {
       'modal-receipt',
       'modal-google-auth',
       'modal-user-profile',
-      'modal-mobile-quick-actions'
+      'modal-mobile-quick-actions',
+      'modal-mobile-dp-calculator',
+      'modal-admin-event'
     ];
     modals.forEach(id => {
       const el = [REDACTED]id);
@@ -3280,8 +4052,11 @@ class BursaLimbahApp {
       }
 
       const gross = qty * price;
-      const dp = Math.round(gross * 0.3);
-      const remaining = gross - dp;
+      const isDp = this.store.isDpEnabled();
+      const settings = this.store.getSettings();
+      const dpPercent = settings.downPaymentPercent || 30;
+      const dp = isDp ? Math.round(gross * (dpPercent / 100)) : 0;
+      const remaining = isDp ? gross - dp : 0;
 
       // Hitung biaya penanganan sistem berjenjang
       let fee = 0;
@@ -3296,8 +4071,28 @@ class BursaLimbahApp {
       }
 
       [REDACTED]'calc-result-gross').textContent = this.formatRupiah(gross);
-      [REDACTED]'calc-result-dp').textContent = this.formatRupiah(dp);
-      [REDACTED]'calc-result-remaining').textContent = this.formatRupiah(remaining);
+
+      const dpRow = [REDACTED]'calc-dp-row');
+      const remRow = [REDACTED]'calc-remaining-row');
+      const fullRow = [REDACTED]'calc-fullpay-row');
+      const dpLabel = [REDACTED]'calc-dp-label');
+      const remLabel = [REDACTED]'calc-remaining-label');
+
+      if (isDp) {
+        if (dpRow) dpRow.style.display = 'flex';
+        if (remRow) remRow.style.display = 'flex';
+        if (fullRow) fullRow.style.display = 'none';
+        if (dpLabel) dpLabel.textContent = `Alokasi DP ${dpPercent}% Rekening Bersama:`;
+        if (remLabel) remLabel.textContent = `Sisa ${100 - dpPercent}% Pelunasan di Lokasi:`;
+        const resDp = [REDACTED]'calc-result-dp');
+        if (resDp) resDp.textContent = this.formatRupiah(dp);
+        const resRem = [REDACTED]'calc-result-remaining');
+        if (resRem) resRem.textContent = this.formatRupiah(remaining);
+      } else {
+        if (dpRow) dpRow.style.display = 'none';
+        if (remRow) remRow.style.display = 'none';
+        if (fullRow) fullRow.style.display = 'flex';
+      }
 
       const feeEl = [REDACTED]'calc-result-fee');
       if (feeEl) {
@@ -3377,6 +4172,14 @@ class BursaLimbahApp {
           if (b3Check) b3Check.checked = true;
           if (b3Box) b3Box.classList.remove('hidden');
         }
+      });
+    }
+
+    const upUnit = [REDACTED]'up-unit');
+    if (upUnit) {
+      upUnit.addEventListener('change', () => {
+        const moqUnit = [REDACTED]'up-min-order-unit');
+        if (moqUnit) moqUnit.textContent = upUnit.value;
       });
     }
 

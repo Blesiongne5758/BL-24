@@ -48,320 +48,65 @@
 </head>
 <body class="bg-slate-50 text-slate-800 antialiased min-h-screen flex flex-col selection:bg-brand-500 selection:text-white">
 
-  <!-- ================= BAR PENGUMUMAN & TICKER HARGA PASAR ================= -->
-  <div class="bg-slate-900 text-slate-300 text-xs py-2 px-4 border-b border-slate-800 overflow-hidden relative">
-    <div class="max-w-7xl mx-auto flex items-center justify-between">
-      <div class="flex items-center space-x-2 font-mono text-brand-400 font-semibold shrink-0 pr-4">
-        <span class="inline-flex items-center px-2 py-0.5 rounded bg-emerald-950/80 border border-emerald-500/40 text-emerald-400 text-[10px] font-bold">
-          <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping mr-1.5"></span>
-          LIVE WIB
-        </span>
-      </div>
-      <div class="overflow-hidden whitespace-nowrap flex-1 relative">
-        <div id="price-ticker-strip" class="animate-ticker text-xs font-mono flex space-x-8">
-          <!-- Diisi otomatis oleh JavaScript -->
-        </div>
-      </div>
-      <div class="hidden lg:flex items-center space-x-4 pl-4 shrink-0 text-slate-400">
-        <span><i class="fa-solid fa-shield-halved text-emerald-400 mr-1"></i> Ketertelusuran Terstandarisasi</span>
-        <span class="text-slate-600">|</span>
-        <span><i class="fa-solid fa-headset mr-1"></i> Bantuan: +62 812-3456-7890</span>
-      </div>
-    </div>
-  </div>
+  <!-- ================= TOP APP BAR (MOBILE APP HEADER) ================= -->
+  <header class="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200/90 shadow-xs">
+    <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between h-14 sm:h-16">
 
-  <!-- ================= NAVBAR ================= -->
-  <header class="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-sm">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="flex items-center justify-between h-16">
-
-        <!-- Logo -->
-        <div class="flex items-center cursor-pointer shrink-0" onclick="app.setRole('public')">
-          <img src="assets/logo.png" alt="Bursa Limbah" class="h-12 w-auto object-contain" />
+        <!-- Logo & Branding -->
+        <div class="flex items-center cursor-pointer gap-2" onclick="app.switchAppTab('home')">
+          <img src="assets/logo.png" alt="Bursa Limbah" class="h-10 sm:h-12 w-auto object-contain" />
+          <div class="hidden sm:block">
+            <span class="text-[10px] font-bold text-emerald-700 tracking-wider uppercase block leading-none">Marketplace</span>
+            <span class="text-[11px] text-slate-500 font-medium">Verified Waste. Trusted Trade.</span>
+          </div>
         </div>
 
-        <!-- Nav Links (Desktop) -->
-        <nav id="nav-links-public" class="hidden lg:flex items-center space-x-0.5 text-xs font-semibold text-slate-600">
-          <button onclick="app.navigateToSection('hero')" class="px-3 py-2 rounded-lg hover:text-emerald-700 hover:bg-emerald-50 transition">Beranda</button>
-          <button onclick="app.navigateToSection('postingan-publik')" class="px-3 py-2 rounded-lg hover:text-emerald-700 hover:bg-emerald-50 transition flex items-center gap-1.5">
-            Bursa Terbuka
-            <span class="px-1.5 py-0.5 text-[9px] font-bold bg-amber-100 text-amber-700 rounded-full leading-none">GATED</span>
+        <!-- Desktop Navigation Tabs (Home, Mulai Jual, Berlangganan, Simulasi) -->
+        <nav class="hidden md:flex items-center space-x-1 text-xs font-semibold text-slate-600 bg-slate-100/80 p-1 rounded-2xl border border-slate-200/80">
+          <button id="dnav-home" onclick="app.switchAppTab('home')" class="px-3.5 py-2 rounded-xl text-xs font-bold bg-emerald-50 text-emerald-800 border border-emerald-200 transition shadow-2xs flex items-center gap-1.5 cursor-pointer">
+            <i class="fa-solid fa-house text-emerald-600"></i>
+            <span>Home</span>
           </button>
-          <button onclick="app.navigateToSection('kategori')" class="px-3 py-2 rounded-lg hover:text-emerald-700 hover:bg-emerald-50 transition">Komoditas</button>
-          <button onclick="app.navigateToSection('kalkulator')" class="px-3 py-2 rounded-lg hover:text-emerald-700 hover:bg-emerald-50 transition">Kalkulator</button>
-          <button onclick="app.navigateToSection('tarif')" class="px-3 py-2 rounded-lg text-emerald-700 hover:bg-emerald-50 transition font-bold flex items-center gap-1">
-            <i class="fa-solid fa-star text-amber-400 text-[10px]"></i> Paket Langganan
+          <button id="dnav-sell" onclick="app.switchAppTab('sell')" class="px-3.5 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition flex items-center gap-1.5 cursor-pointer">
+            <i class="fa-solid fa-circle-plus text-emerald-600"></i>
+            <span>Mulai Jual</span>
           </button>
-          <button onclick="app.navigateToSection('preloved')" class="px-3 py-2 rounded-lg hover:text-pink-700 hover:bg-pink-50 transition flex items-center gap-1.5">
-            <i class="fa-solid fa-heart text-pink-500 text-[10px]"></i> PreLoved
+          <button id="dnav-sub" onclick="app.switchAppTab('sub')" class="px-3.5 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition flex items-center gap-1.5 cursor-pointer">
+            <i class="fa-solid fa-crown text-amber-500"></i>
+            <span>Berlangganan</span>
           </button>
-          <button onclick="app.navigateToSection('event')" class="px-3 py-2 rounded-lg hover:text-indigo-700 hover:bg-indigo-50 transition flex items-center gap-1.5">
-            <i class="fa-solid fa-calendar-star text-indigo-500 text-[10px]"></i> Event
-          </button>
-          <button onclick="app.navigateToSection('donasi')" class="px-3 py-2 rounded-lg hover:text-amber-700 hover:bg-amber-50 transition flex items-center gap-1.5">
-            <i class="fa-solid fa-hand-holding-heart text-amber-500 text-[10px]"></i> Donasi Buku &amp; Barang
+          <button id="dnav-sim" onclick="app.switchAppTab('sim')" class="px-3.5 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition flex items-center gap-1.5 cursor-pointer">
+            <i class="fa-solid fa-calculator text-blue-500"></i>
+            <span>Simulasi</span>
           </button>
         </nav>
 
-        <!-- Kanan: Mode switcher + Aksi -->
-        <div class="flex items-center gap-2">
+        <!-- Right Quick Actions (Chat, Profile/Login, WhatsApp) -->
+        <div class="flex items-center gap-1.5 sm:gap-2">
+          <!-- Chat Button -->
+          <button onclick="app.toggleChat()" class="relative w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center text-sm active:scale-95 transition cursor-pointer" title="Layar Chat Langsung">
+            <i class="fa-solid fa-comment-dots text-emerald-700"></i>
+            <span id="chat-unread-badge" class="absolute -top-1 -right-1 w-4 h-4 bg-rose-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center border-2 border-white">1</span>
+          </button>
 
-          <!-- Mode Switcher (Desktop) -->
-          <div class="hidden sm:flex items-center bg-slate-100 rounded-xl p-0.5 border border-slate-200 text-xs font-semibold gap-0.5">
-            <button id="role-btn-public"   onclick="app.setRole('public')"   class="px-2.5 py-1.5 rounded-lg transition bg-white text-emerald-700 shadow-sm">Publik</button>
-            <button id="role-btn-buyer"    onclick="app.navigateToBuyer()"   class="px-2.5 py-1.5 rounded-lg transition text-slate-600 hover:text-slate-900">Pembeli</button>
-            <button id="role-btn-seller"   onclick="app.navigateToSeller()"  class="px-2.5 py-1.5 rounded-lg transition text-slate-600 hover:text-slate-900">Penjual</button>
-            <button id="role-btn-admin"    onclick="app.navigateToAdmin()"    class="px-2.5 py-1.5 rounded-lg transition text-slate-600 hover:text-slate-900 flex items-center gap-1">
-              Pengelola
-              <span id="admin-pending-pill" class="px-1.5 bg-amber-500 text-white text-[9px] rounded-full hidden">0</span>
+          <!-- WhatsApp Konsultasi -->
+          <a href="https://wa.me/628[REDACTED]7890?text=Halo%20Admin%20Bursa%20Limbah%2C%20saya%20ingin%20konsultasi%20transaksi" target="_blank" class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 flex items-center justify-center text-sm active:scale-95 transition cursor-pointer" title="WhatsApp Bantuan">
+            <i class="fa-brands fa-whatsapp text-emerald-600 text-base"></i>
+          </a>
+
+          <!-- Profile / Login Action -->
+          <div id="nav-action-container" class="flex items-center gap-1.5">
+            <button onclick="app.showLoginPage()" class="flex items-center gap-1.5 px-3 py-2 text-xs font-bold rounded-xl border border-slate-300 hover:border-emerald-400 hover:text-emerald-700 bg-white text-slate-700 shadow-2xs transition active:scale-95 cursor-pointer">
+              <i class="fa-solid fa-user text-emerald-600"></i>
+              <span class="hidden sm:inline">Akun / Masuk</span>
             </button>
           </div>
-
-          <!-- Divider -->
-          <div class="hidden sm:block w-px h-6 bg-slate-200"></div>
-
-          <!-- Tombol Aksi -->
-          <div id="nav-action-container" class="flex items-center gap-2">
-            <button onclick="app.showLoginPage()" class="hidden sm:flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold rounded-xl border border-slate-300 hover:border-emerald-400 hover:text-emerald-700 bg-white text-slate-700 shadow-sm transition">
-              <i class="fa-solid fa-right-to-bracket text-emerald-600"></i>
-              Masuk
-            </button>
-            <button onclick="app.showRegisterOptions()" class="flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm transition">
-              <i class="fa-solid fa-user-plus"></i>
-              Daftar
-            </button>
-          </div>
-
-          <!-- Tombol Aksi Cepat Mobile (Search & Hamburger) -->
-          <div class="lg:hidden flex items-center gap-1">
-            <button onclick="app.toggleMobileSearchBar()" class="w-9 h-9 flex items-center justify-center text-slate-600 hover:text-emerald-700 rounded-xl hover:bg-slate-100 active:scale-95 transition text-sm" title="Cari Komoditas">
-              <i class="fa-solid fa-magnifying-glass"></i>
-            </button>
-            <button id="mobile-menu-btn" onclick="app.toggleMobileMenu()" class="w-9 h-9 flex items-center justify-center text-slate-600 hover:text-slate-900 rounded-xl hover:bg-slate-100 active:scale-95 transition">
-              <i class="fa-solid fa-bars text-base"></i>
-            </button>
-          </div>
-
         </div>
-      </div>
-    </div>
 
-    <!-- ================= SUB-BAR MOBILE: ROLE SWITCHER INSTAN ================= -->
-    <div id="mobile-role-subbar" class="lg:hidden bg-slate-50/95 border-t border-slate-200/80 px-2.5 py-1.5 backdrop-blur-md">
-      <div class="flex items-center gap-1 max-w-md mx-auto bg-slate-200/80 p-1 rounded-xl text-xs font-semibold">
-        <button id="mob-role-public" onclick="app.setRole('public')" class="mobile-role-pill active flex-1 py-1.5 px-1 rounded-lg text-center text-[11px] transition">
-          🌐 Publik
-        </button>
-        <button id="mob-role-buyer" onclick="app.navigateToBuyer()" class="mobile-role-pill flex-1 py-1.5 px-1 rounded-lg text-center text-[11px] text-slate-600 transition">
-          🛒 Pembeli
-        </button>
-        <button id="mob-role-seller" onclick="app.navigateToSeller()" class="mobile-role-pill flex-1 py-1.5 px-1 rounded-lg text-center text-[11px] text-slate-600 transition">
-          🏭 Penjual
-        </button>
-        <button id="mob-role-admin" onclick="app.navigateToAdmin()" class="mobile-role-pill flex-1 py-1.5 px-1 rounded-lg text-center text-[11px] text-slate-600 transition flex items-center justify-center gap-1">
-          ⚙️ Admin
-          <span id="mob-admin-pending-pill" class="px-1.5 bg-amber-500 text-white text-[9px] rounded-full hidden">0</span>
-        </button>
-      </div>
-    </div>
-
-    <!-- ================= DOCK PENCARIAN CEPAT MOBILE ================= -->
-    <div id="mobile-search-container" class="lg:hidden hidden bg-white border-b border-slate-200 px-3 py-2 transition-all shadow-sm">
-      <div class="relative max-w-md mx-auto">
-        <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
-        <input type="text" id="mobile-global-search-input" oninput="app.handleMobileInstantSearch(this.value)" placeholder="Cari limbah (Jelantah, Besi, PET, Kardus)..." class="w-full pl-8 pr-8 py-2 bg-slate-100 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-emerald-500 focus:bg-white focus:outline-none">
-        <button type="button" onclick="app.clearMobileSearch()" class="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs p-1">
-          <i class="fa-solid fa-xmark"></i>
-        </button>
-      </div>
-    </div>
-
-    <!-- Panel Menu Mobile -->
-    <div id="mobile-drawer" class="hidden lg:hidden border-t border-slate-200 bg-white shadow-2xl p-4 space-y-3 transition-all duration-300">
-      <div id="mobile-auth-section" class="pb-3 border-b border-slate-100 grid grid-cols-2 gap-2">
-        <button onclick="app.showLoginPage('buyer'); app.toggleMobileMenu();" class="py-2.5 px-3 text-xs font-bold rounded-xl bg-gradient-to-r from-emerald-50 to-teal-50 text-emerald-800 border border-emerald-200/80 hover:shadow-xs active:scale-95 transition flex items-center justify-center gap-1.5">
-          <i class="fa-solid fa-crown text-amber-500"></i> Masuk Pembeli
-        </button>
-        <button onclick="app.showLoginPage('seller'); app.toggleMobileMenu();" class="py-2.5 px-3 text-xs font-bold rounded-xl bg-gradient-to-r from-slate-100 to-slate-50 text-slate-800 border border-slate-200 hover:shadow-xs active:scale-95 transition flex items-center justify-center gap-1.5">
-          <i class="fa-solid fa-store text-emerald-600"></i> Masuk Penjual
-        </button>
-      </div>
-      <div class="flex items-center justify-between">
-        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Pilih Tampilan:</span>
-        <span class="text-[10px] text-emerald-600 font-semibold flex items-center gap-1">
-          <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-          Mode Interaktif
-        </span>
-      </div>
-      <div class="grid grid-cols-4 gap-1.5">
-        <button onclick="app.setRole('public'); app.toggleMobileMenu();"  class="py-2 text-xs font-semibold rounded-xl bg-slate-100 text-slate-700 hover:bg-emerald-100 hover:text-emerald-800 active:scale-95 transition shadow-2xs">Publik</button>
-        <button onclick="app.navigateToBuyer(); app.toggleMobileMenu();"  class="py-2 text-xs font-semibold rounded-xl bg-slate-100 text-slate-700 hover:bg-emerald-100 hover:text-emerald-800 active:scale-95 transition shadow-2xs">Pembeli</button>
-        <button onclick="app.navigateToSeller(); app.toggleMobileMenu();" class="py-2 text-xs font-semibold rounded-xl bg-slate-100 text-slate-700 hover:bg-emerald-100 hover:text-emerald-800 active:scale-95 transition shadow-2xs">Penjual</button>
-        <button onclick="app.navigateToAdmin(); app.toggleMobileMenu();"  class="py-2 text-xs font-semibold rounded-xl bg-slate-100 text-slate-700 hover:bg-emerald-100 hover:text-emerald-800 active:scale-95 transition shadow-2xs">Admin</button>
-      </div>
-      <div class="border-t border-slate-100 pt-3 grid grid-cols-2 gap-1.5 text-xs font-medium">
-        <button onclick="app.navigateToSection('postingan-publik'); app.toggleMobileMenu();" class="text-left py-2 px-2.5 text-slate-700 bg-slate-50 hover:bg-emerald-50 hover:text-emerald-800 rounded-xl transition flex items-center gap-2">
-          <i class="fa-solid fa-boxes-stacked text-emerald-600 w-4 text-center"></i>
-          <span>Bursa Terbuka</span>
-        </button>
-        <button onclick="app.navigateToSection('tarif'); app.toggleMobileMenu();" class="text-left py-2 px-2.5 text-slate-700 bg-slate-50 hover:bg-emerald-50 hover:text-emerald-800 rounded-xl transition flex items-center gap-2">
-          <i class="fa-solid fa-crown text-amber-500 w-4 text-center"></i>
-          <span>Paket 3-Tier</span>
-        </button>
-        <button onclick="app.navigateToSection('kalkulator'); app.toggleMobileMenu();" class="text-left py-2 px-2.5 text-slate-700 bg-slate-50 hover:bg-emerald-50 hover:text-emerald-800 rounded-xl transition flex items-center gap-2">
-          <i class="fa-solid fa-calculator text-brand-600 w-4 text-center"></i>
-          <span>Kalkulator</span>
-        </button>
-        <button onclick="app.navigateToSection('preloved'); app.toggleMobileMenu();" class="text-left py-2 px-2.5 text-pink-700 bg-pink-50/70 hover:bg-pink-100 rounded-xl transition flex items-center gap-2">
-          <i class="fa-solid fa-heart text-pink-500 w-4 text-center"></i>
-          <span>PreLoved</span>
-        </button>
-        <button onclick="app.navigateToSection('event'); app.toggleMobileMenu();" class="text-left py-2 px-2.5 text-indigo-700 bg-indigo-50/70 hover:bg-indigo-100 rounded-xl transition flex items-center gap-2">
-          <i class="fa-solid fa-calendar-star text-indigo-500 w-4 text-center"></i>
-          <span>Event Acara</span>
-        </button>
-        <button onclick="app.navigateToSection('donasi'); app.toggleMobileMenu();" class="text-left py-2 px-2.5 text-amber-700 bg-amber-50/70 hover:bg-amber-100 rounded-xl transition flex items-center gap-2">
-          <i class="fa-solid fa-hand-holding-heart text-amber-500 w-4 text-center"></i>
-          <span>Donasi Buku</span>
-        </button>
-      </div>
-      <div class="border-t border-slate-100 pt-2 text-center">
-        <button onclick="app.showRegisterOptions(); app.toggleMobileMenu();" class="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold text-xs shadow-md shadow-emerald-600/20 active:scale-95 transition flex items-center justify-center gap-1.5">
-          <i class="fa-solid fa-user-plus text-amber-300"></i>
-          <span>Daftar Akun Baru (3 Paket Langganan)</span>
-        </button>
       </div>
     </div>
   </header>
-
-  <!-- ================= FRAME IKLAN SPONSOR ================= -->
-  <div id="sponsor-ad-bar" class="w-full bg-gradient-to-r from-slate-50 via-white to-slate-50 border-b border-slate-200 py-2 px-4 relative overflow-hidden">
-    <!-- Background pattern subtle -->
-    <div class="absolute inset-0 opacity-[0.03]" style="background-image: repeating-linear-gradient(45deg, #059669 0, #059669 1px, transparent 0, transparent 50%); background-size: 10px 10px;"></div>
-
-    <div class="max-w-7xl mx-auto flex items-center gap-3 relative z-10">
-
-      <!-- Label Sponsor -->
-      <div class="shrink-0 flex items-center gap-1.5">
-        <span class="text-[9px] font-bold text-slate-400 uppercase tracking-widest border border-slate-300 rounded px-1.5 py-0.5 bg-white shadow-sm">Iklan</span>
-      </div>
-
-      <!-- Slider Iklan -->
-      <div class="flex-1 overflow-hidden relative h-10">
-        <div id="ad-slider" class="flex transition-transform duration-700 ease-in-out h-full" style="will-change: transform;">
-
-          <!-- Slot Iklan 1 -->
-          <div class="ad-slide shrink-0 w-full flex items-center gap-3 px-1">
-            <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow text-white text-sm shrink-0">
-              <i class="fa-solid fa-leaf"></i>
-            </div>
-            <div class="flex-1 min-w-0">
-              <p class="text-xs font-bold text-slate-800 truncate">🌿 <span class="text-emerald-700">PT EcoRecycle Nusantara</span> — Mitra Daur Ulang Plastik Terpercaya No.1</p>
-              <p class="text-[10px] text-slate-500 truncate">Beli & jual plastik HDPE, PET, dan PP grade industri. Harga kompetitif, pickup gratis se-Jabodetabek.</p>
-            </div>
-            <a href="#" class="shrink-0 text-[10px] font-bold px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white transition shadow-sm whitespace-nowrap">Hubungi Sponsor →</a>
-          </div>
-
-          <!-- Slot Iklan 2 -->
-          <div class="ad-slide shrink-0 w-full flex items-center gap-3 px-1">
-            <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow text-white text-sm shrink-0">
-              <i class="fa-solid fa-droplet"></i>
-            </div>
-            <div class="flex-1 min-w-0">
-              <p class="text-xs font-bold text-slate-800 truncate">💧 <span class="text-blue-700">Tirta Limbah Industri</span> — Solusi Pengelolaan Limbah Cair B3</p>
-              <p class="text-[10px] text-slate-500 truncate">Layanan pengolahan limbah cair bersertifikasi KLHK. Dokumen manifes resmi, cepat & aman.</p>
-            </div>
-            <a href="#" class="shrink-0 text-[10px] font-bold px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white transition shadow-sm whitespace-nowrap">Pelajari Lebih →</a>
-          </div>
-
-          <!-- Slot Iklan 3 -->
-          <div class="ad-slide shrink-0 w-full flex items-center gap-3 px-1">
-            <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shadow text-white text-sm shrink-0">
-              <i class="fa-solid fa-industry"></i>
-            </div>
-            <div class="flex-1 min-w-0">
-              <p class="text-xs font-bold text-slate-800 truncate">🏭 <span class="text-amber-700">SteelMax Scrap Indonesia</span> — Pengepul Besi & Logam Bekas Terbesar</p>
-              <p class="text-[10px] text-slate-500 truncate">Harga besi tua & scrap tembaga terbaik. Timbangan digital bersertifikat, bayar tunai di tempat.</p>
-            </div>
-            <a href="#" class="shrink-0 text-[10px] font-bold px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-white transition shadow-sm whitespace-nowrap">Cek Harga →</a>
-          </div>
-
-          <!-- Slot Iklan 4: CTA Pasang Iklan -->
-          <div class="ad-slide shrink-0 w-full flex items-center gap-3 px-1">
-            <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-pink-500 to-rose-600 flex items-center justify-center shadow text-white text-sm shrink-0">
-              <i class="fa-solid fa-bullhorn"></i>
-            </div>
-            <div class="flex-1 min-w-0">
-              <p class="text-xs font-bold text-slate-800 truncate">📢 Pasang Iklan Bisnis Anda di Bursa Limbah — Jangkau ribuan pelaku industri daur ulang!</p>
-              <p class="text-[10px] text-slate-500 truncate">Slot iklan premium tersedia: Banner, Featured Listing, dan Sponsor Newsletter. Harga mulai Rp 500.000/bulan.</p>
-            </div>
-            <button onclick="app.navigateToSection('tarif')" class="shrink-0 text-[10px] font-bold px-3 py-1.5 rounded-lg bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white transition shadow-sm whitespace-nowrap">Pasang Iklan →</button>
-          </div>
-
-        </div>
-      </div>
-
-      <!-- Navigasi Manual Iklan -->
-      <div class="shrink-0 flex items-center gap-1.5">
-        <button id="ad-prev" onclick="adSlider.prev()" class="w-6 h-6 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 transition flex items-center justify-center text-[10px]">
-          <i class="fa-solid fa-chevron-left"></i>
-        </button>
-        <!-- Dot Indicator -->
-        <div id="ad-dots" class="flex items-center gap-1">
-          <span class="ad-dot w-1.5 h-1.5 rounded-full bg-emerald-500 transition-all duration-300"></span>
-          <span class="ad-dot w-1.5 h-1.5 rounded-full bg-slate-300 transition-all duration-300"></span>
-          <span class="ad-dot w-1.5 h-1.5 rounded-full bg-slate-300 transition-all duration-300"></span>
-          <span class="ad-dot w-1.5 h-1.5 rounded-full bg-slate-300 transition-all duration-300"></span>
-        </div>
-        <button id="ad-next" onclick="adSlider.next()" class="w-6 h-6 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 transition flex items-center justify-center text-[10px]">
-          <i class="fa-solid fa-chevron-right"></i>
-        </button>
-      </div>
-
-      <!-- Tombol Tutup -->
-      <button onclick="[REDACTED]'sponsor-ad-bar').style.display='none'" class="shrink-0 w-6 h-6 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition flex items-center justify-center text-[10px]" title="Tutup iklan">
-        <i class="fa-solid fa-xmark"></i>
-      </button>
-
-    </div>
-  </div>
-
-  <!-- Script Ad Slider -->
-  <script>
-    const adSlider = (() => {
-      let current = 0;
-      const total = 4;
-      let timer = null;
-
-      function goTo(index) {
-        current = (index + total) % total;
-        const slider = [REDACTED]'ad-slider');
-        if (slider) slider.style.transform = `translateX(-${current * 100}%)`;
-        document.querySelectorAll('.ad-dot').forEach((dot, i) => {
-          dot.classList.toggle('bg-emerald-500', i === current);
-          dot.classList.toggle('w-3', i === current);
-          dot.classList.toggle('bg-slate-300', i !== current);
-          dot.classList.toggle('w-1.5', i !== current);
-        });
-      }
-
-      function next() { goTo(current + 1); resetTimer(); }
-      function prev() { goTo(current - 1); resetTimer(); }
-
-      function resetTimer() {
-        clearInterval(timer);
-        timer = setInterval(() => goTo(current + 1), 5000);
-      }
-
-      // Auto-slide setelah DOM siap
-      document.addEventListener('DOMContentLoaded', () => {
-        goTo(0);
-        resetTimer();
-      });
-
-      return { next, prev, goTo };
-    })();
-  </script>
 
   <!-- ================= BANNER INDIKATOR STATUS PERAN & TIER ================= -->
   <div id="role-context-banner" class="hidden bg-slate-900 text-slate-100 px-4 py-2.5 text-xs border-b border-slate-800 transition-all">
@@ -619,11 +364,14 @@
 
     </div>
 
-    <!-- ================= TAMPILAN 1: HALAMAN DEPAN (PUBLIK) ================= -->
-    <div id="view-public" class="tab-content">
+    <!-- ================= TAMPILAN 1: HALAMAN DEPAN (4 TAB UTAMA MOBILE APP) ================= -->
+    <div id="view-public" class="tab-content pb-24">
       
-      <!-- ================= STRIP DISCOVERY STORY HIGHLIGHTS (KHUSUS MOBILE) ================= -->
-      <div class="lg:hidden bg-gradient-to-b from-white via-slate-50 to-slate-100/80 border-b border-slate-200/90 px-3 pt-3 pb-2.5">
+      <!-- ================= TAB 1: HOME (BERANDA & KATALOG BURSA) ================= -->
+      <div id="tab-home" class="app-tab-pane">
+
+        <!-- ================= STRIP DISCOVERY STORY HIGHLIGHTS (KHUSUS MOBILE) ================= -->
+        <div class="lg:hidden bg-gradient-to-b from-white via-slate-50 to-slate-100/80 border-b border-slate-200/90 px-3 pt-3 pb-2.5">
         <div class="flex items-center justify-between mb-2">
           <span class="text-[11px] font-extrabold uppercase text-slate-800 tracking-wider flex items-center gap-1.5">
             <span class="w-2 h-2 rounded-full bg-emerald-500 live-badge-dot"></span>
@@ -1123,96 +871,345 @@
         </div>
       </section>
 
-      <!-- KALKULATOR TRANSAKSI INTERAKTIF -->
-      <section id="kalkulator" class="py-16 bg-slate-50 border-b border-slate-200">
-        <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-          
-          <div class="text-center mb-12">
-            <h2 class="text-xs font-bold text-brand-600 uppercase tracking-widest mb-2">Simulasi Keuangan Transparan</h2>
-            <h3 class="text-3xl font-extrabold text-slate-900">Kalkulator Nilai Limbah & Pembayaran DP</h3>
-            <p class="text-slate-600 mt-2 text-sm">
-              Hitung estimasi nilai bruto limbah, alokasi DP 30%, biaya penanganan sistem (berjenjang sesuai nilai transaksi), dan proyeksi pengurangan emisi karbon (ESG).
+      <!-- ================= SEKSI EVENT ================= -->
+      <section id="event" class="py-20 bg-gradient-to-b from-indigo-50/60 via-white to-slate-50 border-t border-indigo-100">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+
+          <!-- Header -->
+          <div class="text-center max-w-3xl mx-auto mb-14">
+            <div class="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full text-xs font-bold bg-indigo-100 text-indigo-800 border border-indigo-300 mb-3">
+              <i class="fa-solid fa-calendar-star text-indigo-500"></i>
+              <span>Kalender Kegiatan</span>
+            </div>
+            <h2 class="text-3xl sm:text-4xl font-extrabold text-slate-900 leading-tight">
+              Event &amp; Agenda Bursa Limbah
+            </h2>
+            <p class="text-slate-500 mt-3 text-sm max-w-xl mx-auto">
+              Ikuti seminar, workshop, business matching, dan pameran limbah terkurasi — pertemukan penjual dan pembeli limbah di satu forum terverifikasi.
             </p>
           </div>
 
-          <!-- Wadah Kalkulator -->
-          <div class="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-xl grid md:grid-cols-12 gap-8">
-            <div class="md:col-span-6 space-y-4">
-              <div>
-                <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Pilih Komoditas Limbah</label>
-                <select id="calc-category" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2.5 text-sm font-medium focus:ring-2 focus:ring-brand-500 focus:outline-none">
-                  <!-- Diisi otomatis oleh JavaScript -->
-                </select>
-              </div>
+          <!-- Filter Kategori Event -->
+          <div class="flex flex-wrap justify-center gap-2 mb-10" id="event-filter-pills">
+            <button onclick="app.filterEvents('semua')" data-filter="semua" class="event-filter-btn px-4 py-1.5 rounded-full text-xs font-bold bg-indigo-600 text-white border border-indigo-600 transition">Semua</button>
+            <button onclick="app.filterEvents('workshop')" data-filter="workshop" class="event-filter-btn px-4 py-1.5 rounded-full text-xs font-semibold bg-white text-slate-600 border border-slate-300 hover:border-indigo-400 hover:text-indigo-700 transition">Workshop</button>
+            <button onclick="app.filterEvents('seminar')" data-filter="seminar" class="event-filter-btn px-4 py-1.5 rounded-full text-xs font-semibold bg-white text-slate-600 border border-slate-300 hover:border-indigo-400 hover:text-indigo-700 transition">Seminar</button>
+            <button onclick="app.filterEvents('pameran')" data-filter="pameran" class="event-filter-btn px-4 py-1.5 rounded-full text-xs font-semibold bg-white text-slate-600 border border-slate-300 hover:border-indigo-400 hover:text-indigo-700 transition">Pameran &amp; Expo</button>
+            <button onclick="app.filterEvents('business-matching')" data-filter="business-matching" class="event-filter-btn px-4 py-1.5 rounded-full text-xs font-semibold bg-white text-slate-600 border border-slate-300 hover:border-indigo-400 hover:text-indigo-700 transition">Business Matching</button>
+            <button onclick="app.filterEvents('webinar')" data-filter="webinar" class="event-filter-btn px-4 py-1.5 rounded-full text-xs font-semibold bg-white text-slate-600 border border-slate-300 hover:border-indigo-400 hover:text-indigo-700 transition">Webinar Online</button>
+          </div>
 
-              <div>
-                <div class="flex justify-between items-center mb-1.5">
-                  <label class="block text-xs font-bold uppercase text-slate-600">Volume / Tonase Limbah</label>
-                  <div class="flex items-center space-x-1.5 bg-slate-100 px-2 py-0.5 rounded-md">
-                    <span id="calc-volume-display" class="text-xs font-mono font-bold text-slate-800">2.000</span>
-                    <span id="calc-unit-label" class="text-xs text-brand-700 font-mono font-bold">Liter</span>
-                  </div>
-                </div>
-                <input type="number" id="calc-quantity" value="2000" min="1" max="50000" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2.5 text-sm font-semibold focus:ring-2 focus:ring-brand-500 focus:outline-none transition">
-                
-                <!-- Penggeser Rentang Volume & Tombol Pintasan Cepat -->
-                <div class="mt-2.5 space-y-2">
-                  <input type="range" id="calc-volume-slider" min="100" max="20000" step="100" value="2000" class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-emerald-600">
-                  <div class="flex items-center justify-between text-[10px] text-slate-400 font-mono">
-                    <span>100</span>
-                    <span>5.000</span>
-                    <span>10.000</span>
-                    <span>20.000+</span>
-                  </div>
-                  <div class="flex flex-wrap items-center gap-1.5 pt-1">
-                    <span class="text-[11px] text-slate-500 font-medium mr-1">Preset:</span>
-                    <button type="button" onclick="app.setCalcVolume(500)" class="px-2.5 py-1 text-xs rounded-lg border border-slate-200 bg-white hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-300 text-slate-700 font-medium transition shadow-sm">500</button>
-                    <button type="button" onclick="app.setCalcVolume(1000)" class="px-2.5 py-1 text-xs rounded-lg border border-slate-200 bg-white hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-300 text-slate-700 font-medium transition shadow-sm">1.000</button>
-                    <button type="button" onclick="app.setCalcVolume(2500)" class="px-2.5 py-1 text-xs rounded-lg border border-slate-200 bg-white hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-300 text-slate-700 font-medium transition shadow-sm">2.500</button>
-                    <button type="button" onclick="app.setCalcVolume(5000)" class="px-2.5 py-1 text-xs rounded-lg border border-slate-200 bg-white hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-300 text-slate-700 font-medium transition shadow-sm">5.000</button>
-                    <button type="button" onclick="app.setCalcVolume(10000)" class="px-2.5 py-1 text-xs rounded-lg border border-slate-200 bg-white hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-300 text-slate-700 font-medium transition shadow-sm">10.000</button>
-                  </div>
-                </div>
-              </div>
+          <!-- Grid Kartu Event (Dinamis dari app.renderEvents) -->
+          <div id="event-cards-grid" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            <!-- Diisi secara dinamis oleh JavaScript app.renderEvents() -->
+          </div><!-- /event-cards-grid -->
 
-              <div>
-                <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Harga Satuan Acuan (Rp)</label>
-                <input type="number" id="calc-price" value="9500" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2.5 text-sm font-semibold focus:ring-2 focus:ring-brand-500 focus:outline-none">
+          <!-- CTA Banner Notifikasi -->
+          <div class="mt-14 bg-gradient-to-r from-indigo-600 via-indigo-700 to-violet-700 rounded-3xl p-8 sm:p-10 text-white text-center relative overflow-hidden shadow-xl">
+            <div class="absolute inset-0 opacity-10" style="background-image: radial-gradient(circle at 20% 50%, #fff 0, transparent 50%), radial-gradient(circle at 80% 50%, #fff 0, transparent 50%);"></div>
+            <div class="relative z-10">
+              <div class="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full text-xs font-bold bg-white/20 border border-white/30 mb-3">
+                <i class="fa-solid fa-bell text-yellow-300"></i>
+                <span>Jangan Lewatkan Event Berikutnya</span>
               </div>
-            </div>
-
-            <div class="md:col-span-6 bg-slate-900 text-white rounded-2xl p-6 flex flex-col justify-between space-y-4">
-              <div>
-                <div class="text-xs text-slate-400 font-mono uppercase">Hasil Simulasi Transaksi</div>
-                <div class="text-3xl font-extrabold font-mono text-emerald-400 mt-1" id="calc-result-gross">Rp19.000.000</div>
-                <div class="text-[11px] text-slate-400 mt-0.5">Estimasi Total Nilai Pasokan Limbah</div>
-              </div>
-
-              <div class="space-y-2 border-t border-slate-800 pt-4 text-xs font-mono">
-                <div class="flex justify-between text-slate-300">
-                  <span>Alokasi DP 30% Rekening Bersama:</span>
-                  <span class="font-bold text-brand-400" id="calc-result-dp">Rp5.700.000</span>
-                </div>
-                <div class="flex justify-between text-slate-300">
-                  <span>Biaya Penanganan Sistem:</span>
-                  <span id="calc-result-fee" class="text-amber-400 font-bold">Rp10.000</span>
-                </div>
-                <div class="flex justify-between text-slate-300">
-                  <span>Sisa 70% Pelunasan di Lokasi:</span>
-                  <span id="calc-result-remaining">Rp13.300.000</span>
-                </div>
-              </div>
-
-              <div class="p-3 rounded-xl bg-slate-800/80 border border-slate-700 flex items-center space-x-2.5 text-xs text-emerald-300">
-                <i class="fa-solid fa-leaf text-base shrink-0"></i>
-                <span id="calc-result-esg">Mengurangi proyeksi 3.200 Kg jejak karbon (CO2e).</span>
+              <h3 class="text-2xl sm:text-3xl font-extrabold mb-2">Daftarkan Diri untuk Notifikasi Event</h3>
+              <p class="text-sm text-indigo-200 mb-6 max-w-md mx-auto">Jadilah yang pertama mendapatkan informasi event, early-bird ticket, dan undangan eksklusif khusus mitra Bursa Limbah.</p>
+              <div class="flex flex-col sm:flex-row items-center justify-center gap-3 max-w-md mx-auto">
+                <input type="email" id="event-notify-email" placeholder="Masukkan email Anda..." class="flex-1 px-4 py-3 rounded-xl text-slate-800 text-sm font-medium bg-white focus:outline-none focus:ring-2 focus:ring-yellow-400 w-full placeholder-slate-400">
+                <button onclick="app.subscribeEventNotification()" class="px-6 py-3 rounded-xl bg-yellow-400 hover:bg-yellow-300 text-indigo-900 font-extrabold text-sm shadow-md transition whitespace-nowrap">
+                  <i class="fa-solid fa-paper-plane mr-1.5"></i> Langganan Notifikasi
+                </button>
               </div>
             </div>
           </div>
 
         </div>
       </section>
+      </div> <!-- /#tab-home -->
 
+      <!-- ================= TAB 2: MULAI JUAL (SCREEN JUAL PASOKAN ADAPTIF) ================= -->
+      <div id="tab-sell" class="app-tab-pane hidden max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-10">
+        <!-- Header Screen -->
+        <div class="mb-8 text-center sm:text-left">
+          <div class="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-300 mb-2.5">
+            <i class="fa-solid fa-circle-plus text-emerald-600"></i>
+            <span>Portal Pendaftaran Pasokan Limbah</span>
+          </div>
+          <h2 class="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">Mulai Jual Pasokan Limbah</h2>
+          <p class="text-slate-600 text-xs sm:text-sm mt-1 max-w-2xl">
+            Pilih klasifikasi sumber limbah Anda di bawah ini (Rumah Tangga, Industri Menengah, atau Industri Besar) untuk menampilkan formulir spesifik dengan verifikasi otomatis &amp; jaminan pembayaran DP 30% Escrow.
+          </p>
+        </div>
+
+        <!-- Card Container Formulir -->
+        <div class="bg-white rounded-3xl p-5 sm:p-8 shadow-xl border border-slate-200">
+      <form id="form-upload-product" onsubmit="app.handleUploadProduct(event)" class="space-y-4">
+        <!-- STEP 1: Pemilih Sumber Limbah (3 Kartu) -->
+        <div>
+          <label class="block text-xs font-bold uppercase text-slate-600 mb-2">
+            <i class="fa-solid fa-layer-group mr-1 text-brand-600"></i>
+            Pilih Sumber Limbah *
+          </label>
+          <div id="up-source-cards" class="grid grid-cols-3 gap-2.5">
+            <button type="button" onclick="app.selectSourceTier('source_household')"
+              id="source-card-household"
+              class="source-card group p-3 rounded-2xl border-2 border-slate-200 bg-white text-center transition-all duration-200 hover:shadow-lg hover:border-emerald-400 cursor-pointer active:scale-[0.97]">
+              <div class="text-3xl mb-1.5">🏠</div>
+              <div class="font-bold text-xs text-slate-800 group-hover:text-emerald-700">Rumah Tangga</div>
+              <div class="text-[10px] text-slate-400 leading-tight mt-0.5">Perorangan / Bank Sampah / RT</div>
+            </button>
+            <button type="button" onclick="app.selectSourceTier('source_medium_industry')"
+              id="source-card-medium"
+              class="source-card group p-3 rounded-2xl border-2 border-slate-200 bg-white text-center transition-all duration-200 hover:shadow-lg hover:border-blue-400 cursor-pointer active:scale-[0.97]">
+              <div class="text-3xl mb-1.5">🏢</div>
+              <div class="font-bold text-xs text-slate-800 group-hover:text-blue-700">Industri Menengah</div>
+              <div class="text-[10px] text-slate-400 leading-tight mt-0.5">UMKM / Bengkel / Percetakan</div>
+            </button>
+            <button type="button" onclick="app.selectSourceTier('source_large_industry')"
+              id="source-card-large"
+              class="source-card group p-3 rounded-2xl border-2 border-slate-200 bg-white text-center transition-all duration-200 hover:shadow-lg hover:border-amber-400 cursor-pointer active:scale-[0.97]">
+              <div class="text-3xl mb-1.5">🏭</div>
+              <div class="font-bold text-xs text-slate-800 group-hover:text-amber-700">Industri Besar</div>
+              <div class="text-[10px] text-slate-400 leading-tight mt-0.5">Pabrik / Kawasan Industri</div>
+            </button>
+          </div>
+          <input type="hidden" id="up-source-type" value="">
+          <div id="up-source-hint" class="mt-2 text-center text-[11px] text-amber-600 font-semibold hidden">
+            <i class="fa-solid fa-circle-info mr-1"></i>
+            <span id="up-source-hint-text">Silakan pilih sumber limbah</span>
+          </div>
+        </div>
+
+        <!-- Seluruh field formulir (disembunyikan sampai sumber dipilih) -->
+        <div id="up-form-fields" class="space-y-4 hidden">
+
+        <div>
+          <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Judul / Deskripsi Ringkas Pasokan *</label>
+          <input type="text" id="up-title" required placeholder="Contoh: Minyak Jelantah Kualitas Resto Cepat Saji (FFA < 3%)" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none">
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Kategori Komoditas *</label>
+            <select id="up-category" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none">
+              <!-- Diisi otomatis oleh JavaScript -->
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Jenis Wadah Kemasan *</label>
+            <select id="up-container-type" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none">
+              <option value="IBC Tank (1000L)">IBC Tank (1000L)</option>
+              <option value="Drum Besi (200L)">Drum Besi (200L)</option>
+              <option value="Jerigen (20L - 30L)">Jerigen (20L - 30L)</option>
+              <option value="Bal Press Padat">Bal Press Padat</option>
+              <option value="Karung Jumbo">Karung Jumbo</option>
+              <option value="Curah / Bak Truk Fuso">Curah / Bak Truk Fuso</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-3 gap-3">
+          <div>
+            <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Jumlah Wadah</label>
+            <input type="number" id="up-container-qty" value="1" min="1" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Kuantitas Total</label>
+            <input type="number" id="up-qty" required value="1000" min="1" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none" oninput="app.calculateUploadTotal()">
+          </div>
+          <div>
+            <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Satuan</label>
+            <select id="up-unit" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none">
+              <option value="Liter">Liter</option>
+              <option value="Kg">Kg</option>
+              <option value="Ton">Ton</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Kondisi Fisik Pasokan *</label>
+            <select id="up-condition" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-brand-500 focus:outline-none">
+              <option value="Bersih">Bersih (Tanpa Campuran / Siap Olah)</option>
+              <option value="Campur">Campur (Perlu Pemilahan / Sortir)</option>
+              <option value="Terpress">Terpress (Bal Padat Siap Muat)</option>
+              <option value="Cacah">Cacah (Flakes / Crushed)</option>
+              <option value="Baled">Baled (Terikat Rapi Standar Ekspor)</option>
+            </select>
+          </div>
+          <div id="up-grade-box">
+            <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Kadar / Grade Mutu *</label>
+            <input type="text" id="up-grade" placeholder="Contoh: FFA < 3%, Kadar Air < 1.5%, Tebal 10mm" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-brand-500 focus:outline-none">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-3 gap-3">
+          <div>
+            <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Minimal Beli (MOQ) *</label>
+            <div class="flex">
+              <input type="number" id="up-min-order" value="100" min="1" class="w-full bg-slate-50 border border-slate-300 rounded-l-xl px-3 py-2 text-xs focus:outline-none">
+              <span id="up-min-order-unit" class="bg-slate-200 border border-l-0 border-slate-300 rounded-r-xl px-2.5 py-2 text-xs font-semibold text-slate-700 flex items-center">Kg</span>
+            </div>
+          </div>
+          <div>
+            <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Jadwal Pengambilan *</label>
+            <select id="up-pickup-schedule" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-brand-500 focus:outline-none">
+              <option value="Siap Angkut Segera (H+0 s/d H+1)">Siap Angkut Segera (H+0 - H+1)</option>
+              <option value="Terjadwal (H+2 s/d H+3)">Terjadwal (H+2 - H+3)</option>
+              <option value="Pengambilan Rutin Mingguan">Pengambilan Rutin Mingguan</option>
+              <option value="Kontrak Pasokan Berkala Bulanan">Kontrak Pasokan Berkala</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Status Ketersediaan *</label>
+            <select id="up-listing-status" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-brand-500 focus:outline-none">
+              <option value="Tersedia">Tersedia (Ready Stock)</option>
+              <option value="Kontrak">Kontrak (Pemasok Rutin)</option>
+              <option value="Terjual">Terjual (Arsip)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Harga Penawaran Satuan (Rp) *</label>
+            <input type="number" id="up-price" required value="9500" min="100" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2.5 text-sm font-semibold focus:ring-2 focus:ring-brand-500 focus:outline-none" oninput="app.calculateUploadTotal()">
+          </div>
+          <div>
+            <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Total Nilai Penawaran</label>
+            <div id="up-total-display" class="bg-slate-100 border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-bold font-mono text-emerald-800">
+              Rp9.500.000
+            </div>
+          </div>
+        </div>
+
+        <!-- Klasifikasi Limbah B3 KLHK (tersembunyi untuk Rumah Tangga) -->
+        <div id="up-b3-section" class="p-3 bg-amber-50 rounded-2xl border border-amber-200 space-y-2">
+          <div class="flex items-center space-x-2">
+            <input type="checkbox" id="up-is-b3" class="w-4 h-4 text-rose-600 rounded focus:ring-rose-500 border-slate-300" onchange="[REDACTED]'up-b3-permit-box').classList.toggle('hidden', !this.checked)">
+            <label for="up-is-b3" class="text-xs font-bold text-slate-800 cursor-pointer flex items-center gap-1">
+              <i class="fa-solid fa-triangle-exclamation text-rose-600"></i>
+              <span>Limbah B3 (Bahan Berbahaya & Beracun) — Memerlukan Izin Khusus KLHK</span>
+            </label>
+          </div>
+          <div id="up-b3-permit-box" class="hidden pl-6">
+            <label class="block text-[11px] font-semibold text-slate-600 mb-1">Nomor Izin Pengelolaan / Rekomendasi Pengangkutan B3 KLHK</label>
+            <input type="text" id="up-b3-permit" placeholder="Contoh: SK.KLHK/PLB3/2026/8912" class="w-full bg-white border border-amber-300 rounded-xl px-3 py-2 text-xs focus:outline-none font-mono">
+          </div>
+        </div>
+
+        <!-- Field Industri: NIB & Izin TPS (ditampilkan kondisional per tier) -->
+        <div id="up-industry-fields" class="hidden">
+          <div class="grid grid-cols-2 gap-3">
+            <div id="up-nib-box">
+              <label class="block text-xs font-bold uppercase text-slate-600 mb-1">
+                <i class="fa-solid fa-id-card-clip text-blue-500 mr-1"></i>Nomor Induk Berusaha (NIB)
+              </label>
+              <input type="text" id="up-nib" placeholder="Contoh: 9120003847291" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-mono focus:ring-2 focus:ring-blue-500 focus:outline-none">
+            </div>
+            <div id="up-tps-box" class="hidden">
+              <label class="block text-xs font-bold uppercase text-slate-600 mb-1">
+                <i class="fa-solid fa-file-shield text-amber-600 mr-1"></i>No. Izin TPS Limbah / Manifes KLHK
+              </label>
+              <input type="text" id="up-tps-permit" placeholder="Contoh: SK.KLHK/TPS/2026/..." class="w-full bg-slate-50 border border-amber-300 rounded-xl px-3 py-2 text-xs font-mono focus:ring-2 focus:ring-amber-500 focus:outline-none">
+            </div>
+          </div>
+        </div>
+
+        <!-- 3 Foto Eviden Fisik -->
+        <div class="border-t border-slate-100 pt-2">
+          <label class="block text-xs font-bold uppercase text-slate-600 mb-1.5 flex items-center">
+            <i class="fa-solid fa-camera mr-1.5 text-emerald-600"></i>
+            <span>3 Foto Eviden Fisik & Tera Digital (Wajib)</span>
+          </label>
+          <div class="grid grid-cols-3 gap-2 text-xs">
+            <div class="p-2 rounded-xl bg-slate-50 border border-slate-200 text-center space-y-1">
+              <i class="fa-solid fa-boxes-stacked text-emerald-600 text-lg"></i>
+              <div class="font-bold text-[11px] text-slate-700">1. Wadah Utuh</div>
+              <p class="text-[10px] text-slate-400">Drum/IBC/bal tersegel</p>
+              <input type="hidden" id="up-foto-1" value="https://images.unsplash.com/photo-1578575437130-527eed3abbec?auto=format&fit=crop&w=800&q=80">
+              <span class="text-[10px] text-emerald-600 font-semibold"><i class="fa-solid fa-check"></i> Siap Diunggah</span>
+            </div>
+            <div class="p-2 rounded-xl bg-slate-50 border border-slate-200 text-center space-y-1">
+              <i class="fa-solid fa-flask text-blue-600 text-lg"></i>
+              <div class="font-bold text-[11px] text-slate-700">2. Sampel Material</div>
+              <p class="text-[10px] text-slate-400">Detail kebersihan fisik</p>
+              <input type="hidden" id="up-foto-2" value="https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?auto=format&fit=crop&w=800&q=80">
+              <span class="text-[10px] text-emerald-600 font-semibold"><i class="fa-solid fa-check"></i> Siap Diunggah</span>
+            </div>
+            <div class="p-2 rounded-xl bg-slate-50 border border-slate-200 text-center space-y-1">
+              <i class="fa-solid fa-scale-balanced text-amber-600 text-lg"></i>
+              <div class="font-bold text-[11px] text-slate-700">3. Struk Timbangan</div>
+              <p class="text-[10px] text-slate-400">Bukti tera kalibrasi sah</p>
+              <input type="hidden" id="up-foto-3" value="https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=800&q=80">
+              <span class="text-[10px] text-emerald-600 font-semibold"><i class="fa-solid fa-check"></i> Siap Diunggah</span>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Asal Usul Limbah *</label>
+          <input type="text" id="up-origin" required placeholder="Contoh: Jaringan Restoran Cepat Saji Wilayah Jakarta Selatan" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none">
+        </div>
+
+        <div id="up-location-grid" class="grid grid-cols-3 gap-3">
+          <div id="up-city-box">
+            <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Nama Kota *</label>
+            <input type="text" id="up-city" required placeholder="Contoh: Jakarta Selatan" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-brand-500 focus:outline-none">
+          </div>
+          <div id="up-address-box">
+            <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Alamat Penjemputan / Gudang *</label>
+            <input type="text" id="up-address" required placeholder="Jl. Raya Pasar Minggu No. 45" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-brand-500 focus:outline-none">
+          </div>
+          <div id="up-coords-box">
+            <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Titik GPS (Lat, Lng)</label>
+            <input type="text" id="up-coords" value="-6.2845, 106.8421" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-2 py-2 text-xs font-mono focus:outline-none">
+          </div>
+        </div>
+
+        </div><!-- /up-form-fields -->
+
+        <div class="flex justify-end space-x-3 pt-2">
+          <button type="button" onclick="app.closeModals()" class="px-5 py-2.5 rounded-xl border border-slate-300 text-slate-700 text-xs font-bold hover:bg-slate-50 transition">
+            Batal
+          </button>
+          <button type="submit" class="px-6 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold shadow-md transition flex items-center space-x-1.5">
+            <i class="fa-solid fa-cloud-arrow-up"></i>
+            <span>Kirim untuk Kurasi Pengelola</span>
+          </button>
+        </div>
+      </form>
+        </div>
+
+        <!-- Kartu Jaminan Keamanan Penjual -->
+        <div class="mt-8 grid sm:grid-cols-3 gap-4">
+          <div class="p-4 rounded-2xl bg-emerald-50/70 border border-emerald-100 flex items-start space-x-3 text-xs">
+            <i class="fa-solid fa-shield-halved text-emerald-600 text-xl shrink-0 mt-0.5"></i>
+            <div>
+              <div class="font-bold text-slate-900">DP 30% Rekber Aman</div>
+              <div class="text-slate-500 text-[11px] mt-0.5">Pembeli wajib menyetor DP 30% ke rekening bersama sebelum armada penjemputan dikirim.</div>
+            </div>
+          </div>
+          <div class="p-4 rounded-2xl bg-blue-50/70 border border-blue-100 flex items-start space-x-3 text-xs">
+            <i class="fa-solid fa-certificate text-blue-600 text-xl shrink-0 mt-0.5"></i>
+            <div>
+              <div class="font-bold text-slate-900">Verifikasi Sah</div>
+              <div class="text-slate-500 text-[11px] mt-0.5">Kurasi foto wadah, sampel, dan tera kalibrasi timbangan untuk menjamin keaslian komoditas.</div>
+            </div>
+          </div>
+          <div class="p-4 rounded-2xl bg-amber-50/70 border border-amber-100 flex items-start space-x-3 text-xs">
+            <i class="fa-solid fa-gift text-amber-600 text-xl shrink-0 mt-0.5"></i>
+            <div>
+              <div class="font-bold text-slate-900">Bebas Biaya Bulanan</div>
+              <div class="text-slate-500 text-[11px] mt-0.5">Pendaftaran pasokan dan penerbitan tiket muat barcode QR 100% gratis bagi seluruh penjual.</div>
+            </div>
+          </div>
+        </div>
+      </div> <!-- /#tab-sell -->
+
+      <!-- ================= TAB 3: BERLANGGANAN (PAKET SUBSCRIPTION PEMBELI) ================= -->
+      <div id="tab-subscription" class="app-tab-pane hidden">
       <!-- ================= 3 PILIHAN JENIS BERLANGGANAN PEMBELI (UTAMA) ================= -->
       <section id="tarif" class="py-20 bg-white border-b border-slate-200">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -1285,243 +1282,97 @@
         </div>
       </section>
 
-      <!-- ================= SEKSI EVENT ================= -->
-      <section id="event" class="py-20 bg-gradient-to-b from-indigo-50/60 via-white to-slate-50 border-t border-indigo-100">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      </div> <!-- /#tab-subscription -->
 
-          <!-- Header -->
-          <div class="text-center max-w-3xl mx-auto mb-14">
-            <div class="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full text-xs font-bold bg-indigo-100 text-indigo-800 border border-indigo-300 mb-3">
-              <i class="fa-solid fa-calendar-star text-indigo-500"></i>
-              <span>Kalender Kegiatan</span>
-            </div>
-            <h2 class="text-3xl sm:text-4xl font-extrabold text-slate-900 leading-tight">
-              Event &amp; Agenda Bursa Limbah
-            </h2>
-            <p class="text-slate-500 mt-3 text-sm max-w-xl mx-auto">
-              Ikuti seminar, workshop, business matching, dan pameran limbah terkurasi — pertemukan penjual dan pembeli limbah di satu forum terverifikasi.
+      <!-- ================= TAB 4: SIMULASI (KALKULATOR DP 30% & ESG) ================= -->
+      <div id="tab-simulation" class="app-tab-pane hidden">
+      <!-- KALKULATOR TRANSAKSI INTERAKTIF -->
+      <section id="kalkulator" class="py-16 bg-slate-50 border-b border-slate-200">
+        <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+          
+          <div class="text-center mb-12">
+            <h2 class="text-xs font-bold text-brand-600 uppercase tracking-widest mb-2">Simulasi Keuangan Transparan</h2>
+            <h3 class="text-3xl font-extrabold text-slate-900">Kalkulator Nilai Limbah & Pembayaran DP</h3>
+            <p class="text-slate-600 mt-2 text-sm">
+              Hitung estimasi nilai bruto limbah, alokasi DP 30%, biaya penanganan sistem (berjenjang sesuai nilai transaksi), dan proyeksi pengurangan emisi karbon (ESG).
             </p>
           </div>
 
-          <!-- Filter Kategori Event -->
-          <div class="flex flex-wrap justify-center gap-2 mb-10" id="event-filter-pills">
-            <button onclick="app.filterEvents('semua')" data-filter="semua" class="event-filter-btn px-4 py-1.5 rounded-full text-xs font-bold bg-indigo-600 text-white border border-indigo-600 transition">Semua</button>
-            <button onclick="app.filterEvents('workshop')" data-filter="workshop" class="event-filter-btn px-4 py-1.5 rounded-full text-xs font-semibold bg-white text-slate-600 border border-slate-300 hover:border-indigo-400 hover:text-indigo-700 transition">Workshop</button>
-            <button onclick="app.filterEvents('seminar')" data-filter="seminar" class="event-filter-btn px-4 py-1.5 rounded-full text-xs font-semibold bg-white text-slate-600 border border-slate-300 hover:border-indigo-400 hover:text-indigo-700 transition">Seminar</button>
-            <button onclick="app.filterEvents('pameran')" data-filter="pameran" class="event-filter-btn px-4 py-1.5 rounded-full text-xs font-semibold bg-white text-slate-600 border border-slate-300 hover:border-indigo-400 hover:text-indigo-700 transition">Pameran &amp; Expo</button>
-            <button onclick="app.filterEvents('business-matching')" data-filter="business-matching" class="event-filter-btn px-4 py-1.5 rounded-full text-xs font-semibold bg-white text-slate-600 border border-slate-300 hover:border-indigo-400 hover:text-indigo-700 transition">Business Matching</button>
-            <button onclick="app.filterEvents('webinar')" data-filter="webinar" class="event-filter-btn px-4 py-1.5 rounded-full text-xs font-semibold bg-white text-slate-600 border border-slate-300 hover:border-indigo-400 hover:text-indigo-700 transition">Webinar Online</button>
-          </div>
-
-          <!-- Grid Kartu Event -->
-          <div id="event-cards-grid" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-
-            <!-- Event 1 -->
-            <article class="event-card bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 group" data-category="workshop">
-              <div class="relative">
-                <img src="https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&w=800&q=80" alt="Workshop Pengelolaan Minyak Jelantah" class="w-full h-44 object-cover group-hover:scale-105 transition-transform duration-300">
-                <div class="absolute top-3 left-3">
-                  <span class="px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-violet-600 text-white shadow">Workshop</span>
-                </div>
-                <div class="absolute top-3 right-3 bg-white/90 backdrop-blur-sm rounded-xl px-2.5 py-1.5 text-center shadow-sm">
-                  <div class="text-lg font-black text-indigo-700 leading-none">22</div>
-                  <div class="text-[10px] font-bold text-slate-500 uppercase">Sep 2026</div>
-                </div>
+          <!-- Wadah Kalkulator -->
+          <div class="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-xl grid md:grid-cols-12 gap-8">
+            <div class="md:col-span-6 space-y-4">
+              <div>
+                <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Pilih Komoditas Limbah</label>
+                <select id="calc-category" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2.5 text-sm font-medium focus:ring-2 focus:ring-brand-500 focus:outline-none">
+                  <!-- Diisi otomatis oleh JavaScript -->
+                </select>
               </div>
-              <div class="p-5 flex flex-col flex-1">
-                <div class="flex items-center gap-2 text-[10px] text-slate-500 font-semibold mb-2">
-                  <i class="fa-solid fa-location-dot text-indigo-400"></i>
-                  <span>Balai Kartini, Jakarta Selatan</span>
-                  <span class="text-slate-300">|</span>
-                  <i class="fa-solid fa-clock text-indigo-400"></i>
-                  <span>09.00 – 15.00 WIB</span>
-                </div>
-                <h3 class="text-sm font-extrabold text-slate-900 mb-1.5 leading-snug">Workshop Pengelolaan &amp; Monetisasi Minyak Jelantah (UCO) untuk Biodiesel</h3>
-                <p class="text-xs text-slate-500 flex-1 leading-relaxed">Pelajari standar sertifikasi ISCC, teknik pengujian kadar FFA, dan cara terhubung langsung dengan pembeli ekspor biodiesel berkualitas tinggi.</p>
-                <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
-                  <div class="flex items-center gap-1.5 text-[11px] font-semibold text-emerald-700">
-                    <i class="fa-solid fa-ticket text-emerald-500"></i>
-                    <span>Gratis (Terbatas 80 Kursi)</span>
+
+              <div>
+                <div class="flex justify-between items-center mb-1.5">
+                  <label class="block text-xs font-bold uppercase text-slate-600">Volume / Tonase Limbah</label>
+                  <div class="flex items-center space-x-1.5 bg-slate-100 px-2 py-0.5 rounded-md">
+                    <span id="calc-volume-display" class="text-xs font-mono font-bold text-slate-800">2.000</span>
+                    <span id="calc-unit-label" class="text-xs text-brand-700 font-mono font-bold">Liter</span>
                   </div>
-                  <button onclick="app.showToast('Pendaftaran event Workshop UCO segera dibuka!', 'warning')" class="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-[11px] font-bold transition shadow-sm">Daftar →</button>
                 </div>
-              </div>
-            </article>
-
-            <!-- Event 2 -->
-            <article class="event-card bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 group" data-category="business-matching">
-              <div class="relative">
-                <img src="https://images.unsplash.com/photo-1556761175-b413da4baf72?auto=format&fit=crop&w=800&q=80" alt="Business Matching Limbah Industri" class="w-full h-44 object-cover group-hover:scale-105 transition-transform duration-300">
-                <div class="absolute top-3 left-3">
-                  <span class="px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-emerald-600 text-white shadow">Business Matching</span>
-                </div>
-                <div class="absolute top-3 right-3 bg-white/90 backdrop-blur-sm rounded-xl px-2.5 py-1.5 text-center shadow-sm">
-                  <div class="text-lg font-black text-indigo-700 leading-none">05</div>
-                  <div class="text-[10px] font-bold text-slate-500 uppercase">Okt 2026</div>
-                </div>
-              </div>
-              <div class="p-5 flex flex-col flex-1">
-                <div class="flex items-center gap-2 text-[10px] text-slate-500 font-semibold mb-2">
-                  <i class="fa-solid fa-location-dot text-indigo-400"></i>
-                  <span>Hotel Grand Mercure, Surabaya</span>
-                  <span class="text-slate-300">|</span>
-                  <i class="fa-solid fa-clock text-indigo-400"></i>
-                  <span>08.00 – 17.00 WIB</span>
-                </div>
-                <h3 class="text-sm font-extrabold text-slate-900 mb-1.5 leading-snug">Business Matching: Pengepul Limbah Logam Jawa Timur × Smelter Nasional</h3>
-                <p class="text-xs text-slate-500 flex-1 leading-relaxed">Forum pertemuan terstruktur antara 50+ pengepul besi, tembaga, dan aluminium dengan 12 smelter dan pabrik peleburan logam nasional.</p>
-                <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
-                  <div class="flex items-center gap-1.5 text-[11px] font-semibold text-amber-700">
-                    <i class="fa-solid fa-ticket text-amber-500"></i>
-                    <span>Rp 150.000 / peserta</span>
+                <input type="number" id="calc-quantity" value="2000" min="1" max="50000" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2.5 text-sm font-semibold focus:ring-2 focus:ring-brand-500 focus:outline-none transition">
+                
+                <!-- Penggeser Rentang Volume & Tombol Pintasan Cepat -->
+                <div class="mt-2.5 space-y-2">
+                  <input type="range" id="calc-volume-slider" min="100" max="20000" step="100" value="2000" class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-emerald-600">
+                  <div class="flex items-center justify-between text-[10px] text-slate-400 font-mono">
+                    <span>100</span>
+                    <span>5.000</span>
+                    <span>10.000</span>
+                    <span>20.000+</span>
                   </div>
-                  <button onclick="app.showToast('Registrasi Business Matching Surabaya berhasil! Tim kami akan menghubungi Anda.', 'success')" class="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-[11px] font-bold transition shadow-sm">Daftar →</button>
-                </div>
-              </div>
-            </article>
-
-            <!-- Event 3 -->
-            <article class="event-card bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 group" data-category="webinar">
-              <div class="relative">
-                <img src="https://images.unsplash.com/photo-1591115765373-5207764f72e7?auto=format&fit=crop&w=800&q=80" alt="Webinar Regulasi Limbah B3" class="w-full h-44 object-cover group-hover:scale-105 transition-transform duration-300">
-                <div class="absolute top-3 left-3">
-                  <span class="px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-blue-600 text-white shadow">Webinar Online</span>
-                </div>
-                <div class="absolute top-3 right-3 bg-white/90 backdrop-blur-sm rounded-xl px-2.5 py-1.5 text-center shadow-sm">
-                  <div class="text-lg font-black text-indigo-700 leading-none">10</div>
-                  <div class="text-[10px] font-bold text-slate-500 uppercase">Okt 2026</div>
-                </div>
-              </div>
-              <div class="p-5 flex flex-col flex-1">
-                <div class="flex items-center gap-2 text-[10px] text-slate-500 font-semibold mb-2">
-                  <i class="fa-solid fa-video text-indigo-400"></i>
-                  <span>Zoom Meeting (Online)</span>
-                  <span class="text-slate-300">|</span>
-                  <i class="fa-solid fa-clock text-indigo-400"></i>
-                  <span>13.00 – 15.30 WIB</span>
-                </div>
-                <h3 class="text-sm font-extrabold text-slate-900 mb-1.5 leading-snug">Webinar: Update Regulasi Limbah B3 PP No. 22/2021 &amp; Implikasinya bagi Pengepul</h3>
-                <p class="text-xs text-slate-500 flex-1 leading-relaxed">Narasumber: Direktur PSLB3 KLHK. Pahami persyaratan izin pengumpulan, manifest elektronik, dan sanksi terbaru bagi pengepul limbah B3 tidak terdaftar.</p>
-                <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
-                  <div class="flex items-center gap-1.5 text-[11px] font-semibold text-emerald-700">
-                    <i class="fa-solid fa-ticket text-emerald-500"></i>
-                    <span>Gratis — Daftar via WhatsApp</span>
+                  <div class="flex flex-wrap items-center gap-1.5 pt-1">
+                    <span class="text-[11px] text-slate-500 font-medium mr-1">Preset:</span>
+                    <button type="button" onclick="app.setCalcVolume(500)" class="px-2.5 py-1 text-xs rounded-lg border border-slate-200 bg-white hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-300 text-slate-700 font-medium transition shadow-sm">500</button>
+                    <button type="button" onclick="app.setCalcVolume(1000)" class="px-2.5 py-1 text-xs rounded-lg border border-slate-200 bg-white hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-300 text-slate-700 font-medium transition shadow-sm">1.000</button>
+                    <button type="button" onclick="app.setCalcVolume(2500)" class="px-2.5 py-1 text-xs rounded-lg border border-slate-200 bg-white hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-300 text-slate-700 font-medium transition shadow-sm">2.500</button>
+                    <button type="button" onclick="app.setCalcVolume(5000)" class="px-2.5 py-1 text-xs rounded-lg border border-slate-200 bg-white hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-300 text-slate-700 font-medium transition shadow-sm">5.000</button>
+                    <button type="button" onclick="app.setCalcVolume(10000)" class="px-2.5 py-1 text-xs rounded-lg border border-slate-200 bg-white hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-300 text-slate-700 font-medium transition shadow-sm">10.000</button>
                   </div>
-                  <button onclick="app.showToast('Link Zoom Webinar B3 dikirim ke WhatsApp Anda!', 'success')" class="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-[11px] font-bold transition shadow-sm">Daftar →</button>
                 </div>
               </div>
-            </article>
 
-            <!-- Event 4 -->
-            <article class="event-card bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 group" data-category="pameran">
-              <div class="relative">
-                <img src="https://images.unsplash.com/photo-1511578314322-379afb476865?auto=format&fit=crop&w=800&q=80" alt="Pameran Daur Ulang Nasional 2026" class="w-full h-44 object-cover group-hover:scale-105 transition-transform duration-300">
-                <div class="absolute top-3 left-3">
-                  <span class="px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-orange-500 text-white shadow">Pameran &amp; Expo</span>
-                </div>
-                <div class="absolute top-3 right-3 bg-white/90 backdrop-blur-sm rounded-xl px-2.5 py-1.5 text-center shadow-sm">
-                  <div class="text-lg font-black text-indigo-700 leading-none">20</div>
-                  <div class="text-[10px] font-bold text-slate-500 uppercase">Nov 2026</div>
-                </div>
+              <div>
+                <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Harga Satuan Acuan (Rp)</label>
+                <input type="number" id="calc-price" value="9500" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2.5 text-sm font-semibold focus:ring-2 focus:ring-brand-500 focus:outline-none">
               </div>
-              <div class="p-5 flex flex-col flex-1">
-                <div class="flex items-center gap-2 text-[10px] text-slate-500 font-semibold mb-2">
-                  <i class="fa-solid fa-location-dot text-indigo-400"></i>
-                  <span>JIExpo Kemayoran, Jakarta Pusat</span>
-                  <span class="text-slate-300">|</span>
-                  <i class="fa-solid fa-clock text-indigo-400"></i>
-                  <span>3 Hari (20–22 Nov)</span>
-                </div>
-                <h3 class="text-sm font-extrabold text-slate-900 mb-1.5 leading-snug">INDONESIA RECYCLE EXPO 2026 — Pameran Daur Ulang &amp; Ekonomi Sirkular Nasional</h3>
-                <p class="text-xs text-slate-500 flex-1 leading-relaxed">300+ booth dari pabrik daur ulang, pengepul, dan produsen mesin cacah plastik. Bursa Limbah hadir sebagai platform digital resmi mitra Expo.</p>
-                <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
-                  <div class="flex items-center gap-1.5 text-[11px] font-semibold text-slate-600">
-                    <i class="fa-solid fa-ticket text-slate-400"></i>
-                    <span>Pengunjung Umum: Gratis</span>
-                  </div>
-                  <button onclick="app.showToast('Pendaftaran booth Recycle Expo 2026 segera dibuka. Pantau terus!', 'warning')" class="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-[11px] font-bold transition shadow-sm">Info Booth →</button>
-                </div>
-              </div>
-            </article>
+            </div>
 
-            <!-- Event 5 -->
-            <article class="event-card bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 group" data-category="seminar">
-              <div class="relative">
-                <img src="https://images.unsplash.com/photo-1475721027785-f74eccf877e2?auto=format&fit=crop&w=800&q=80" alt="Seminar Ekonomi Sirkular" class="w-full h-44 object-cover group-hover:scale-105 transition-transform duration-300">
-                <div class="absolute top-3 left-3">
-                  <span class="px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-rose-600 text-white shadow">Seminar</span>
-                </div>
-                <div class="absolute top-3 right-3 bg-white/90 backdrop-blur-sm rounded-xl px-2.5 py-1.5 text-center shadow-sm">
-                  <div class="text-lg font-black text-indigo-700 leading-none">14</div>
-                  <div class="text-[10px] font-bold text-slate-500 uppercase">Nov 2026</div>
-                </div>
+            <div class="md:col-span-6 bg-slate-900 text-white rounded-2xl p-6 flex flex-col justify-between space-y-4">
+              <div>
+                <div class="text-xs text-slate-400 font-mono uppercase">Hasil Simulasi Transaksi</div>
+                <div class="text-3xl font-extrabold font-mono text-emerald-400 mt-1" id="calc-result-gross">Rp19.000.000</div>
+                <div class="text-[11px] text-slate-400 mt-0.5">Estimasi Total Nilai Pasokan Limbah</div>
               </div>
-              <div class="p-5 flex flex-col flex-1">
-                <div class="flex items-center gap-2 text-[10px] text-slate-500 font-semibold mb-2">
-                  <i class="fa-solid fa-location-dot text-indigo-400"></i>
-                  <span>Grand Ballroom Trans Luxury Hotel, Bandung</span>
-                </div>
-                <h3 class="text-sm font-extrabold text-slate-900 mb-1.5 leading-snug">Seminar Nasional: Peluang Bisnis Ekonomi Sirkular Indonesia 2026 – 2030</h3>
-                <p class="text-xs text-slate-500 flex-1 leading-relaxed">Pembicara dari Kementerian LHK, BRIN, dan pelaku industri daur ulang papan atas. Bahas peta jalan ekonomi sirkular dan peluang bisnis limbah bernilai tinggi.</p>
-                <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
-                  <div class="flex items-center gap-1.5 text-[11px] font-semibold text-amber-700">
-                    <i class="fa-solid fa-ticket text-amber-500"></i>
-                    <span>Rp 350.000 / orang (termasuk makan siang)</span>
-                  </div>
-                  <button onclick="app.showToast('Daftar Seminar Nasional Bandung berhasil! Cek email untuk invoice.', 'success')" class="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-[11px] font-bold transition shadow-sm">Daftar →</button>
-                </div>
-              </div>
-            </article>
 
-            <!-- Event 6 -->
-            <article class="event-card bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 group" data-category="workshop">
-              <div class="relative">
-                <img src="https://images.unsplash.com/photo-1558618666-fcd25c85cd64?auto=format&fit=crop&w=800&q=80" alt="Workshop Upload Pasokan Limbah" class="w-full h-44 object-cover group-hover:scale-105 transition-transform duration-300">
-                <div class="absolute top-3 left-3">
-                  <span class="px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-violet-600 text-white shadow">Workshop</span>
+              <div class="space-y-2 border-t border-slate-800 pt-4 text-xs font-mono">
+                <div class="flex justify-between text-slate-300" id="calc-dp-row">
+                  <span id="calc-dp-label">Alokasi DP 30% Rekening Bersama:</span>
+                  <span class="font-bold text-brand-400" id="calc-result-dp">Rp5.700.000</span>
                 </div>
-                <div class="absolute top-3 right-3 bg-white/90 backdrop-blur-sm rounded-xl px-2.5 py-1.5 text-center shadow-sm">
-                  <div class="text-lg font-black text-indigo-700 leading-none">29</div>
-                  <div class="text-[10px] font-bold text-slate-500 uppercase">Okt 2026</div>
+                <div class="flex justify-between text-slate-300">
+                  <span>Biaya Penanganan Sistem:</span>
+                  <span id="calc-result-fee" class="text-amber-400 font-bold">Rp10.000</span>
                 </div>
-              </div>
-              <div class="p-5 flex flex-col flex-1">
-                <div class="flex items-center gap-2 text-[10px] text-slate-500 font-semibold mb-2">
-                  <i class="fa-solid fa-location-dot text-indigo-400"></i>
-                  <span>Kantor Bursa Limbah, Kuningan, Jakarta</span>
-                  <span class="text-slate-300">|</span>
-                  <i class="fa-solid fa-clock text-indigo-400"></i>
-                  <span>10.00 – 14.00 WIB</span>
+                <div class="flex justify-between text-slate-300" id="calc-remaining-row">
+                  <span id="calc-remaining-label">Sisa 70% Pelunasan di Lokasi:</span>
+                  <span id="calc-result-remaining">Rp13.300.000</span>
                 </div>
-                <h3 class="text-sm font-extrabold text-slate-900 mb-1.5 leading-snug">Workshop: Cara Upload Pasokan Limbah Bermutu Tinggi di Bursa Limbah (Foto &amp; GPS)</h3>
-                <p class="text-xs text-slate-500 flex-1 leading-relaxed">Panduan langsung dari tim kurator: teknik foto eviden 3 sisi, kalibrasi timbangan digital, pengambilan titik GPS gudang, dan cara mengisi manifest digital.</p>
-                <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
-                  <div class="flex items-center gap-1.5 text-[11px] font-semibold text-emerald-700">
-                    <i class="fa-solid fa-ticket text-emerald-500"></i>
-                    <span>Gratis untuk Mitra Penjual Terdaftar</span>
-                  </div>
-                  <button onclick="app.showToast('Selamat! Anda terdaftar untuk Workshop Upload Limbah 29 Oktober.', 'success')" class="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-[11px] font-bold transition shadow-sm">Daftar →</button>
+                <div class="flex justify-between text-emerald-300" id="calc-fullpay-row" style="display: none;">
+                  <span>Sistem Transaksi:</span>
+                  <span class="font-bold text-emerald-400">Pelunasan Penuh (Tanpa DP)</span>
                 </div>
               </div>
-            </article>
 
-          </div><!-- /event-cards-grid -->
-
-          <!-- CTA Banner Notifikasi -->
-          <div class="mt-14 bg-gradient-to-r from-indigo-600 via-indigo-700 to-violet-700 rounded-3xl p-8 sm:p-10 text-white text-center relative overflow-hidden shadow-xl">
-            <div class="absolute inset-0 opacity-10" style="background-image: radial-gradient(circle at 20% 50%, #fff 0, transparent 50%), radial-gradient(circle at 80% 50%, #fff 0, transparent 50%);"></div>
-            <div class="relative z-10">
-              <div class="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full text-xs font-bold bg-white/20 border border-white/30 mb-3">
-                <i class="fa-solid fa-bell text-yellow-300"></i>
-                <span>Jangan Lewatkan Event Berikutnya</span>
-              </div>
-              <h3 class="text-2xl sm:text-3xl font-extrabold mb-2">Daftarkan Diri untuk Notifikasi Event</h3>
-              <p class="text-sm text-indigo-200 mb-6 max-w-md mx-auto">Jadilah yang pertama mendapatkan informasi event, early-bird ticket, dan undangan eksklusif khusus mitra Bursa Limbah.</p>
-              <div class="flex flex-col sm:flex-row items-center justify-center gap-3 max-w-md mx-auto">
-                <input type="email" id="event-notify-email" placeholder="Masukkan email Anda..." class="flex-1 px-4 py-3 rounded-xl text-slate-800 text-sm font-medium bg-white focus:outline-none focus:ring-2 focus:ring-yellow-400 w-full placeholder-slate-400">
-                <button onclick="app.subscribeEventNotification()" class="px-6 py-3 rounded-xl bg-yellow-400 hover:bg-yellow-300 text-indigo-900 font-extrabold text-sm shadow-md transition whitespace-nowrap">
-                  <i class="fa-solid fa-paper-plane mr-1.5"></i> Langganan Notifikasi
-                </button>
+              <div class="p-3 rounded-xl bg-slate-800/80 border border-slate-700 flex items-center space-x-2.5 text-xs text-emerald-300">
+                <i class="fa-solid fa-leaf text-base shrink-0"></i>
+                <span id="calc-result-esg">Mengurangi proyeksi 3.200 Kg jejak karbon (CO2e).</span>
               </div>
             </div>
           </div>
@@ -1529,54 +1380,7 @@
         </div>
       </section>
 
-      <!-- ================= MVP QUICK ACTION HUB (KHUSUS MOBILE - POSISI STATIK PALING BAWAH) ================= -->
-      <section id="mobile-static-bottom-hub" class="lg:hidden static py-6 px-3 bg-gradient-to-b from-slate-50 to-emerald-50/40 border-t border-slate-200">
-        <div class="max-w-md mx-auto">
-          <div class="flex items-center justify-between mb-3 px-1">
-            <span class="text-xs font-black text-slate-800 flex items-center gap-1.5 uppercase tracking-wide">
-              <i class="fa-solid fa-bolt text-amber-500"></i> Aksi Cepat Pasar Limbah
-            </span>
-            <span class="text-[10px] text-emerald-700 font-bold bg-emerald-100/80 border border-emerald-200 px-2 py-0.5 rounded-full">Menu Pintasan</span>
-          </div>
-          <div class="grid grid-cols-4 gap-2">
-            <!-- 1. Jual Pasokan -->
-            <button onclick="app.handleMobileSellAction()" class="mobile-action-card p-2.5 rounded-2xl bg-white border border-slate-200 shadow-2xs flex flex-col items-center justify-center text-center group active:scale-95 transition">
-              <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white flex items-center justify-center text-sm shadow-xs mb-1 group-active:scale-90 transition">
-                <i class="fa-solid fa-plus"></i>
-              </div>
-              <span class="text-[11px] font-bold text-slate-800 leading-tight">Jual Limbah</span>
-              <span class="text-[9px] text-emerald-600 font-semibold mt-0.5">Pasang Cepat</span>
-            </button>
-
-            <!-- 2. Hitung DP 30% -->
-            <button onclick="app.openMobileDpSimulator()" class="mobile-action-card p-2.5 rounded-2xl bg-white border border-slate-200 shadow-2xs flex flex-col items-center justify-center text-center group active:scale-95 transition">
-              <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 text-white flex items-center justify-center text-sm shadow-xs mb-1 group-active:scale-90 transition">
-                <i class="fa-solid fa-calculator"></i>
-              </div>
-              <span class="text-[11px] font-bold text-slate-800 leading-tight">Hitung DP</span>
-              <span class="text-[9px] text-amber-600 font-semibold mt-0.5">Escrow 30%</span>
-            </button>
-
-            <!-- 3. Paket 3-Tier -->
-            <button onclick="app.showBuyerRegisterModal()" class="mobile-action-card p-2.5 rounded-2xl bg-white border border-slate-200 shadow-2xs flex flex-col items-center justify-center text-center group active:scale-95 transition">
-              <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex items-center justify-center text-sm shadow-xs mb-1 group-active:scale-90 transition">
-                <i class="fa-solid fa-crown text-amber-300"></i>
-              </div>
-              <span class="text-[11px] font-bold text-slate-800 leading-tight">Buka Akses</span>
-              <span class="text-[9px] text-blue-600 font-semibold mt-0.5">3 Pilihan Tier</span>
-            </button>
-
-            <!-- 4. Peta GPS Gudang -->
-            <button onclick="app.navigateToSection('ketertelusuran')" class="mobile-action-card p-2.5 rounded-2xl bg-white border border-slate-200 shadow-2xs flex flex-col items-center justify-center text-center group active:scale-95 transition">
-              <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-slate-700 to-slate-900 text-emerald-400 flex items-center justify-center text-sm shadow-xs mb-1 group-active:scale-90 transition">
-                <i class="fa-solid fa-map-location-dot"></i>
-              </div>
-              <span class="text-[11px] font-bold text-slate-800 leading-tight">Peta GPS</span>
-              <span class="text-[9px] text-slate-500 font-semibold mt-0.5">Traceability</span>
-            </button>
-          </div>
-        </div>
-      </section>
+      </div> <!-- /#tab-simulation -->
 
     </div>
 
@@ -1906,15 +1710,24 @@
           </button>
           <button id="admin-tab-btn-orders" onclick="app.switchAdminTab('orders')" class="px-4 py-2.5 text-xs font-bold text-slate-600 hover:text-slate-900 rounded-t-lg transition flex items-center space-x-1.5 shrink-0">
             <i class="fa-solid fa-handshake"></i>
-            <span>Audit Transaksi & DP Escrow</span>
+            <span>Audit Transaksi</span>
           </button>
-          <button id="admin-tab-btn-tiers" onclick="app.switchAdminTab('tiers')" class="px-4 py-2.5 text-xs font-bold text-slate-600 hover:text-slate-900 rounded-t-lg transition flex items-center space-x-1.5 shrink-0 text-emerald-700">
+          <button id="admin-tab-btn-subscriptions" onclick="app.switchAdminTab('subscriptions')" class="px-4 py-2.5 text-xs font-bold text-slate-600 hover:text-slate-900 rounded-t-lg transition flex items-center space-x-1.5 shrink-0 text-emerald-700">
+            <i class="fa-solid fa-user-check text-emerald-600"></i>
+            <span>Approval Berlangganan</span>
+            <span id="admin-tab-sub-pending-badge" class="ml-1 px-1.5 py-0.2 bg-emerald-600 text-white rounded-full text-[10px]">0</span>
+          </button>
+          <button id="admin-tab-btn-events" onclick="app.switchAdminTab('events')" class="px-4 py-2.5 text-xs font-bold text-slate-600 hover:text-slate-900 rounded-t-lg transition flex items-center space-x-1.5 shrink-0 text-indigo-700">
+            <i class="fa-solid fa-calendar-days text-indigo-600"></i>
+            <span>Manajemen Event</span>
+          </button>
+          <button id="admin-tab-btn-tiers" onclick="app.switchAdminTab('tiers')" class="px-4 py-2.5 text-xs font-bold text-slate-600 hover:text-slate-900 rounded-t-lg transition flex items-center space-x-1.5 shrink-0">
             <i class="fa-solid fa-crown text-amber-500"></i>
-            <span>Atur Rentang Harga 3-Tier Langganan</span>
+            <span>Paket &amp; Tarif Langganan</span>
           </button>
           <button id="admin-tab-btn-settings" onclick="app.switchAdminTab('settings')" class="px-4 py-2.5 text-xs font-bold text-slate-600 hover:text-slate-900 rounded-t-lg transition flex items-center space-x-1.5 shrink-0">
             <i class="fa-solid fa-sliders"></i>
-            <span>Konfigurasi Tarif Sistem</span>
+            <span>Pengaturan DP &amp; Biaya</span>
           </button>
         </div>
 
@@ -1979,34 +1792,112 @@
           </div>
         </div>
 
-        <!-- Konten 4: Konfigurasi Biaya Umum -->
+        <!-- Konten 4: PUSAT VERIFIKASI & APPROVAL LANGGANAN PEMBELI -->
+        <div id="admin-content-subscriptions" class="p-6 hidden">
+          <div class="space-y-5">
+            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
+              <div>
+                <div class="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-300 mb-1.5">
+                  <i class="fa-solid fa-user-check text-emerald-600"></i>
+                  <span>Approval Manual Berlangganan</span>
+                </div>
+                <h3 class="text-lg font-bold text-slate-900">Verifikasi Permohonan Langganan Pembeli</h3>
+                <p class="text-xs text-slate-500">Tinjau bukti pembayaran transfer bank, dan setujui aktivasi kuota akses paket Pro &amp; Enterprise pembeli.</p>
+              </div>
+              <div class="flex items-center gap-2">
+                <button onclick="app.filterAdminSubscriptionRequests('all')" id="sub-filter-all" class="sub-filter-btn px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-600 text-white transition">Semua</button>
+                <button onclick="app.filterAdminSubscriptionRequests('pending')" id="sub-filter-pending" class="sub-filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-white text-slate-600 border border-slate-300 hover:bg-slate-50 transition">Menunggu (<span id="sub-pending-count">0</span>)</button>
+                <button onclick="app.filterAdminSubscriptionRequests('approved')" id="sub-filter-approved" class="sub-filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-white text-slate-600 border border-slate-300 hover:bg-slate-50 transition">Disetujui</button>
+              </div>
+            </div>
+
+            <div id="admin-subscriptions-table-container" class="overflow-x-auto">
+              <!-- Diisi otomatis oleh JavaScript app.renderAdminSubscriptionRequestsTable() -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Konten 5: MANAJEMEN EVENT & AGENDA -->
+        <div id="admin-content-events" class="p-6 hidden">
+          <div class="space-y-5">
+            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
+              <div>
+                <div class="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full text-xs font-bold bg-indigo-100 text-indigo-800 border border-indigo-300 mb-1.5">
+                  <i class="fa-solid fa-calendar-star text-indigo-600"></i>
+                  <span>Kalender Kegiatan &amp; Forum</span>
+                </div>
+                <h3 class="text-lg font-bold text-slate-900">Manajemen Event &amp; Kegiatan Bursa Limbah</h3>
+                <p class="text-xs text-slate-500">Kelola agenda seminar, workshop, expo, dan forum pertemuan penjual-pembeli limbah.</p>
+              </div>
+              <button onclick="app.showAddEventModal()" class="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-md transition flex items-center space-x-2">
+                <i class="fa-solid fa-calendar-plus"></i>
+                <span>Tambah Event Baru</span>
+              </button>
+            </div>
+
+            <div id="admin-events-table-container" class="overflow-x-auto">
+              <!-- Diisi otomatis oleh JavaScript app.renderAdminEventsTable() -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Konten 6: Pengaturan DP & Konfigurasi Biaya Umum -->
         <div id="admin-content-settings" class="p-6 hidden">
           <div class="max-w-2xl space-y-6">
             <div>
-              <h3 class="text-base font-bold text-slate-900">Pengaturan Biaya Tambahan Platform</h3>
-              <p class="text-xs text-slate-500">Ubah biaya penanganan transaksi dan persentase DP rekening bersama.</p>
+              <div class="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-300 mb-2">
+                <i class="fa-solid fa-sliders"></i>
+                <span>Kontrol Transaksi &amp; Rekber</span>
+              </div>
+              <h3 class="text-base font-bold text-slate-900">Pengaturan Uang Muka (DP) &amp; Biaya Platform</h3>
+              <p class="text-xs text-slate-500">Atur status aktif/nonaktif fitur DP Escrow, persentase DP, serta biaya penanganan sistem transaksi.</p>
             </div>
 
-            <form id="admin-settings-form" onsubmit="app.saveAdminSettings(event)" class="space-y-4 bg-slate-50 p-6 rounded-xl border border-slate-200">
-              <div>
-                <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Biaya Penanganan Sistem per Transaksi</label>
-                <div class="relative">
-                  <span class="absolute left-3 top-2.5 text-xs font-bold text-slate-400">Rp</span>
-                  <input type="number" id="setting-handling" class="w-full bg-white border border-slate-300 rounded-xl pl-9 pr-4 py-2 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-brand-500" value="10000">
+            <form id="admin-settings-form" onsubmit="app.saveAdminSettings(event)" class="space-y-5 bg-slate-50 p-6 rounded-2xl border border-slate-200">
+              
+              <!-- PENGATURAN STATUS DP (ON / OFF) -->
+              <div class="p-4 bg-white rounded-xl border border-slate-200 shadow-2xs space-y-3">
+                <div class="flex items-center justify-between">
+                  <div>
+                    <label class="block text-xs font-bold uppercase text-slate-800 tracking-wider">Status Fitur Uang Muka (DP Escrow)</label>
+                    <p class="text-[11px] text-slate-500 mt-0.5">Jika Nonaktif (Set OFF), badge &amp; rincian DP disembunyikan dari katalog, kalkulator, dan checkout.</p>
+                  </div>
+                  <span id="setting-dp-status-badge" class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-rose-100 text-rose-800 border border-rose-200">
+                    NONAKTIF (SET OFF)
+                  </span>
+                </div>
+                <div class="flex items-center space-x-3 pt-1">
+                  <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" id="setting-dp-enabled" class="sr-only peer" onchange="app.handleDpToggleChange(this.checked)">
+                    <div class="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
+                  </label>
+                  <span id="setting-dp-toggle-label" class="text-xs font-semibold text-slate-700">Fitur DP Saat Ini Dinonaktifkan (Pelunasan Penuh)</span>
                 </div>
               </div>
 
-              <div>
-                <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Persentase Uang Muka (DP Escrow)</label>
-                <div class="relative">
-                  <input type="number" id="setting-dp" class="w-full bg-white border border-slate-300 rounded-xl pl-4 pr-9 py-2 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-brand-500" value="30">
-                  <span class="absolute right-3 top-2.5 text-xs font-bold text-slate-400">%</span>
+              <!-- PERSENTASE DP -->
+              <div id="setting-dp-percent-group" class="p-4 bg-white rounded-xl border border-slate-200 shadow-2xs space-y-2 opacity-60">
+                <label class="block text-xs font-bold uppercase text-slate-800">Besaran Persentase Uang Muka (DP)</label>
+                <p class="text-[11px] text-slate-500">Nilai persentase uang muka yang dibayarkan ke rekening bersama saat fitur DP diaktifkan.</p>
+                <div class="relative max-w-xs">
+                  <input type="number" id="setting-dp" min="5" max="90" step="5" class="w-full bg-slate-50 border border-slate-300 rounded-xl pl-4 pr-9 py-2 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500" value="30">
+                  <span class="absolute right-3 top-2 text-xs font-bold text-slate-400">%</span>
                 </div>
               </div>
 
-              <div class="pt-2">
-                <button type="submit" class="px-5 py-2.5 bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold rounded-xl shadow-sm transition">
-                  Simpan Biaya Penanganan & DP
+              <!-- BIAYA PENANGANAN SISTEM -->
+              <div class="p-4 bg-white rounded-xl border border-slate-200 shadow-2xs space-y-2">
+                <label class="block text-xs font-bold uppercase text-slate-800">Biaya Penanganan Sistem per Transaksi</label>
+                <div class="relative max-w-xs">
+                  <span class="absolute left-3 top-2 text-xs font-bold text-slate-400">Rp</span>
+                  <input type="number" id="setting-handling" class="w-full bg-slate-50 border border-slate-300 rounded-xl pl-9 pr-4 py-2 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500" value="10000">
+                </div>
+              </div>
+
+              <div class="pt-2 flex justify-end">
+                <button type="submit" class="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-md transition flex items-center space-x-2">
+                  <i class="fa-solid fa-floppy-disk"></i>
+                  <span>Simpan Pengaturan DP &amp; Biaya</span>
                 </button>
               </div>
             </form>
@@ -2297,200 +2188,6 @@
           Masuk di sini
         </button>
       </div>
-    </div>
-  </div>
-
-  <!-- ================= MODAL 3: UNGGAH PASOKAN LIMBAH (PENJUAL) ================= -->
-  <div id="modal-upload" class="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm hidden items-center justify-center p-4 overflow-y-auto">
-    <div class="bg-white rounded-3xl max-w-2xl w-full p-6 sm:p-8 shadow-2xl border border-slate-200 space-y-5">
-      <div class="flex items-center justify-between border-b border-slate-100 pb-3">
-        <div>
-          <h3 class="text-lg font-bold text-slate-900">Daftarkan Pasokan Limbah Baru</h3>
-          <p class="text-xs text-slate-500">Wajib melampirkan 3 foto eviden tera dan koordinat GPS gudang pengambilan.</p>
-        </div>
-        <button onclick="app.closeModals()" class="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100">
-          <i class="fa-solid fa-xmark text-lg"></i>
-        </button>
-      </div>
-
-      <form id="form-upload-product" onsubmit="app.handleUploadProduct(event)" class="space-y-4">
-        <div>
-          <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Judul / Deskripsi Ringkas Pasokan *</label>
-          <input type="text" id="up-title" required placeholder="Contoh: Minyak Jelantah Kualitas Resto Cepat Saji (FFA < 3%)" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none">
-        </div>
-
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Kategori Komoditas *</label>
-            <select id="up-category" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none">
-              <!-- Diisi otomatis oleh JavaScript -->
-            </select>
-          </div>
-          <div>
-            <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Jenis Wadah Kemasan *</label>
-            <select id="up-container-type" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none">
-              <option value="IBC Tank (1000L)">IBC Tank (1000L)</option>
-              <option value="Drum Besi (200L)">Drum Besi (200L)</option>
-              <option value="Jerigen (20L - 30L)">Jerigen (20L - 30L)</option>
-              <option value="Bal Press Padat">Bal Press Padat</option>
-              <option value="Karung Jumbo">Karung Jumbo</option>
-              <option value="Curah / Bak Truk Fuso">Curah / Bak Truk Fuso</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="grid grid-cols-3 gap-3">
-          <div>
-            <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Jumlah Wadah</label>
-            <input type="number" id="up-container-qty" value="1" min="1" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none">
-          </div>
-          <div>
-            <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Kuantitas Total</label>
-            <input type="number" id="up-qty" required value="1000" min="1" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none" oninput="app.calculateUploadTotal()">
-          </div>
-          <div>
-            <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Satuan</label>
-            <select id="up-unit" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none">
-              <option value="Liter">Liter</option>
-              <option value="Kg">Kg</option>
-              <option value="Ton">Ton</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Kondisi Fisik Pasokan *</label>
-            <select id="up-condition" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-brand-500 focus:outline-none">
-              <option value="Bersih">Bersih (Tanpa Campuran / Siap Olah)</option>
-              <option value="Campur">Campur (Perlu Pemilahan / Sortir)</option>
-              <option value="Terpress">Terpress (Bal Padat Siap Muat)</option>
-              <option value="Cacah">Cacah (Flakes / Crushed)</option>
-              <option value="Baled">Baled (Terikat Rapi Standar Ekspor)</option>
-            </select>
-          </div>
-          <div>
-            <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Kadar / Grade Mutu *</label>
-            <input type="text" id="up-grade" required placeholder="Contoh: FFA < 3%, Kadar Air < 1.5%, Tebal 10mm" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-brand-500 focus:outline-none">
-          </div>
-        </div>
-
-        <div class="grid grid-cols-3 gap-3">
-          <div>
-            <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Minimal Beli (MOQ) *</label>
-            <div class="flex">
-              <input type="number" id="up-min-order" value="100" min="1" class="w-full bg-slate-50 border border-slate-300 rounded-l-xl px-3 py-2 text-xs focus:outline-none">
-              <span id="up-min-order-unit" class="bg-slate-200 border border-l-0 border-slate-300 rounded-r-xl px-2.5 py-2 text-xs font-semibold text-slate-700 flex items-center">Kg</span>
-            </div>
-          </div>
-          <div>
-            <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Jadwal Pengambilan *</label>
-            <select id="up-pickup-schedule" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-brand-500 focus:outline-none">
-              <option value="Siap Angkut Segera (H+0 s/d H+1)">Siap Angkut Segera (H+0 - H+1)</option>
-              <option value="Terjadwal (H+2 s/d H+3)">Terjadwal (H+2 - H+3)</option>
-              <option value="Pengambilan Rutin Mingguan">Pengambilan Rutin Mingguan</option>
-              <option value="Kontrak Pasokan Berkala Bulanan">Kontrak Pasokan Berkala</option>
-            </select>
-          </div>
-          <div>
-            <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Status Ketersediaan *</label>
-            <select id="up-listing-status" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-brand-500 focus:outline-none">
-              <option value="Tersedia">Tersedia (Ready Stock)</option>
-              <option value="Kontrak">Kontrak (Pemasok Rutin)</option>
-              <option value="Terjual">Terjual (Arsip)</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="grid grid-cols-2 gap-4">
-          <div>
-            <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Harga Penawaran Satuan (Rp) *</label>
-            <input type="number" id="up-price" required value="9500" min="100" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2.5 text-sm font-semibold focus:ring-2 focus:ring-brand-500 focus:outline-none" oninput="app.calculateUploadTotal()">
-          </div>
-          <div>
-            <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Total Nilai Penawaran</label>
-            <div id="up-total-display" class="bg-slate-100 border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-bold font-mono text-emerald-800">
-              Rp9.500.000
-            </div>
-          </div>
-        </div>
-
-        <!-- Klasifikasi Limbah B3 KLHK -->
-        <div class="p-3 bg-amber-50 rounded-2xl border border-amber-200 space-y-2">
-          <div class="flex items-center space-x-2">
-            <input type="checkbox" id="up-is-b3" class="w-4 h-4 text-rose-600 rounded focus:ring-rose-500 border-slate-300" onchange="[REDACTED]'up-b3-permit-box').classList.toggle('hidden', !this.checked)">
-            <label for="up-is-b3" class="text-xs font-bold text-slate-800 cursor-pointer flex items-center gap-1">
-              <i class="fa-solid fa-triangle-exclamation text-rose-600"></i>
-              <span>Limbah B3 (Bahan Berbahaya & Beracun) — Memerlukan Izin Khusus KLHK</span>
-            </label>
-          </div>
-          <div id="up-b3-permit-box" class="hidden pl-6">
-            <label class="block text-[11px] font-semibold text-slate-600 mb-1">Nomor Izin Pengelolaan / Rekomendasi Pengangkutan B3 KLHK</label>
-            <input type="text" id="up-b3-permit" placeholder="Contoh: SK.KLHK/PLB3/2026/8912" class="w-full bg-white border border-amber-300 rounded-xl px-3 py-2 text-xs focus:outline-none font-mono">
-          </div>
-        </div>
-
-        <!-- 3 Foto Eviden Fisik -->
-        <div class="border-t border-slate-100 pt-2">
-          <label class="block text-xs font-bold uppercase text-slate-600 mb-1.5 flex items-center">
-            <i class="fa-solid fa-camera mr-1.5 text-emerald-600"></i>
-            <span>3 Foto Eviden Fisik & Tera Digital (Wajib)</span>
-          </label>
-          <div class="grid grid-cols-3 gap-2 text-xs">
-            <div class="p-2 rounded-xl bg-slate-50 border border-slate-200 text-center space-y-1">
-              <i class="fa-solid fa-boxes-stacked text-emerald-600 text-lg"></i>
-              <div class="font-bold text-[11px] text-slate-700">1. Wadah Utuh</div>
-              <p class="text-[10px] text-slate-400">Drum/IBC/bal tersegel</p>
-              <input type="hidden" id="up-foto-1" value="https://images.unsplash.com/photo-1578575437130-527eed3abbec?auto=format&fit=crop&w=800&q=80">
-              <span class="text-[10px] text-emerald-600 font-semibold"><i class="fa-solid fa-check"></i> Siap Diunggah</span>
-            </div>
-            <div class="p-2 rounded-xl bg-slate-50 border border-slate-200 text-center space-y-1">
-              <i class="fa-solid fa-flask text-blue-600 text-lg"></i>
-              <div class="font-bold text-[11px] text-slate-700">2. Sampel Material</div>
-              <p class="text-[10px] text-slate-400">Detail kebersihan fisik</p>
-              <input type="hidden" id="up-foto-2" value="https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?auto=format&fit=crop&w=800&q=80">
-              <span class="text-[10px] text-emerald-600 font-semibold"><i class="fa-solid fa-check"></i> Siap Diunggah</span>
-            </div>
-            <div class="p-2 rounded-xl bg-slate-50 border border-slate-200 text-center space-y-1">
-              <i class="fa-solid fa-scale-balanced text-amber-600 text-lg"></i>
-              <div class="font-bold text-[11px] text-slate-700">3. Struk Timbangan</div>
-              <p class="text-[10px] text-slate-400">Bukti tera kalibrasi sah</p>
-              <input type="hidden" id="up-foto-3" value="https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=800&q=80">
-              <span class="text-[10px] text-emerald-600 font-semibold"><i class="fa-solid fa-check"></i> Siap Diunggah</span>
-            </div>
-          </div>
-        </div>
-
-        <div>
-          <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Asal Usul Limbah *</label>
-          <input type="text" id="up-origin" required placeholder="Contoh: Jaringan Restoran Cepat Saji Wilayah Jakarta Selatan" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none">
-        </div>
-
-        <div class="grid grid-cols-3 gap-3">
-          <div>
-            <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Nama Kota *</label>
-            <input type="text" id="up-city" required placeholder="Contoh: Jakarta Selatan" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-brand-500 focus:outline-none">
-          </div>
-          <div>
-            <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Alamat Gudang (Privat) *</label>
-            <input type="text" id="up-address" required placeholder="Jl. Raya Pasar Minggu No. 45" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-brand-500 focus:outline-none">
-          </div>
-          <div>
-            <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Titik GPS (Lat, Lng)</label>
-            <input type="text" id="up-coords" value="-6.2845, 106.8421" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-2 py-2 text-xs font-mono focus:outline-none">
-          </div>
-        </div>
-
-        <div class="flex justify-end space-x-3 pt-2">
-          <button type="button" onclick="app.closeModals()" class="px-5 py-2.5 rounded-xl border border-slate-300 text-slate-700 text-xs font-bold hover:bg-slate-50 transition">
-            Batal
-          </button>
-          <button type="submit" class="px-6 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold shadow-md transition flex items-center space-x-1.5">
-            <i class="fa-solid fa-cloud-arrow-up"></i>
-            <span>Kirim untuk Kurasi Pengelola</span>
-          </button>
-        </div>
-      </form>
     </div>
   </div>
 
@@ -3081,6 +2778,125 @@
       </div>
     </div>
   </div>
+
+  <!-- ================= MODAL: TAMBAH / EDIT EVENT (ADMIN) ================= -->
+  <div id="modal-admin-event" class="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm hidden items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-white rounded-3xl max-w-xl w-full p-6 sm:p-7 shadow-2xl border border-slate-200 space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+        <div>
+          <h3 id="modal-admin-event-title" class="text-lg font-bold text-slate-900">Tambah Event Baru</h3>
+          <p class="text-xs text-slate-500">Lengkapi data informasi agenda kegiatan untuk dipublikasikan di kalender event.</p>
+        </div>
+        <button onclick="app.closeModals()" class="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <form id="form-admin-event" onsubmit="app.handleSaveEvent(event)" class="space-y-3.5">
+        <input type="hidden" id="evt-id" value="">
+
+        <div>
+          <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Judul Agenda Event *</label>
+          <input type="text" id="evt-title" required placeholder="Contoh: Workshop Pengelolaan Limbah B3 Industri" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none font-semibold">
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Kategori Event *</label>
+            <select id="evt-category" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+              <option value="workshop">Workshop</option>
+              <option value="seminar">Seminar</option>
+              <option value="pameran">Pameran &amp; Expo</option>
+              <option value="business-matching">Business Matching</option>
+              <option value="webinar">Webinar Online</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Status Publikasi *</label>
+            <select id="evt-status" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+              <option value="published">Dipublikasikan (Aktif)</option>
+              <option value="draft">Draf (Disembunyikan)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Tanggal Pelaksanaan *</label>
+            <input type="date" id="evt-date" required class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none font-mono">
+          </div>
+          <div>
+            <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Waktu Pelaksanaan *</label>
+            <input type="text" id="evt-time" placeholder="Contoh: 09.00 – 15.00 WIB" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Lokasi Kegiatan / Link *</label>
+          <input type="text" id="evt-location" required placeholder="Contoh: Balai Kartini, Jakarta Selatan atau Zoom Online" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Label Tiket / Harga *</label>
+            <input type="text" id="evt-price-label" placeholder="Contoh: Gratis atau Rp 350.000 / orang" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-bold uppercase text-slate-600 mb-1">URL Foto Poster</label>
+            <input type="url" id="evt-image" placeholder="https://images.unsplash.com/..." class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none font-mono">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Deskripsi Ringkas Event *</label>
+          <textarea id="evt-desc" rows="3" required placeholder="Ringkasan agenda, narasumber, materi yang dibahas, dan target peserta..." class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none"></textarea>
+        </div>
+
+        <div class="flex justify-end space-x-2 pt-2 border-t border-slate-100">
+          <button type="button" onclick="app.closeModals()" class="px-4 py-2 rounded-xl border border-slate-300 text-slate-600 text-xs font-bold hover:bg-slate-50 transition">
+            Batal
+          </button>
+          <button type="submit" class="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-md transition flex items-center space-x-1.5">
+            <i class="fa-solid fa-floppy-disk"></i>
+            <span>Simpan Event</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ================= DOCKED BOTTOM NAVIGATION BAR (MOBILE APP) ================= -->
+  <nav id="mobile-app-bottom-nav" class="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-xl border-t border-slate-200/90 shadow-[0_-4px_25px_rgba(0,0,0,0.08)] py-1.5 px-3">
+    <div class="max-w-md mx-auto grid grid-cols-4 items-center text-center">
+      <!-- 1. Home -->
+      <button type="button" onclick="app.switchAppTab('home')" id="bnav-home" class="bnav-item flex flex-col items-center justify-center py-1 text-emerald-700 font-bold active:scale-90 transition cursor-pointer">
+        <i class="fa-solid fa-house text-lg mb-0.5"></i>
+        <span class="text-[10px] leading-tight">Home</span>
+        <span class="bnav-indicator w-1 h-1 bg-emerald-600 rounded-full mt-0.5 transition-all"></span>
+      </button>
+
+      <!-- 2. Mulai Jual -->
+      <button type="button" onclick="app.switchAppTab('sell')" id="bnav-sell" class="bnav-item flex flex-col items-center justify-center py-1 text-slate-500 font-medium active:scale-90 transition cursor-pointer">
+        <i class="fa-solid fa-circle-plus text-lg mb-0.5 text-emerald-600"></i>
+        <span class="text-[10px] leading-tight">Mulai Jual</span>
+        <span class="bnav-indicator w-1 h-1 bg-emerald-600 rounded-full mt-0.5 transition-all opacity-0"></span>
+      </button>
+
+      <!-- 3. Berlangganan -->
+      <button type="button" onclick="app.switchAppTab('sub')" id="bnav-sub" class="bnav-item flex flex-col items-center justify-center py-1 text-slate-500 font-medium active:scale-90 transition cursor-pointer">
+        <i class="fa-solid fa-crown text-lg mb-0.5 text-amber-500"></i>
+        <span class="text-[10px] leading-tight">Berlangganan</span>
+        <span class="bnav-indicator w-1 h-1 bg-emerald-600 rounded-full mt-0.5 transition-all opacity-0"></span>
+      </button>
+
+      <!-- 4. Simulasi -->
+      <button type="button" onclick="app.switchAppTab('sim')" id="bnav-sim" class="bnav-item flex flex-col items-center justify-center py-1 text-slate-500 font-medium active:scale-90 transition cursor-pointer">
+        <i class="fa-solid fa-calculator text-lg mb-0.5 text-blue-500"></i>
+        <span class="text-[10px] leading-tight">Simulasi</span>
+        <span class="bnav-indicator w-1 h-1 bg-emerald-600 rounded-full mt-0.5 transition-all opacity-0"></span>
+      </button>
+    </div>
+  </nav>
 
   <!-- WADAH TOAST -->
   <div id="toast-container" class="fixed bottom-20 lg:bottom-5 right-5 z-50 flex flex-col space-y-2 pointer-events-none"></div>
