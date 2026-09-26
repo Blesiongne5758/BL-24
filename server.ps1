@@ -59,15 +59,55 @@ while ($Listener.IsListening) {
             continue
         }
 
-        # Handle API Health Check
-        if ($UrlPath -eq "/api/health") {
-            $HealthJson = '{"status":"ok","server":"bursalimbah-http","port":' + $Port + ',"database":"hybrid-ready","timestamp":"' + (Get-Date -Format s) + '"}'
-            $Bytes = [System.Text.Encoding]::UTF8.GetBytes($HealthJson)
-            $Response.ContentType = "application/json; charset=utf-8"
-            $Response.ContentLength64 = $Bytes.Length
-            $Response.StatusCode = 200
-            $Response.AddHeader("Access-Control-Allow-Origin", "*")
-            $Response.OutputStream.Write($Bytes, 0, $Bytes.Length)
+        # Forward all /api/* requests to Node.js backend on port 5050
+        if ($UrlPath.StartsWith("/api/")) {
+            try {
+                $BackendUrl = "http://localhost:5050" + $Request.RawUrl
+                $WebReq = [System.Net.HttpWebRequest]::Create($BackendUrl)
+                $WebReq.Method = $Request.HttpMethod
+                $WebReq.Timeout = 15000
+
+                if ($Request.ContentType) {
+                    $WebReq.ContentType = $Request.ContentType
+                }
+
+                if ($Request.HasEntityBody) {
+                    $ReqStream = $WebReq.GetRequestStream()
+                    $Request.InputStream.CopyTo($ReqStream)
+                    $ReqStream.Close()
+                }
+
+                $WebResp = $WebReq.GetResponse()
+                $Response.StatusCode = [int]$WebResp.StatusCode
+                $Response.ContentType = $WebResp.ContentType
+                $Response.AddHeader("Access-Control-Allow-Origin", "*")
+                $RespStream = $WebResp.GetResponseStream()
+                $RespStream.CopyTo($Response.OutputStream)
+                $RespStream.Close()
+                $WebResp.Close()
+            } catch [System.Net.WebException] {
+                $ErrResp = $_.Exception.Response
+                if ($ErrResp) {
+                    $Response.StatusCode = [int]$ErrResp.StatusCode
+                    $Response.ContentType = $ErrResp.ContentType
+                    $Response.AddHeader("Access-Control-Allow-Origin", "*")
+                    $ErrRespStream = $ErrResp.GetResponseStream()
+                    $ErrRespStream.CopyTo($Response.OutputStream)
+                    $ErrRespStream.Close()
+                } else {
+                    $Response.StatusCode = 503
+                    $Msg = [System.Text.Encoding]::UTF8.GetBytes('{"success":false,"message":"Backend server offline"}')
+                    $Response.ContentType = "application/json"
+                    $Response.AddHeader("Access-Control-Allow-Origin", "*")
+                    $Response.OutputStream.Write($Msg, 0, $Msg.Length)
+                }
+            } catch {
+                $Response.StatusCode = 500
+                $ErrMsg = [System.Text.Encoding]::UTF8.GetBytes('{"success":false,"message":"' + $_.Exception.Message + '"}')
+                $Response.ContentType = "application/json"
+                $Response.AddHeader("Access-Control-Allow-Origin", "*")
+                $Response.OutputStream.Write($ErrMsg, 0, $ErrMsg.Length)
+            }
             $Response.OutputStream.Close()
             continue
         }

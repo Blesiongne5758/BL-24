@@ -28,9 +28,96 @@ class BursaLimbahStore {
         const data = await res.json();
         this.isBackendConnected = (data.database === 'connected');
         console.log('[BursaLimbah Store] Terhubung ke MySQL Backend API:', data);
+        if (this.isBackendConnected) {
+          await this.syncWithBackend();
+        }
       }
     } catch (e) {
       this.isBackendConnected = false;
+    }
+  }
+
+  async syncWithBackend() {
+    try {
+      // 1. Ambil produk dari MySQL
+      const pRes = await fetch(`${this.apiBaseUrl}/api/products?limit=100`);
+      if (pRes.ok) {
+        const pData = await pRes.json();
+        if (pData.success && Array.isArray(pData.products) && pData.products.length > 0) {
+          const serverProducts = pData.products;
+          const serverIds = new Set(serverProducts.map(p => p.id));
+          const localOnly = (this.state.products || []).filter(p => !serverIds.has(p.id));
+          this.state.products = [...serverProducts, ...localOnly];
+        }
+      }
+
+      // 2. Ambil orders/transaksi dari MySQL
+      const oRes = await fetch(`${this.apiBaseUrl}/api/orders`);
+      if (oRes.ok) {
+        const oData = await oRes.json();
+        if (oData.success && Array.isArray(oData.orders) && oData.orders.length > 0) {
+          const serverOrders = oData.orders.map(o => ({
+            id: o.id,
+            bookingCode: o.order_code,
+            productId: o.product_id,
+            productTitle: o.product_title || 'Limbah Terverifikasi',
+            buyerId: o.buyer_id,
+            buyerName: o.buyer_name || 'Pembeli',
+            sellerId: o.seller_id,
+            sellerName: o.seller_name || 'Penjual',
+            totalPrice: parseFloat(o.total_amount) || 0,
+            downPaymentRate: parseFloat(o.dp_percentage) || 0,
+            downPaymentAmount: parseFloat(o.dp_amount) || 0,
+            handlingFee: parseFloat(o.handling_fee) || 10000,
+            totalPaidNow: (parseFloat(o.dp_amount) || parseFloat(o.total_amount)) + (parseFloat(o.handling_fee) || 10000),
+            remainingPayment: parseFloat(o.remaining_amount) || 0,
+            paymentStatus: parseFloat(o.dp_amount) > 0 ? `DP Terbayar (${parseFloat(o.dp_percentage)}%)` : 'Lunas 100%',
+            bookingStatus: o.escrow_status === 'completed' ? 'Selesai & Diterima' : 'Jadwal Pengambilan Armada',
+            pickupDate: o.pickup_date ? new Date(o.pickup_date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+            createdAt: o.created_at ? new Date(o.created_at).toISOString().replace('T', ' ').substring(0, 16) : '',
+            notes: o.notes || ''
+          }));
+          const serverOrderIds = new Set(serverOrders.map(o => o.id));
+          const localOrders = (this.state.orders || []).filter(o => !serverOrderIds.has(o.id));
+          this.state.orders = [...serverOrders, ...localOrders];
+        }
+      }
+
+      // 3. Ambil events dari MySQL
+      const eRes = await fetch(`${this.apiBaseUrl}/api/events`);
+      if (eRes.ok) {
+        const eData = await eRes.json();
+        if (eData.success && Array.isArray(eData.events) && eData.events.length > 0) {
+          const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+          const serverEvents = eData.events.map(ev => {
+            const d = ev.event_date ? new Date(ev.event_date) : new Date();
+            return {
+              id: ev.id,
+              title: ev.title,
+              category: ev.event_type || 'webinar',
+              categoryLabel: (ev.event_type || 'webinar').toUpperCase(),
+              date: d.toISOString().split('T')[0],
+              day: String(d.getDate()).padStart(2, '0'),
+              monthYear: `${months[d.getMonth()]} ${d.getFullYear()}`,
+              time: ev.event_time || '09.00 – 12.00 WIB',
+              location: ev.location || 'Online',
+              image: ev.image || 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&w=800&q=80',
+              description: ev.description || '',
+              priceLabel: parseFloat(ev.price) > 0 ? `Rp ${parseFloat(ev.price).toLocaleString('id-ID')}` : 'Gratis',
+              isFree: parseFloat(ev.price) === 0,
+              status: ev.status || 'aktif'
+            };
+          });
+          const serverEvIds = new Set(serverEvents.map(e => e.id));
+          const localEvents = (this.state.events || []).filter(e => !serverEvIds.has(e.id));
+          this.state.events = [...serverEvents, ...localEvents];
+        }
+      }
+
+      this.save();
+      console.log('[BursaLimbah Store] Sinkronisasi data real-time dengan database MySQL berhasil.');
+    } catch (err) {
+      console.warn('[BursaLimbah Store] Gagal sinkronisasi data awal backend:', err);
     }
   }
 
@@ -968,6 +1055,15 @@ class BursaLimbahStore {
 
     this.state.products.unshift(newProduct);
     this.save();
+
+    if (this.isBackendConnected) {
+      fetch(`${this.apiBaseUrl}/api/products`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newProduct)
+      }).catch(e => console.warn('[Add Product API Error]', e));
+    }
+
     return newProduct;
   }
 
@@ -984,6 +1080,15 @@ class BursaLimbahStore {
         prod.adminNotes = adminNotes;
       }
       this.save();
+
+      if (this.isBackendConnected) {
+        fetch(`${this.apiBaseUrl}/api/products/${productId}/status`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status, adminNotes })
+        }).catch(e => console.warn('[Update Product Status API Error]', e));
+      }
+
       return prod;
     }
     return null;
@@ -1072,6 +1177,15 @@ class BursaLimbahStore {
     if (!this.state.chats) this.state.chats = [];
     this.state.chats.push(newMsg);
     this.save();
+
+    if (this.isBackendConnected) {
+      fetch(`${this.apiBaseUrl}/api/chats`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newMsg)
+      }).catch(e => console.warn('[Send Chat API Error]', e));
+    }
+
     return newMsg;
   }
 
@@ -1152,6 +1266,15 @@ class BursaLimbahStore {
 
     this.state.orders.unshift(newOrder);
     this.save();
+
+    if (this.isBackendConnected) {
+      fetch(`${this.apiBaseUrl}/api/orders`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newOrder)
+      }).catch(e => console.warn('[Create Order API Error]', e));
+    }
+
     return newOrder;
   }
 
@@ -1171,6 +1294,15 @@ class BursaLimbahStore {
       }
 
       this.save();
+
+      if (this.isBackendConnected) {
+        fetch(`${this.apiBaseUrl}/api/orders/${orderId}/status`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ escrowStatus: 'completed' })
+        }).catch(e => console.warn('[Complete Order API Error]', e));
+      }
+
       return order;
     }
     return null;
@@ -1191,12 +1323,33 @@ class BursaLimbahStore {
       this.state.settings.downPaymentPercent = Number(percent) || 30;
     }
     this.save();
+
+    if (this.isBackendConnected) {
+      fetch(`${this.apiBaseUrl}/api/settings`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          dp_enabled: String(enabled),
+          dp_percentage: String(this.state.settings.downPaymentPercent || 30)
+        })
+      }).catch(e => console.warn('[DP Settings API Error]', e));
+    }
+
     return this.state.settings;
   }
 
   updateSettings(newSettings) {
     this.state.settings = { ...this.state.settings, ...newSettings };
     this.save();
+
+    if (this.isBackendConnected) {
+      fetch(`${this.apiBaseUrl}/api/settings`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newSettings)
+      }).catch(e => console.warn('[Update Settings API Error]', e));
+    }
+
     return this.state.settings;
   }
 
@@ -1244,6 +1397,15 @@ class BursaLimbahStore {
     if (!this.state.events) this.state.events = [];
     this.state.events.unshift(newEvent);
     this.save();
+
+    if (this.isBackendConnected) {
+      fetch(`${this.apiBaseUrl}/api/events`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newEvent)
+      }).catch(e => console.warn('[Add Event API Error]', e));
+    }
+
     return newEvent;
   }
 
@@ -1260,6 +1422,15 @@ class BursaLimbahStore {
       events[idx] = { ...events[idx], ...updatedData };
       this.state.events = events;
       this.save();
+
+      if (this.isBackendConnected) {
+        fetch(`${this.apiBaseUrl}/api/events/${id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(updatedData)
+        }).catch(e => console.warn('[Update Event API Error]', e));
+      }
+
       return events[idx];
     }
     return null;
@@ -1269,6 +1440,13 @@ class BursaLimbahStore {
     const events = this.getEvents('semua');
     this.state.events = events.filter(e => e.id !== id);
     this.save();
+
+    if (this.isBackendConnected) {
+      fetch(`${this.apiBaseUrl}/api/events/${id}`, {
+        method: 'DELETE'
+      }).catch(e => console.warn('[Delete Event API Error]', e));
+    }
+
     return true;
   }
 
