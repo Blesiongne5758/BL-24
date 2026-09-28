@@ -408,6 +408,7 @@ const WASTE_SOURCE_TIERS = [
     color: "emerald",
     containers: [
       "Karung Plastik",
+      "Jerigen 18 L",
       "Ember / Tong (20L)",
       "Kantong Plastik Besar",
       "Goni / Karung Goni",
@@ -429,7 +430,7 @@ const WASTE_SOURCE_TIERS = [
     defaultMOQ: 5,
     defaultPrice: 3000,
     defaultQty: 50,
-    showFields: { grade: false, b3: false, gps: false, nib: false, tpsPermit: false },
+    showFields: { grade: false, b3: false, gps: true, nib: false, tpsPermit: false },
     placeholders: {
       title: "Contoh: Botol Plastik PET Bersih dari Perumahan",
       origin: "Contoh: Perumahan Griya Indah RT 05/RW 03, Depok",
@@ -523,7 +524,7 @@ const WASTE_SOURCE_TIERS = [
 
 const INITIAL_SETTINGS = {
   appName: "BURSA LIMBAH",
-  tagline: "Limbah Terverifikasi. Transaksi Tepercaya.",
+  tagline: "Limbah Terverifikasi. Transaksi Terpercaya.",
   // Data Rekening Bank Pengelola (Escrow DP 30%)
   escrowBankName: "Bank Central Asia (BCA)",
   escrowAccountNumber: "8271-9920-1122",
@@ -533,6 +534,24 @@ const INITIAL_SETTINGS = {
   dpEnabled: false, // Status DP saat ini: SET OFF (Nonaktif) sesuai instruksi
   downPaymentPercent: 30, // Persentase DP jika diaktifkan
   handlingFeePerTransaction: 10000, // Biaya Penanganan
+  // Gateway pembayaran: kunci rahasia selalu disimpan di environment server.
+  paymentGatewayEnabled: false,
+  paymentGatewayProvider: "midtrans",
+    paymentGatewayEnvironment: "sandbox",
+    paymentGatewayClientKey: "",
+    // Ticker harga pasar pada halaman publik
+    tickerEnabled: true,
+    tickerTitle: "Harga Pasar Terkini",
+    tickerRefreshMinutes: 15,
+    termsTitle: "Syarat dan Ketentuan Penggunaan Bursa Limbah",
+    termsVersion: "1.0",
+    termsContent: "Dengan membuat akun, Anda menyatakan bahwa data yang diberikan benar, mematuhi ketentuan perdagangan limbah yang berlaku, dan menggunakan Bursa Limbah secara bertanggung jawab. Anda menyetujui verifikasi data serta kebijakan pembayaran dan penyelesaian transaksi platform.",
+  handlingFeeByTier: {
+    tier_starter: 15000,
+    tier_basic: 10000,
+    tier_pro: 7500,
+    tier_enterprise: 5000
+  },
   appFeePerTransaction: 5000, // Fee Aplikasi
   shippingServiceEnabled: true, // Jasa Pengiriman
   shippingFlatFee: 250000, // Tarif Jasa Pengiriman Flat Mitra BURSA LIMBAH

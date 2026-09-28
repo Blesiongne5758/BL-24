@@ -56,7 +56,10 @@ class BursaLimbahStore {
       if (oRes.ok) {
         const oData = await oRes.json();
         if (oData.success && Array.isArray(oData.orders) && oData.orders.length > 0) {
-          const serverOrders = oData.orders.map(o => ({
+          const serverOrders = oData.orders.map(o => {
+            const localOrder = (this.state.orders || []).find(local => local.id === o.id) || {};
+            return ({
+            ...localOrder,
             id: o.id,
             bookingCode: o.order_code,
             productId: o.product_id,
@@ -76,10 +79,54 @@ class BursaLimbahStore {
             pickupDate: o.pickup_date ? new Date(o.pickup_date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
             createdAt: o.created_at ? new Date(o.created_at).toISOString().replace('T', ' ').substring(0, 16) : '',
             notes: o.notes || ''
-          }));
+          });
+          });
           const serverOrderIds = new Set(serverOrders.map(o => o.id));
           const localOrders = (this.state.orders || []).filter(o => !serverOrderIds.has(o.id));
           this.state.orders = [...serverOrders, ...localOrders];
+        }
+      }
+
+      // 2B. Ambil penawaran harga dan notifikasi transaksi dari MySQL
+      const offerRes = await fetch(`${this.apiBaseUrl}/api/offers`);
+      if (offerRes.ok) {
+        const offerData = await offerRes.json();
+        if (offerData.success && Array.isArray(offerData.offers)) {
+          const serverOffers = offerData.offers.map(o => ({
+            id: o.id, productId: o.product_id, productTitle: o.product_title,
+            productCode: o.product_code, sellerId: o.seller_id, sellerName: o.seller_name,
+            buyerId: o.buyer_id, buyerName: o.buyer_name, offerPrice: Number(o.offer_price),
+            quantity: Number(o.quantity), unit: o.unit, note: o.note || '', status: o.status,
+            createdAt: o.created_at
+          }));
+          const serverIds = new Set(serverOffers.map(o => o.id));
+          this.state.offers = [...serverOffers, ...(this.state.offers || []).filter(o => !serverIds.has(o.id))];
+        }
+      }
+
+      const settingRes = await fetch(`${this.apiBaseUrl}/api/settings`);
+      if (settingRes.ok) {
+        const settingData = await settingRes.json();
+        const remote = settingData.settings || {};
+        if (Object.keys(remote).length) {
+          let tierFees = this.state.settings.handlingFeeByTier;
+          try { tierFees = remote.handlingFeeByTier ? JSON.parse(remote.handlingFeeByTier) : tierFees; } catch (_) { /* retain local fallback */ }
+          this.state.settings = {
+            ...this.state.settings,
+            dpEnabled: remote.dp_enabled === undefined ? this.state.settings.dpEnabled : remote.dp_enabled === 'true',
+            downPaymentPercent: Number(remote.dp_percentage) || this.state.settings.downPaymentPercent,
+            handlingFeeByTier: tierFees,
+            paymentGatewayEnabled: remote.paymentGatewayEnabled === undefined ? this.state.settings.paymentGatewayEnabled : remote.paymentGatewayEnabled === 'true',
+            paymentGatewayProvider: remote.paymentGatewayProvider || this.state.settings.paymentGatewayProvider,
+            paymentGatewayEnvironment: remote.paymentGatewayEnvironment || this.state.settings.paymentGatewayEnvironment,
+            paymentGatewayClientKey: remote.paymentGatewayClientKey || this.state.settings.paymentGatewayClientKey,
+            tickerEnabled: remote.ticker_enabled === undefined ? this.state.settings.tickerEnabled : remote.ticker_enabled === 'true',
+            tickerTitle: remote.ticker_title || this.state.settings.tickerTitle,
+            tickerRefreshMinutes: Math.min(120, Math.max(1, Number(remote.ticker_refresh_minutes) || this.state.settings.tickerRefreshMinutes || 15)),
+            termsTitle: remote.terms_title || this.state.settings.termsTitle,
+            termsVersion: remote.terms_version || this.state.settings.termsVersion,
+            termsContent: remote.terms_content || this.state.settings.termsContent
+          };
         }
       }
 
@@ -103,9 +150,10 @@ class BursaLimbahStore {
               location: ev.location || 'Online',
               image: ev.image || 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&w=800&q=80',
               description: ev.description || '',
+              price: parseFloat(ev.price) || 0,
               priceLabel: parseFloat(ev.price) > 0 ? `Rp ${parseFloat(ev.price).toLocaleString('id-ID')}` : 'Gratis',
               isFree: parseFloat(ev.price) === 0,
-              status: ev.status || 'aktif'
+              status: ev.status === 'aktif' ? 'published' : (ev.status || 'draft')
             };
           });
           const serverEvIds = new Set(serverEvents.map(e => e.id));
@@ -115,6 +163,7 @@ class BursaLimbahStore {
       }
 
       this.save();
+      window.dispatchEvent(new CustomEvent('bursalimbah:settings-synced'));
       console.log('[BursaLimbah Store] Sinkronisasi data real-time dengan database MySQL berhasil.');
     } catch (err) {
       console.warn('[BursaLimbah Store] Gagal sinkronisasi data awal backend:', err);
@@ -128,6 +177,8 @@ class BursaLimbahStore {
         categories: [...INITIAL_CATEGORIES],
         products: [...INITIAL_PRODUCTS],
         orders: [...INITIAL_ORDERS],
+        offers: [],
+        notifications: [],
         users: [...INITIAL_USERS],
         settings: { ...INITIAL_SETTINGS, dpEnabled: false },
         buyerRequests: [...INITIAL_BUYER_REQUESTS],
@@ -167,6 +218,8 @@ class BursaLimbahStore {
           }
         }
         if (!this.state.users) this.state.users = [...INITIAL_USERS];
+        if (!Array.isArray(this.state.offers)) this.state.offers = [];
+        if (!Array.isArray(this.state.notifications)) this.state.notifications = [];
         // Pastikan akun demo user_buyer_free terdaftar di users
         if (!this.state.users.some(u => u.id === 'user_buyer_free')) {
           const freeSeed = INITIAL_USERS.find(u => u.id === 'user_buyer_free');
@@ -692,6 +745,45 @@ class BursaLimbahStore {
     return user;
   }
 
+  async uploadProductEvidences(files) {
+    const formData = new FormData();
+    files.forEach(file => formData.append('files', file));
+
+    const response = await fetch(`${this.apiBaseUrl}/api/uploads/product-evidence`, {
+      method: 'POST',
+      body: formData
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok || !data.success) {
+      throw new Error(data.message || 'Gagal mengunggah gambar eviden.');
+    }
+    return data.files;
+  }
+
+  async uploadIdentityDocument(file) {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const response = await fetch(`${this.apiBaseUrl}/api/uploads/identity-document`, {
+      method: 'POST',
+      body: formData
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok || !data.success) {
+      throw new Error(data.message || 'Gagal mengunggah dokumen identitas.');
+    }
+    return data.file;
+  }
+
+  async uploadWeighingProof(file) {
+    const formData = new FormData();
+    formData.append('file', file);
+    const response = await fetch(`${this.apiBaseUrl}/api/uploads/weighing-proof`, { method: 'POST', body: formData });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok || !data.success) throw new Error(data.message || 'Gagal mengunggah bukti timbang.');
+    return data.file;
+  }
+
   logout() {
     this.state.currentRole = "public";
     this.state.adminUserId = null;
@@ -1211,7 +1303,7 @@ class BursaLimbahStore {
     const isDp = this.isDpEnabled();
     const dpPercent = settings.downPaymentPercent || 30;
     const downPaymentAmount = isDp ? Math.round(totalPrice * (dpPercent / 100)) : totalPrice;
-    const handlingFee = settings.handlingFeePerTransaction || 10000;
+    const handlingFee = this.getHandlingFeeForUser(buyer);
     const appFee = settings.appFeePerTransaction || 5000;
     const isDelivery = shippingMethod === 'BURSA LIMBAH_delivery';
     const finalShippingFee = isDelivery ? (Number(shippingFee) || settings.shippingFlatFee || 250000) : 0;
@@ -1265,6 +1357,8 @@ class BursaLimbahStore {
     product.bookedByOrderId = orderId;
 
     this.state.orders.unshift(newOrder);
+    this.createNotification(product.sellerId, 'info', 'Pesanan baru masuk', `${buyer.name} membuat pesanan ${product.title}.`, `/seller/orders/${orderId}`);
+    this.createNotification(buyer.id, 'success', 'Pesanan tercatat', `Pesanan ${bookingCode} berhasil dibuat dan menunggu proses pembayaran.`, `/buyer/orders/${orderId}`);
     this.save();
 
     if (this.isBackendConnected) {
@@ -1308,6 +1402,18 @@ class BursaLimbahStore {
     return null;
   }
 
+  recordReceivingEvidence(orderId, actualWeight, weighingProof = null) {
+    const order = this.getOrderById(orderId);
+    if (!order) throw new Error('Data transaksi tidak ditemukan.');
+    if (!(Number(actualWeight) > 0)) throw new Error('Berat aktual yang diterima harus lebih dari nol.');
+    order.actualReceivedWeight = Number(actualWeight);
+    order.weighingProof = weighingProof;
+    order.receivingEvidenceSubmittedAt = new Date().toISOString();
+    order.qrCompletionReady = true;
+    this.save();
+    return order;
+  }
+
   // ================= SETTINGS & DP CONFIGURATION =================
   getSettings() {
     return this.state.settings;
@@ -1343,14 +1449,112 @@ class BursaLimbahStore {
     this.save();
 
     if (this.isBackendConnected) {
+      const apiSettings = { ...newSettings };
+      if (apiSettings.handlingFeeByTier) apiSettings.handlingFeeByTier = JSON.stringify(apiSettings.handlingFeeByTier);
+      if (apiSettings.tickerEnabled !== undefined) {
+        apiSettings.ticker_enabled = String(apiSettings.tickerEnabled);
+        delete apiSettings.tickerEnabled;
+      }
+      if (apiSettings.tickerTitle !== undefined) {
+        apiSettings.ticker_title = apiSettings.tickerTitle;
+        delete apiSettings.tickerTitle;
+      }
+      if (apiSettings.tickerRefreshMinutes !== undefined) {
+        apiSettings.ticker_refresh_minutes = String(apiSettings.tickerRefreshMinutes);
+        delete apiSettings.tickerRefreshMinutes;
+      }
+      if (apiSettings.termsTitle !== undefined) { apiSettings.terms_title = apiSettings.termsTitle; delete apiSettings.termsTitle; }
+      if (apiSettings.termsVersion !== undefined) { apiSettings.terms_version = apiSettings.termsVersion; delete apiSettings.termsVersion; }
+      if (apiSettings.termsContent !== undefined) { apiSettings.terms_content = apiSettings.termsContent; delete apiSettings.termsContent; }
       fetch(`${this.apiBaseUrl}/api/settings`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newSettings)
+        body: JSON.stringify(apiSettings)
       }).catch(e => console.warn('[Update Settings API Error]', e));
     }
 
     return this.state.settings;
+  }
+
+  recordReceivingEvidence(orderId, actualWeight, weighingProof = null) {
+    const order = this.getOrderById(orderId);
+    if (!order) throw new Error('Data transaksi tidak ditemukan.');
+    if (!(Number(actualWeight) > 0)) throw new Error('Berat aktual yang diterima harus lebih dari nol.');
+    order.actualReceivedWeight = Number(actualWeight);
+    order.weighingProof = weighingProof;
+    order.receivingEvidenceSubmittedAt = new Date().toISOString();
+    order.qrCompletionReady = true;
+    this.save();
+    return order;
+  }
+
+  getHandlingFeeForUser(user) {
+    const settings = this.getSettings();
+    const tierId = user && user.subscriptionTier ? user.subscriptionTier : 'tier_starter';
+    const tierFees = settings.handlingFeeByTier || {};
+    const fee = Number(tierFees[tierId]);
+    return Number.isFinite(fee) ? fee : (Number(settings.handlingFeePerTransaction) || 10000);
+  }
+
+  getOffersForSeller(sellerId) {
+    return (this.state.offers || []).filter(o => o.sellerId === sellerId).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  }
+
+  createOffer({ productId, buyerId, offerPrice, quantity, note }) {
+    const product = this.getProductById(productId);
+    const buyer = this.state.users.find(u => u.id === buyerId);
+    if (!product || !buyer) throw new Error('Data produk atau pembeli tidak ditemukan.');
+    if (product.status !== 'approved') throw new Error('Produk ini tidak lagi tersedia untuk ditawar.');
+    if (!(Number(offerPrice) > 0)) throw new Error('Masukkan harga penawaran yang valid.');
+    const offer = {
+      id: `OFF-${Date.now()}`,
+      productId: product.id,
+      productTitle: product.title,
+      productCode: product.code,
+      sellerId: product.sellerId,
+      sellerName: product.sellerName,
+      buyerId: buyer.id,
+      buyerName: buyer.name,
+      offerPrice: Number(offerPrice),
+      quantity: Number(quantity) || product.minimumOrder || 1,
+      unit: product.unit || 'Kg',
+      note: String(note || '').trim(),
+      status: 'pending',
+      createdAt: new Date().toISOString()
+    };
+    this.state.offers.unshift(offer);
+    this.createNotification(product.sellerId, 'warning', 'Penawaran harga baru', `${buyer.name} menawar ${product.title} sebesar Rp${offer.offerPrice.toLocaleString('id-ID')}.`, `/seller/offers/${offer.id}`);
+    this.createNotification(buyer.id, 'info', 'Penawaran dikirim', `Penawaran Anda untuk ${product.title} sudah diteruskan kepada penjual.`, `/buyer/offers/${offer.id}`);
+    this.save();
+    if (this.isBackendConnected) {
+      fetch(`${this.apiBaseUrl}/api/offers`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(offer) }).catch(e => console.warn('[Offer API Error]', e));
+    }
+    return offer;
+  }
+
+  respondToOffer(offerId, sellerId, decision) {
+    const offer = (this.state.offers || []).find(o => o.id === offerId);
+    if (!offer || offer.sellerId !== sellerId || offer.status !== 'pending') throw new Error('Penawaran tidak dapat diproses.');
+    offer.status = decision === 'accepted' ? 'accepted' : 'rejected';
+    offer.respondedAt = new Date().toISOString();
+    const accepted = offer.status === 'accepted';
+    this.createNotification(offer.buyerId, accepted ? 'success' : 'error', accepted ? 'Penawaran diterima' : 'Penawaran ditolak', accepted ? `Penjual menerima penawaran Anda untuk ${offer.productTitle}. Lanjutkan ke pembayaran untuk mengunci pasokan.` : `Penjual belum dapat menerima penawaran Anda untuk ${offer.productTitle}.`, `/buyer/offers/${offer.id}`);
+    this.createNotification(sellerId, accepted ? 'success' : 'info', accepted ? 'Penawaran diterima' : 'Penawaran ditolak', `Anda ${accepted ? 'menerima' : 'menolak'} penawaran ${offer.buyerName} untuk ${offer.productTitle}.`, `/seller/offers/${offer.id}`);
+    this.save();
+    if (this.isBackendConnected) {
+      fetch(`${this.apiBaseUrl}/api/offers/${offerId}/status`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sellerId, status: offer.status }) }).catch(e => console.warn('[Offer status API Error]', e));
+    }
+    return offer;
+  }
+
+  createNotification(userId, type, title, message, link = null) {
+    const notification = { id: `NTF-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`, userId, type, title, message, link, isRead: false, createdAt: new Date().toISOString() };
+    if (!this.state.notifications) this.state.notifications = [];
+    this.state.notifications.unshift(notification);
+    if (this.isBackendConnected) {
+      fetch(`${this.apiBaseUrl}/api/notifications`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(notification) }).catch(e => console.warn('[Notification API Error]', e));
+    }
+    return notification;
   }
 
   // ================= EVENT & AGENDA MANAGEMENT =================
@@ -1389,6 +1593,7 @@ class BursaLimbahStore {
       location: eventData.location || "Jakarta",
       image: eventData.image || "https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&w=800&q=80",
       description: eventData.description || "",
+      price: Number(eventData.price) || 0,
       priceLabel: eventData.priceLabel || (eventData.isFree ? "Gratis" : "Berbayar"),
       isFree: Boolean(eventData.isFree),
       status: eventData.status || "published",

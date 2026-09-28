@@ -1,0 +1,28 @@
+# Task Checklist: Transformasi MVP Mobile App
+
+- [x] 1. **Pembersihan Elemen Lama (`index.html`)**:
+  - Hapus announcement bar & ticker market harga (`#announcement-bar`, `#price-ticker-strip`).
+  - Hapus frame iklan sponsor slider (`#sponsor-ad-bar` dan script `adSlider`).
+  - Hapus switcher peran legacy (Publik, Pembeli, Penjual, Admin) di header depan.
+  - Hapus dashboard statik bawah (`#mobile-static-bottom-hub`).
+- [x] 2. **Struktur Tab Mobile App (`index.html`)**:
+  - Bangun Top App Bar khas mobile (logo, tab desktop, notifikasi chat, WhatsApp, profil/login).
+  - Susun 4 Tab Screen:
+    - Tab 1: **Home** (`#tab-home` - Hero, Discovery Stories, Fitur Keunggulan, Komoditas Prioritas, Pasokan Terverifikasi & Event/Agenda)
+    - Tab 2: **Mulai Jual** (`#tab-sell` - Formulir pendaftaran pasokan 3-tier adaptif Rumah Tangga, Industri Menengah, Industri Besar)
+    - Tab 3: **Berlangganan** (`#tab-subscription` - Pilihan 3-tier Starter Rp0, Bisnis Pro Rp249rb, Korporat Rp499rb + Biaya Penanganan)
+    - Tab 4: **Simulasi** (`#tab-simulation` - Kalkulator DP 30%, Escrow & ESG CO2e dengan preset dan slider interaktif)
+  - Bangun Bottom Navigation Bar (`#mobile-app-bottom-nav` docked di bagian bawah layar).
+- [x] 3. **Controller & Navigasi Mobile (`js/app.js`)**:
+  - Tambahkan metode `switchAppTab(tabKey)` untuk mengontrol aktif/inaktif 4 tab dan sinkronisasi status bottom nav & desktop nav.
+  - Perbarui `navigateToSection(sectionId)` untuk otomatis mengarahkan ke tab terkait ('sim' untuk kalkulator, 'sub' untuk tarif, 'home' untuk lainnya).
+  - Integrasikan pendaftaran pasokan langsung dari tab "Mulai Jual" dan navigasi kembali ke Home/Dashboard.
+  - Amankan `renderPriceTicker()` agar tidak error saat ticker DOM dihapus.
+- [x] 4. **Styling Mobile App (`css/style.css`)**:
+  - Tambahkan styling dock bottom bar (`.bnav-item.active`, `.bnav-indicator`, transisi ikon).
+  - Animasi transisi tab halus (`appTabFadeIn`).
+  - Safe-area bottom padding.
+- [x] 5. **Verifikasi & Walkthrough**:
+  - Uji validitas sintaks JS (`node -c js/data.js js/store.js js/app.js`).
+  - Uji siklus navigasi 4 tab simulasi lingkungan browser (`switchAppTab`).
+  - Verifikasi elemen DOM index.html terkonfigurasi tepat.

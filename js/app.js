@@ -17,10 +17,18 @@ class BursaLimbahApp {
     this.currentChatProduct = null;
     this.currentChatSeller = null;
     this.chatOpen = false;
+    this.marketCurrencies = null;
+    this.tickerRefreshTimer = null;
+    this.termsAcceptedForRegistration = null;
   }
 
   init() {
+    window.addEventListener('bursalimbah:settings-synced', () => {
+      this.renderPriceTicker();
+      this.fetchLiveMarketRates();
+    });
     this.renderPriceTicker();
+    this.fetchLiveMarketRates();
     this.renderPublicCategories();
     this.setupCalculator();
     this.populateSelectCategories();
@@ -51,6 +59,12 @@ class BursaLimbahApp {
       minimumFractionDigits: 0,
       maximumFractionDigits: 0
     }).format(amount || 0);
+  }
+
+  bottomNavClass(navKey, isActive = false) {
+    const createModifier = navKey === 'sell' ? ' bnav-create' : '';
+    const state = isActive ? 'text-emerald-700 font-bold active' : 'text-slate-500 font-medium';
+    return `bnav-item${createModifier} flex flex-col items-center justify-center py-1 ${state} active:scale-90 transition cursor-pointer`;
   }
 
   getCity(item) {
@@ -292,10 +306,10 @@ class BursaLimbahApp {
     // ===== PERBARUI STATE BOTTOM NAV BARU (Cari/Event/Pesan/Saya) =====
     // Saat masuk ke role dashboard, hapus highlight aktif di bottom nav baru
     if (['buyer', 'seller', 'admin', 'login'].includes(role)) {
-      ['cari', 'event', 'pesan', 'saya'].forEach(k => {
+      ['home', 'cari', 'pesan', 'saya', 'sell'].forEach(k => {
         const btn = [REDACTED]`bnav-${k}`);
         if (btn) {
-          btn.className = 'bnav-item flex flex-col items-center justify-center py-1 text-slate-500 font-medium active:scale-90 transition cursor-pointer';
+          btn.className = this.bottomNavClass(k);
           btn.removeAttribute('aria-current');
         }
       });
@@ -749,7 +763,40 @@ class BursaLimbahApp {
     }
   }
 
-  showSellerRegisterModal() {
+  showRegistrationTerms(role, preferredTierId = null) {
+    this.pendingRegistration = { role, preferredTierId };
+    const settings = this.store.getSettings();
+    const modal = [REDACTED]'modal-registration-terms');
+    if (!modal) return;
+    [REDACTED]'registration-terms-title').textContent = settings.termsTitle || 'Syarat dan Ketentuan';
+    [REDACTED]'registration-terms-version').textContent = `Versi ${settings.termsVersion || '1.0'}`;
+    [REDACTED]'registration-terms-content').textContent = settings.termsContent || '';
+    [REDACTED]'registration-terms-role').textContent = role === 'seller' ? 'Penjual' : 'Pembeli';
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+  }
+
+  cancelRegistrationTerms() {
+    this.pendingRegistration = null;
+    const modal = [REDACTED]'modal-registration-terms');
+    if (modal) { modal.classList.add('hidden'); modal.classList.remove('flex'); }
+  }
+
+  acceptRegistrationTerms() {
+    const pending = this.pendingRegistration;
+    if (!pending) return;
+    this.termsAcceptedForRegistration = pending.role;
+    this.cancelRegistrationTerms();
+    if (pending.role === 'seller') this.showSellerRegisterModal(true);
+    else this.showBuyerRegisterModal(pending.preferredTierId, true);
+  }
+
+  showSellerRegisterModal(termsApproved = false) {
+    const currentUser = this.store.getCurrentUser();
+    if (!termsApproved && !(currentUser && currentUser.role === 'seller')) {
+      this.showRegistrationTerms('seller');
+      return;
+    }
     const modal = [REDACTED]'modal-seller-register');
     if (modal) {
       modal.classList.remove('hidden');
@@ -759,6 +806,11 @@ class BursaLimbahApp {
 
   async handleSellerRegister(event) {
     event.preventDefault();
+    if (this.termsAcceptedForRegistration !== 'seller') {
+      this.showRegistrationTerms('seller');
+      this.showToast('Setujui Syarat dan Ketentuan sebelum mendaftar.', 'warning');
+      return;
+    }
     const email = [REDACTED]'reg-seller-email').value.trim();
     const name = [REDACTED]'reg-seller-name').value.trim();
     const phone = [REDACTED]'reg-seller-phone').value.trim();
@@ -790,10 +842,14 @@ class BursaLimbahApp {
       email,
       location,
       bankAccount,
-      password
+      password,
+      termsAccepted: true,
+      termsVersion: this.store.getSettings().termsVersion
     });
+    if (!res.success) { this.showToast(res.message || 'Pendaftaran penjual gagal.', 'error'); return; }
 
     this.closeModals();
+    this.termsAcceptedForRegistration = null;
     this.triggerConfetti();
     this.showToast(`Selamat datang ${name}! Akun Penjual berhasil dibuat. Lengkapi data rekening & lokasi di Menu Pengaturan.`, 'success');
     this.setRole('seller', false);
@@ -872,10 +928,12 @@ class BursaLimbahApp {
       sub: 'tab-subscription',
       subscription: 'tab-subscription',
       sim: 'tab-simulation',
-      simulation: 'tab-simulation'
+      simulation: 'tab-simulation',
+      solutions: 'tab-solutions',
+      solution: 'tab-solutions'
     };
     const activeTabId = tabMap[key] || 'tab-home';
-    const normalizedKey = (key === 'subscription' ? 'sub' : (key === 'simulation' ? 'sim' : key));
+    const normalizedKey = key === 'subscription' ? 'sub' : (key === 'simulation' ? 'sim' : (key === 'solution' ? 'solutions' : key));
     this.currentAppTab = normalizedKey;
 
     // Pastikan view-public aktif jika sedang di peran lain
@@ -884,7 +942,7 @@ class BursaLimbahApp {
     }
 
     // Tampilkan panel tab yang dipilih dan sembunyikan yang lain (termasuk tab bottom nav)
-    ['tab-home', 'tab-sell', 'tab-subscription', 'tab-simulation',
+    ['tab-home', 'tab-sell', 'tab-subscription', 'tab-simulation', 'tab-solutions',
      'tab-cari', 'tab-event', 'tab-pesan', 'tab-saya'].forEach(id => {
       const pane = [REDACTED]id);
       if (pane) {
@@ -897,24 +955,24 @@ class BursaLimbahApp {
     });
 
     // Reset highlight tombol bottom nav baru
-    ['cari', 'event', 'pesan', 'saya'].forEach(k => {
+    ['home', 'cari', 'pesan', 'saya'].forEach(k => {
       const btn = [REDACTED]`bnav-${k}`);
       if (btn) {
-        btn.className = 'bnav-item flex flex-col items-center justify-center py-1 text-slate-500 font-medium active:scale-90 transition cursor-pointer';
+        btn.className = this.bottomNavClass(k);
         btn.removeAttribute('aria-current');
       }
     });
 
     // Perbarui status tombol navigasi bawah mobile
-    const bottomNavKeys = ['home', 'sell', 'sub', 'sim'];
+    const bottomNavKeys = ['home', 'sell', 'sub', 'sim', 'solutions'];
     bottomNavKeys.forEach(k => {
       const bnavBtn = [REDACTED]`bnav-${k}`);
       if (bnavBtn) {
         if (k === normalizedKey) {
-          bnavBtn.className = 'bnav-item flex flex-col items-center justify-center py-1 text-emerald-700 font-bold active:scale-90 transition cursor-pointer active';
+          bnavBtn.className = this.bottomNavClass(k, true);
           bnavBtn.setAttribute('aria-current', 'page');
         } else {
-          bnavBtn.className = 'bnav-item flex flex-col items-center justify-center py-1 text-slate-500 font-medium active:scale-90 transition cursor-pointer';
+          bnavBtn.className = this.bottomNavClass(k);
           bnavBtn.removeAttribute('aria-current');
         }
       }
@@ -976,15 +1034,15 @@ class BursaLimbahApp {
     if (activePane) activePane.classList.remove('hidden');
 
     // Update highlight tombol bottom nav
-    const bnavKeys = ['cari', 'event', 'pesan', 'saya'];
+    const bnavKeys = ['home', 'cari', 'sell', 'pesan', 'saya'];
     bnavKeys.forEach(k => {
       const btn = [REDACTED]`bnav-${k}`);
       if (btn) {
         if (k === tabKey) {
-          btn.className = 'bnav-item flex flex-col items-center justify-center py-1 text-emerald-700 font-bold active:scale-90 transition cursor-pointer active';
+          btn.className = this.bottomNavClass(k, true);
           btn.setAttribute('aria-current', 'page');
         } else {
-          btn.className = 'bnav-item flex flex-col items-center justify-center py-1 text-slate-500 font-medium active:scale-90 transition cursor-pointer';
+          btn.className = this.bottomNavClass(k);
           btn.removeAttribute('aria-current');
         }
       }
@@ -1493,7 +1551,7 @@ class BursaLimbahApp {
                 <i class="fa-solid fa-ticket ${evt.isFree ? 'text-emerald-500' : 'text-amber-500'}"></i>
                 <span>${evt.priceLabel}</span>
               </div>
-              <button onclick="app.showToast('Selamat! Pendaftaran untuk ${evt.title.replace(/'/g, "\\'")} berhasil dicatat.', 'success')" class="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-[11px] font-bold transition shadow-sm">Daftar →</button>
+              <button onclick="app.openEventRegistration('${evt.id}')" class="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-[11px] font-bold transition shadow-sm">Minat / Daftar →</button>
             </div>
           </div>
         </article>
@@ -1503,6 +1561,79 @@ class BursaLimbahApp {
 
   filterEvents(category) {
     this.renderEvents(category);
+  }
+
+  getEventTicketPrice(eventData) {
+    if (Number.isFinite(Number(eventData?.price))) return Number(eventData.price);
+    const label = String(eventData?.priceLabel || '');
+    const numeric = label.match(/Rp\s*([0-9.]+)/i);
+    return numeric ? Number(numeric[1].replace(/\./g, '')) : 0;
+  }
+
+  openEventRegistration(eventId) {
+    const eventData = this.store.getEventById(eventId);
+    const modal = [REDACTED]'modal-event-registration');
+    if (!eventData || !modal) return;
+    const user = this.store.getCurrentUser?.();
+    const price = this.getEventTicketPrice(eventData);
+    [REDACTED]'event-registration-title').textContent = eventData.title;
+    [REDACTED]'event-registration-price').textContent = price > 0 ? `Tiket ${this.formatRupiah(price)} / peserta` : 'Event gratis';
+    [REDACTED]'event-registration-form').classList.remove('hidden');
+    [REDACTED]'event-payment-panel').classList.add('hidden');
+    [REDACTED]'event-registration-form').reset();
+    // Isi ulang setelah reset agar informasi akun tidak hilang.
+    [REDACTED]'event-registration-id').value = eventId;
+    [REDACTED]'event-participant-name').value = user?.name || user?.company || '';
+    [REDACTED]'event-participant-email').value = user?.email || '';
+    [REDACTED]'event-participant-phone').value = user?.phone || '';
+    [REDACTED]'event-participant-company').value = user?.company || '';
+    modal.classList.remove('hidden'); modal.classList.add('flex');
+  }
+
+  closeEventRegistrationModal() {
+    const modal = [REDACTED]'modal-event-registration');
+    if (modal) { modal.classList.add('hidden'); modal.classList.remove('flex'); }
+  }
+
+  async submitEventRegistration(event) {
+    event.preventDefault();
+    const eventId = [REDACTED]'event-registration-id').value;
+    const action = document.querySelector('input[name="event-action"]:checked')?.value || 'interest';
+    const payload = {
+      fullName: [REDACTED]'event-participant-name').value.trim(),
+      email: [REDACTED]'event-participant-email').value.trim(),
+      phone: [REDACTED]'event-participant-phone').value.trim(),
+      company: [REDACTED]'event-participant-company').value.trim(),
+      attendeeCount: Number([REDACTED]'event-attendee-count').value),
+      note: [REDACTED]'event-participant-note').value.trim()
+    };
+    try {
+      const endpoint = action === 'interest' ? 'interests' : 'registrations';
+      const response = await fetch(`${this.store.apiBaseUrl}/api/events/${encodeURIComponent(eventId)}/${endpoint}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+      const result = await response.json();
+      if (!response.ok || !result.success) throw new Error(result.message || 'Pendaftaran event gagal diproses.');
+      if (action === 'interest' || !result.paymentRequired) {
+        this.closeEventRegistrationModal();
+        this.showToast(result.message, 'success');
+        return;
+      }
+      const payment = result.paymentInstructions;
+      [REDACTED]'event-registration-form').classList.add('hidden');
+      const panel = [REDACTED]'event-payment-panel');
+      panel.innerHTML = `<div class="rounded-xl bg-amber-50 border border-amber-200 p-3 text-xs text-amber-900"><strong>Total tagihan: ${this.formatRupiah(result.totalAmount)}</strong><br>Transfer ke ${payment.bank} a.n. ${payment.accountName}, rekening ${payment.accountNumber}.</div><label class="block text-xs font-bold text-slate-700">Nomor referensi transfer<input id="event-payment-reference" required class="mt-1.5 w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 text-sm"></label><button onclick="app.submitEventPayment('${result.registrationId}')" class="w-full px-4 py-2.5 rounded-xl bg-emerald-600 text-white text-xs font-bold">Kirim Konfirmasi Pembayaran</button>`;
+      panel.classList.remove('hidden');
+    } catch (error) { this.showToast(error.message, 'error'); }
+  }
+
+  async submitEventPayment(registrationId) {
+    const paymentReference = [REDACTED]'event-payment-reference')?.value.trim();
+    try {
+      const response = await fetch(`${this.store.apiBaseUrl}/api/event-payments/${encodeURIComponent(registrationId)}/submit`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ paymentReference }) });
+      const result = await response.json();
+      if (!response.ok || !result.success) throw new Error(result.message || 'Konfirmasi pembayaran gagal.');
+      this.closeEventRegistrationModal();
+      this.showToast(result.message, 'success');
+    } catch (error) { this.showToast(error.message, 'error'); }
   }
 
   subscribeEventNotification() {
@@ -1518,49 +1649,72 @@ class BursaLimbahApp {
 
   // ================= TICKER HARGA LIVE & KURS =================
   async fetchLiveMarketRates() {
+    const tickerSettings = this.store.getSettings();
+    if (!tickerSettings.tickerEnabled) return;
     try {
-      const response = await fetch('https://open.er-api.com/v6/latest/USD');
+      const response = await fetch(`${this.store.apiBaseUrl}/api/market-prices`);
       if (response.ok) {
         const data = await response.json();
-        if (data && data.rates && data.rates.IDR) {
-          const liveUsd = Math.round(data.rates.IDR);
+        if (data && data.success && data.rates && data.rates.USD_IDR) {
+          const liveUsd = Math.round(data.rates.USD_IDR);
+          const previousRate = this.marketCurrencies?.usd?.rate;
+          const delta = previousRate ? liveUsd - previousRate : 0;
+          const changePercent = previousRate && delta !== 0 ? `${delta > 0 ? '+' : ''}${((delta / previousRate) * 100).toFixed(2)}%` : '0.00%';
+          if (!this.marketCurrencies) this.marketCurrencies = { usd: { rate: liveUsd, trend: 'flat', changePercent: '0.00%' } };
           this.marketCurrencies.usd.rate = liveUsd;
-          // Estimasi harga emas per gram (spot dunia ~US$ 2.650 / troy ounce; 1 troy oz = 31.1035 gr)
-          const goldPerGram = Math.round((2650 * liveUsd) / 31.1035);
-          if (goldPerGram > 1000000 && goldPerGram < 2500000) {
-            this.marketCurrencies.gold.rate = goldPerGram;
-          }
+          this.marketCurrencies.usd.trend = delta > 0 ? 'up' : delta < 0 ? 'down' : 'flat';
+          this.marketCurrencies.usd.changePercent = changePercent;
+          this.marketTickerUpdatedAt = data.updatedAt || new Date().toISOString();
+          this.marketTickerSource = data.source || 'Market Price API';
           this.renderPriceTicker();
         }
       }
     } catch (e) {
-      console.log("Menggunakan rate kurs standar bawaan", e);
+      console.warn("Ticker memakai harga terakhir karena Market Price API tidak tersedia.", e);
+    } finally {
+      this.scheduleTickerRefresh();
     }
+  }
+
+  scheduleTickerRefresh() {
+    if (this.tickerRefreshTimer) clearTimeout(this.tickerRefreshTimer);
+    const settings = this.store.getSettings();
+    if (!settings.tickerEnabled) return;
+    const minutes = Math.min(120, Math.max(1, Number(settings.tickerRefreshMinutes) || 15));
+    this.tickerRefreshTimer = setTimeout(() => this.fetchLiveMarketRates(), minutes * 60 * 1000);
   }
 
   renderPriceTicker() {
     const tickerContainer = [REDACTED]'price-ticker-strip');
-    if (!tickerContainer) return;
+    const tickerSection = [REDACTED]'market-price-ticker');
+    if (!tickerContainer || !tickerSection) return;
+
+    const settings = this.store.getSettings();
+    const isEnabled = settings.tickerEnabled !== false;
+    tickerSection.classList.toggle('hidden', !isEnabled);
+    if (!isEnabled) {
+      if (this.tickerRefreshTimer) clearTimeout(this.tickerRefreshTimer);
+      return;
+    }
+
+    const title = [REDACTED]'price-ticker-title');
+    if (title) title.textContent = settings.tickerTitle || 'Harga Pasar Terkini';
+    const updated = [REDACTED]'price-ticker-updated');
+    if (updated) {
+      const date = this.marketTickerUpdatedAt ? new Date(this.marketTickerUpdatedAt) : null;
+      updated.textContent = date && !Number.isNaN(date.getTime())
+        ? `Diperbarui ${date.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })} WIB`
+        : 'Memuat harga pasar…';
+    }
 
     if (!this.marketCurrencies) {
       this.marketCurrencies = {
         usd: {
-          name: 'USD / IDR',
-          label: 'Kurs Dolar AS',
           rate: 16180,
-          trend: 'up',
-          changePercent: '+0.15%'
-        },
-        gold: {
-          name: 'Harga Emas Antam',
-          label: 'Emas Logam Mulia',
-          rate: 1515000,
-          unit: 'gr',
-          trend: 'up',
-          changePercent: '+0.42%'
+          trend: 'flat',
+          changePercent: '0.00%'
         }
       };
-      this.fetchLiveMarketRates();
     }
 
     const categories = this.store.getCategories();
@@ -1587,28 +1741,7 @@ class BursaLimbahApp {
       </div>
     `;
 
-    // 2. Harga Emas Murni / Antam
-    const gold = this.marketCurrencies.gold;
-    const goldIsUp = gold.trend === 'up';
-    const goldIsDown = gold.trend === 'down';
-    const goldTrendColor = goldIsUp ? 'text-amber-300 border-amber-800/60 bg-amber-950/70' : goldIsDown ? 'text-rose-400 border-rose-800/60 bg-rose-950/70' : 'text-slate-400 border-slate-700 bg-slate-800';
-    const goldTrendIcon = goldIsUp ? 'fa-arrow-trend-up' : goldIsDown ? 'fa-arrow-trend-down' : 'fa-minus';
-
-    html += `
-      <div class="inline-flex items-center space-x-2 bg-gradient-to-r from-amber-950/90 to-slate-900 px-3 py-1 rounded-lg border border-amber-500/50 hover:border-amber-400 transition shadow-sm">
-        <span class="w-2 h-2 rounded-full ${goldIsUp ? 'bg-amber-400' : 'bg-rose-400'} animate-pulse"></span>
-        <span class="text-amber-300 font-bold flex items-center space-x-1 text-xs">
-          <i class="fa-solid fa-coins text-[11px] text-amber-400"></i>
-          <span>Harga Emas:</span>
-        </span>
-        <span class="text-white font-bold font-mono text-xs">${this.formatRupiah(gold.rate)}<span class="text-[10px] text-slate-400 font-normal">/gr</span></span>
-        <span class="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded border ${goldTrendColor} flex items-center">
-          <i class="fa-solid ${goldTrendIcon} mr-1 text-[9px]"></i>${gold.changePercent}
-        </span>
-      </div>
-    `;
-
-    // 3. Kategori Komoditas Limbah
+    // 2. Kategori komoditas berasal dari rata-rata listing aktif Bursa Limbah.
     categories.forEach(cat => {
       const approvedProducts = this.store.getProducts({ category: cat.id, status: 'approved' });
       let currentPrice = cat.avgPrice;
@@ -1635,63 +1768,11 @@ class BursaLimbahApp {
     });
 
     tickerContainer.innerHTML = html + html;
-
-    if (!this.tickerPulseInterval) {
-      this.tickerPulseInterval = setInterval(() => {
-        this.simulateLiveMarketTick();
-      }, 5000);
-    }
   }
 
   simulateLiveMarketTick() {
-    // Fluktuasi acak untuk Kurs USD atau Harga Emas
-    if (this.marketCurrencies && Math.random() > 0.3) {
-      if (Math.random() > 0.5) {
-        const delta = Math.floor(Math.random() * 30) - 14;
-        this.marketCurrencies.usd.rate = Math.max(15000, this.marketCurrencies.usd.rate + delta);
-        this.marketCurrencies.usd.trend = delta >= 0 ? 'up' : 'down';
-        this.marketCurrencies.usd.changePercent = `${delta >= 0 ? '+' : ''}${(Math.random() * 0.25).toFixed(2)}%`;
-      } else {
-        const delta = (Math.floor(Math.random() * 7) - 3) * 1000;
-        this.marketCurrencies.gold.rate = Math.max(1000000, this.marketCurrencies.gold.rate + delta);
-        this.marketCurrencies.gold.trend = delta >= 0 ? 'up' : 'down';
-        this.marketCurrencies.gold.changePercent = `${delta >= 0 ? '+' : ''}${(Math.random() * 0.35).toFixed(2)}%`;
-      }
-    }
-
-    const categories = this.store.getCategories();
-    if (!categories || categories.length === 0) return;
-
-    const randIdx = Math.floor(Math.random() * categories.length);
-    const targetCat = categories[randIdx];
-    const deltaPercent = (Math.random() * 0.6 - 0.25).toFixed(1);
-    const numericDelta = parseFloat(deltaPercent);
-
-    if (numericDelta > 0) {
-      targetCat.trend = 'up';
-      targetCat.changePercent = `+${Math.abs(numericDelta + 1.2).toFixed(1)}%`;
-      targetCat.avgPrice = Math.round(targetCat.avgPrice + (Math.random() * 50 + 25));
-    } else if (numericDelta < 0) {
-      targetCat.trend = 'down';
-      targetCat.changePercent = `-${Math.abs(numericDelta - 0.5).toFixed(1)}%`;
-      targetCat.avgPrice = Math.max(500, Math.round(targetCat.avgPrice - (Math.random() * 50 + 20)));
-    }
-
-    this.renderPriceTicker();
-
-    // Rotasi teks dinamis di banner aktivitas mobile
-    const mobilePulse = [REDACTED]'mobile-live-pulse-text');
-    if (mobilePulse) {
-      const messages = [
-        `14 Pemasok Online • ⚡ 3 Escrow Baru Diproses • 📈 Jelantah +4.5%`,
-        `🏗️ Besi Scrap WF 8 Ton Masuk (Cikarang) • 🛡️ Garansi Rekening Bersama DP 30%`,
-        `💵 Kurs USD Rp ${this.marketCurrencies ? this.formatRupiah(this.marketCurrencies.usd.rate) : '16.180'} • 🪙 Emas Antam Aktif`,
-        `🍶 Pasokan Plastik PET Bal Press 5 Ton Siap Kirim • 🚚 Manifes Digital Siap`,
-        `💖 PreLoved Alat Industri & Mesin Press Diskon s/d 30% • 📦 Siap Pakai`
-      ];
-      this.mobilePulseIndex = ((this.mobilePulseIndex || 0) + 1) % messages.length;
-      mobilePulse.textContent = messages[this.mobilePulseIndex];
-    }
+    // Dipertahankan untuk kompatibilitas pemanggil lama; tidak lagi membuat harga acak.
+    this.fetchLiveMarketRates();
   }
 
   renderPublicCategories(groupFilter = 'all') {
@@ -2040,7 +2121,12 @@ class BursaLimbahApp {
   }
 
   // ================= 3. MODAL PENDAFTARAN PEMBELI & PILIHAN 3-TIER =================
-  showBuyerRegisterModal(preferredTierId = null) {
+  showBuyerRegisterModal(preferredTierId = null, termsApproved = false) {
+    const currentUser = this.store.getCurrentUser();
+    if (!termsApproved && !(currentUser && currentUser.role === 'buyer')) {
+      this.showRegistrationTerms('buyer', preferredTierId);
+      return;
+    }
     if (preferredTierId) {
       this.selectedRegisterTier = preferredTierId;
     }
@@ -2095,6 +2181,11 @@ class BursaLimbahApp {
 
   async handleBuyerRegister(event) {
     event.preventDefault();
+    if (this.termsAcceptedForRegistration !== 'buyer') {
+      this.showRegistrationTerms('buyer');
+      this.showToast('Setujui Syarat dan Ketentuan sebelum mendaftar.', 'warning');
+      return;
+    }
     const email = [REDACTED]'reg-buyer-email').value.trim();
     const name = [REDACTED]'reg-buyer-name').value.trim();
     const phone = [REDACTED]'reg-buyer-phone').value.trim();
@@ -2125,12 +2216,16 @@ class BursaLimbahApp {
       email,
       password,
       tierId: chosenTierId,
-      subscriptionActive: true
+      subscriptionActive: true,
+      termsAccepted: true,
+      termsVersion: this.store.getSettings().termsVersion
     });
+    if (!res.success) { this.showToast(res.message || 'Pendaftaran pembeli gagal.', 'error'); return; }
 
     const tier = this.store.getSubscriptionTierById(chosenTierId);
 
     this.closeModals();
+    this.termsAcceptedForRegistration = null;
     this.setRole('buyer', false);
     this.triggerConfetti();
     this.showToast(`Selamat datang ${name}! Akun Pembeli aktif dengan ${tier ? tier.name : 'Paket Starter'}. Lengkapi profil di Menu Pengaturan.`, 'success');
@@ -2262,12 +2357,12 @@ class BursaLimbahApp {
                   ${this.store.isDpEnabled() ? `
                   <div class="text-[10px] text-brand-700 font-semibold pt-0.5 flex justify-between">
                     <span>DP ${(this.store.getSettings().downPaymentPercent || 30)}%: ${this.formatRupiah(Math.round(p.totalPrice * ((this.store.getSettings().downPaymentPercent || 30) / 100)))}</span>
-                    <span>Penanganan: ${this.formatRupiah(this.store.getSettings().handlingFeePerTransaction || 10000)}</span>
+                    <span>Penanganan: ${this.formatRupiah(this.store.getHandlingFeeForUser(user))}</span>
                   </div>
                   ` : `
                   <div class="text-[10px] text-emerald-700 font-semibold pt-0.5 flex justify-between">
                     <span>Pelunasan Penuh (Tanpa DP)</span>
-                    <span>Penanganan: ${this.formatRupiah(this.store.getSettings().handlingFeePerTransaction || 10000)}</span>
+                    <span>Penanganan: ${this.formatRupiah(this.store.getHandlingFeeForUser(user))}</span>
                   </div>
                   `}
                 ` : `
@@ -2307,6 +2402,9 @@ class BursaLimbahApp {
             </div>
 
             ${!isBooked && access.canViewPrice ? `
+              <button onclick="app.showOfferModal('${p.id}')" class="w-full py-2.5 rounded-xl border border-amber-300 bg-amber-50 hover:bg-amber-100 text-amber-900 text-xs font-bold transition flex items-center justify-center space-x-1">
+                <i class="fa-solid fa-handshake"></i><span>Tawar Harga ke Penjual</span>
+              </button>
               <button onclick="app.initiateCheckout('${p.id}')" class="w-full py-2.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold shadow transition flex items-center justify-center space-x-1">
                 <i class="fa-solid fa-cart-check"></i>
                 <span>${this.store.isDpEnabled() ? `Pesan DP ${(this.store.getSettings().downPaymentPercent || 30)}% Rekening Bersama` : 'Pesan Pasokan Rekening Bersama'}</span>
@@ -2546,7 +2644,7 @@ class BursaLimbahApp {
                   `}
                   <div class="flex justify-between text-slate-300">
                     <span>Biaya Penanganan:</span>
-                    <span>${this.formatRupiah(this.store.getSettings().handlingFeePerTransaction || 10000)}</span>
+                    <span>${this.formatRupiah(this.store.getHandlingFeeForUser(currentUser))}</span>
                   </div>
                 </div>
               ` : `
@@ -2593,6 +2691,9 @@ class BursaLimbahApp {
               </button>
 
               ${access.canViewPrice ? `
+                <button onclick="app.closeModals(); app.showOfferModal('${p.id}')" class="flex-1 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold text-xs transition flex items-center justify-center space-x-1.5">
+                  <i class="fa-solid fa-handshake"></i><span>Tawar</span>
+                </button>
                 <button onclick="app.closeModals(); app.initiateCheckout('${p.id}')" class="flex-1 py-2.5 rounded-xl bg-brand-500 hover:bg-brand-400 text-slate-950 font-bold text-xs transition flex items-center justify-center space-x-1.5">
                   <i class="fa-solid fa-cart-check"></i>
                   <span>${this.store.isDpEnabled() ? `Pesan DP ${(this.store.getSettings().downPaymentPercent || 30)}%` : 'Pesan Pasokan'}</span>
@@ -3070,7 +3171,7 @@ class BursaLimbahApp {
     [REDACTED]'evt-date').value = e.date || "";
     [REDACTED]'evt-time').value = e.time || "";
     [REDACTED]'evt-location').value = e.location || "";
-    [REDACTED]'evt-price-label').value = e.priceLabel || "";
+    [REDACTED]'evt-price').value = this.getEventTicketPrice(e);
     [REDACTED]'evt-image').value = e.image || "";
     [REDACTED]'evt-desc').value = e.description || "";
 
@@ -3087,7 +3188,7 @@ class BursaLimbahApp {
     const date = [REDACTED]'evt-date').value;
     const time = [REDACTED]'evt-time').value.trim();
     const location = [REDACTED]'evt-location').value.trim();
-    const priceLabel = [REDACTED]'evt-price-label').value.trim();
+    const price = Math.max(0, Number([REDACTED]'evt-price').value) || 0);
     const image = [REDACTED]'evt-image').value.trim() || 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&w=800&q=80';
     const description = [REDACTED]'evt-desc').value.trim();
 
@@ -3099,7 +3200,7 @@ class BursaLimbahApp {
       webinar: 'Webinar Online'
     };
 
-    const isFree = priceLabel.toLowerCase().includes('gratis') || priceLabel === '0';
+    const isFree = price === 0;
 
     const eventPayload = {
       title,
@@ -3109,7 +3210,8 @@ class BursaLimbahApp {
       date,
       time,
       location,
-      priceLabel: priceLabel || (isFree ? 'Gratis' : 'Berbayar'),
+      price,
+      priceLabel: isFree ? 'Gratis' : `${this.formatRupiah(price)} / peserta`,
       isFree,
       image,
       description
@@ -3385,6 +3487,31 @@ class BursaLimbahApp {
       dpEnabledCheckbox.checked = !!s.dpEnabled;
       this.handleDpToggleChange(!!s.dpEnabled);
     }
+    const fees = s.handlingFeeByTier || {};
+    ['starter', 'basic', 'pro', 'enterprise'].forEach(tier => {
+      const input = [REDACTED]`setting-handling-tier-${tier}`);
+      if (input) input.value = Number(fees[`tier_${tier}`] ?? s.handlingFeePerTransaction ?? 10000);
+    });
+    const gatewayEnabled = [REDACTED]'setting-gateway-enabled');
+    const provider = [REDACTED]'setting-gateway-provider');
+    const environment = [REDACTED]'setting-gateway-environment');
+    const clientKey = [REDACTED]'setting-gateway-client-key');
+    if (gatewayEnabled) gatewayEnabled.checked = !!s.paymentGatewayEnabled;
+    if (provider) provider.value = s.paymentGatewayProvider || 'midtrans';
+    if (environment) environment.value = s.paymentGatewayEnvironment || 'sandbox';
+    if (clientKey) clientKey.value = s.paymentGatewayClientKey || '';
+    const tickerEnabled = [REDACTED]'setting-ticker-enabled');
+    const tickerTitle = [REDACTED]'setting-ticker-title');
+    const tickerRefreshMinutes = [REDACTED]'setting-ticker-refresh-minutes');
+    if (tickerEnabled) tickerEnabled.checked = s.tickerEnabled !== false;
+    if (tickerTitle) tickerTitle.value = s.tickerTitle || 'Harga Pasar Terkini';
+    if (tickerRefreshMinutes) tickerRefreshMinutes.value = Math.min(120, Math.max(1, Number(s.tickerRefreshMinutes) || 15));
+    const termsTitle = [REDACTED]'setting-terms-title');
+    const termsVersion = [REDACTED]'setting-terms-version');
+    const termsContent = [REDACTED]'setting-terms-content');
+    if (termsTitle) termsTitle.value = s.termsTitle || 'Syarat dan Ketentuan Penggunaan Bursa Limbah';
+    if (termsVersion) termsVersion.value = s.termsVersion || '1.0';
+    if (termsContent) termsContent.value = s.termsContent || '';
   }
 
   saveAdminSettings(event) {
@@ -3392,11 +3519,32 @@ class BursaLimbahApp {
     const handling = Number([REDACTED]'setting-handling').value) || 10000;
     const dp = Number([REDACTED]'setting-dp').value) || 30;
     const dpEnabled = [REDACTED]'setting-dp-enabled')?.checked || false;
+    const handlingFeeByTier = {
+      tier_starter: Number([REDACTED]'setting-handling-tier-starter')?.value) || 0,
+      tier_basic: Number([REDACTED]'setting-handling-tier-basic')?.value) || 0,
+      tier_pro: Number([REDACTED]'setting-handling-tier-pro')?.value) || 0,
+      tier_enterprise: Number([REDACTED]'setting-handling-tier-enterprise')?.value) || 0
+    };
 
     this.store.setDpSettings(dpEnabled, dp);
     this.store.updateSettings({
-      handlingFeePerTransaction: handling
+      handlingFeePerTransaction: handling,
+      handlingFeeByTier,
+      paymentGatewayEnabled: [REDACTED]'setting-gateway-enabled')?.checked || false,
+      paymentGatewayProvider: [REDACTED]'setting-gateway-provider')?.value || 'midtrans',
+      paymentGatewayEnvironment: [REDACTED]'setting-gateway-environment')?.value || 'sandbox',
+      paymentGatewayClientKey: [REDACTED]'setting-gateway-client-key')?.value.trim() || '',
+      tickerEnabled: [REDACTED]'setting-ticker-enabled')?.checked || false,
+      tickerTitle: [REDACTED]'setting-ticker-title')?.value.trim() || 'Harga Pasar Terkini',
+      tickerRefreshMinutes: Math.min(120, Math.max(1, Number([REDACTED]'setting-ticker-refresh-minutes')?.value) || 15)),
+      termsTitle: [REDACTED]'setting-terms-title')?.value.trim() || 'Syarat dan Ketentuan Penggunaan Bursa Limbah',
+      termsVersion: [REDACTED]'setting-terms-version')?.value.trim() || '1.0',
+      termsContent: [REDACTED]'setting-terms-content')?.value.trim() || this.store.getSettings().termsContent
     });
+
+    const tickerSettings = this.store.getSettings();
+    this.renderPriceTicker();
+    if (tickerSettings.tickerEnabled) this.fetchLiveMarketRates();
 
     this.setupCalculator();
     if (this.currentRole === 'buyer') {
@@ -3406,7 +3554,33 @@ class BursaLimbahApp {
     }
 
     const statusText = dpEnabled ? `diaktifkan (DP ${dp}%)` : 'dinonaktifkan (SET OFF)';
-    this.showToast(`Pengaturan berhasil disimpan! Fitur DP ${statusText}.`, "success");
+    this.showToast(`Pengaturan berhasil disimpan! Fitur DP ${statusText}; ticker harga pasar ${tickerSettings.tickerEnabled ? 'aktif' : 'nonaktif'}.`, "success");
+  }
+
+  showOfferModal(productId) {
+    const product = this.store.getProductById(productId);
+    const buyer = this.store.getCurrentUser();
+    if (!buyer || buyer.role !== 'buyer') {
+      this.showLoginPage('buyer');
+      this.showToast('Masuk sebagai pembeli untuk mengirim penawaran.', 'warning');
+      return;
+    }
+    if (!product) return;
+    const modal = [REDACTED]'modal-checkout');
+    const container = [REDACTED]'modal-checkout-content');
+    container.innerHTML = `<div class="p-6 border-b border-slate-100 flex items-center justify-between"><div><h3 class="text-lg font-bold text-slate-900">Tawar Harga ke Penjual</h3><p class="text-xs text-slate-500">Penjual akan menerima notifikasi dan dapat menerima atau menolak tawaran Anda.</p></div><button onclick="app.closeModals()" class="text-slate-400 p-2"><i class="fa-solid fa-xmark text-lg"></i></button></div><form onsubmit="app.submitOffer(event, '${product.id}')" class="p-6 space-y-4"><div class="bg-slate-50 rounded-xl border border-slate-200 p-4"><div class="font-bold text-slate-900">${product.title}</div><div class="mt-1 text-xs text-slate-500">Harga penjual: <strong class="font-mono text-emerald-700">${this.formatRupiah(product.offerPrice)} / ${product.unit}</strong></div></div><label class="block text-xs font-bold text-slate-700">Harga penawaran per ${product.unit}<input id="offer-price" type="number" min="1" required value="${product.offerPrice}" class="mt-1.5 w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm font-mono font-bold focus:ring-2 focus:ring-amber-500 focus:outline-none"></label><label class="block text-xs font-bold text-slate-700">Kuantitas (${product.unit})<input id="offer-quantity" type="number" min="${product.minimumOrder || 1}" required value="${product.minimumOrder || 1}" class="mt-1.5 w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm font-mono font-bold focus:ring-2 focus:ring-amber-500 focus:outline-none"></label><label class="block text-xs font-bold text-slate-700">Catatan untuk penjual (opsional)<textarea id="offer-note" rows="3" class="mt-1.5 w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 text-xs focus:ring-2 focus:ring-amber-500 focus:outline-none" placeholder="Contoh: Armada kami siap mengambil pada minggu depan."></textarea></label><div class="flex justify-end gap-2 pt-2"><button type="button" onclick="app.closeModals()" class="px-4 py-2.5 rounded-xl border border-slate-300 text-xs font-bold">Batal</button><button type="submit" class="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 text-xs font-bold"><i class="fa-solid fa-paper-plane mr-1"></i>Kirim Penawaran</button></div></form>`;
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+  }
+
+  submitOffer(event, productId) {
+    event.preventDefault();
+    const buyer = this.store.getCurrentUser();
+    try {
+      this.store.createOffer({ productId, buyerId: buyer.id, offerPrice: [REDACTED]'offer-price').value, quantity: [REDACTED]'offer-quantity').value, note: [REDACTED]'offer-note').value });
+      this.closeModals();
+      this.showToast('Penawaran dikirim ke penjual. Anda akan diberi notifikasi setelah diputuskan.', 'success');
+    } catch (error) { this.showToast(error.message, 'error'); }
   }
 
   // ================= 9. TRANSAKSI CHECKOUT DP / REKENING BERSAMA =================
@@ -3426,7 +3600,7 @@ class BursaLimbahApp {
     const totalPrice = p.totalPrice;
     const dpPercent = settings.downPaymentPercent || 30;
     const dpAmount = isDp ? Math.round(totalPrice * (dpPercent / 100)) : totalPrice;
-    const handlingFee = settings.handlingFeePerTransaction || 10000;
+    const handlingFee = this.store.getHandlingFeeForUser(buyer);
     const totalPaidNow = dpAmount + handlingFee;
     const remaining = isDp ? totalPrice - dpAmount : 0;
 
@@ -3498,7 +3672,7 @@ class BursaLimbahApp {
 
         <div class="p-3 bg-emerald-50 rounded-xl border border-emerald-200 text-[11px] text-emerald-800 flex items-start space-x-2">
           <i class="fa-solid fa-shield-halved text-emerald-600 mt-0.5"></i>
-          <span>Dana tersimpan di Rekening Bersama Escrow BURSA LIMBAH. Tiket timbang digital diterbitkan otomatis.</span>
+          <span>Dana tersimpan di Rekening Bersama Escrow BURSA LIMBAH. Tiket timbang digital diterbitkan otomatis.${settings.paymentGatewayEnabled ? ` Pembayaran DP diproses melalui ${String(settings.paymentGatewayProvider || 'gateway').toUpperCase()} (${settings.paymentGatewayEnvironment || 'sandbox'}).` : ''}</span>
         </div>
 
         <div class="flex justify-end space-x-3 pt-2">
@@ -3651,6 +3825,25 @@ class BursaLimbahApp {
         ${o.qrCodeTrace}
       </div>
 
+      <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 space-y-3">
+        <div>
+          <h4 class="text-xs font-bold uppercase tracking-wide text-slate-800"><i class="fa-solid fa-scale-balanced mr-1 text-emerald-600"></i>Konfirmasi Penerimaan Barang</h4>
+          <p class="mt-1 text-[11px] text-slate-500">Masukkan berat aktual yang diterima. Anda dapat melampirkan foto atau dokumen bukti timbangan sebelum scan QR.</p>
+        </div>
+        ${o.qrCompletionReady ? `
+          <div class="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-xs text-emerald-800"><i class="fa-solid fa-circle-check mr-1"></i> Data penerimaan tersimpan: <strong>${Number(o.actualReceivedWeight).toLocaleString('id-ID')} ${o.unit}</strong>${o.weighingProof ? ' • Bukti timbang terlampir' : ''}.</div>
+        ` : `
+          <form onsubmit="app.submitReceivingEvidence(event, '${o.id}')" class="space-y-3">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <label class="text-xs font-bold text-slate-700">Berat aktual diterima (${o.unit}) *<input id="receipt-actual-weight" type="number" min="0.01" step="0.01" required value="${o.quantity}" class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-emerald-500"></label>
+              <label class="text-xs font-bold text-slate-700">Foto / dokumen bukti timbang <span class="font-normal text-slate-400">(opsional)</span><input id="receipt-weighing-proof" type="file" accept="image/jpeg,image/png,image/webp,application/pdf" class="mt-1 block w-full text-[11px] text-slate-600 file:mr-2 file:rounded-lg file:border-0 file:bg-emerald-100 file:px-2 file:py-1.5 file:text-[11px] file:font-bold file:text-emerald-800"></label>
+            </div>
+            <button type="submit" class="rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-bold text-white transition hover:bg-emerald-700"><i class="fa-solid fa-cloud-arrow-up mr-1"></i>Simpan Data Penerimaan</button>
+          </form>
+        `}
+        <button ${o.qrCompletionReady ? '' : 'disabled'} onclick="app.scanOrderQr('${o.id}')" class="w-full rounded-xl px-4 py-2.5 text-xs font-bold transition ${o.qrCompletionReady ? 'bg-slate-900 text-white hover:bg-slate-800' : 'cursor-not-allowed bg-slate-200 text-slate-400'}"><i class="fa-solid fa-qrcode mr-1"></i>${o.qrCompletionReady ? 'Scan QR Code untuk Menyelesaikan Transaksi' : 'Scan QR Code terkunci — simpan data penerimaan terlebih dahulu'}</button>
+      </div>
+
       <div class="flex justify-end space-x-2 pt-2">
         <button onclick="window.print()" class="px-4 py-2 bg-slate-900 text-white rounded-xl text-xs font-bold">
           Cetak Dokumen
@@ -3680,6 +3873,29 @@ class BursaLimbahApp {
     [REDACTED]'seller-stat-balance').textContent = this.formatRupiah(stats.balance);
 
     this.renderSellerProductsTable();
+    this.renderSellerOffers();
+  }
+
+  renderSellerOffers() {
+    const container = [REDACTED]'seller-offers-container');
+    const seller = this.store.getCurrentUser();
+    if (!container || !seller) return;
+    const offers = this.store.getOffersForSeller(seller.id);
+    if (!offers.length) {
+      container.innerHTML = '<div class="py-8 text-center text-xs text-slate-400"><i class="fa-solid fa-handshake text-2xl mb-2"></i><p>Belum ada penawaran harga dari pembeli.</p></div>';
+      return;
+    }
+    const labels = { pending: 'Menunggu keputusan', accepted: 'Diterima', rejected: 'Ditolak' };
+    container.innerHTML = `<table class="w-full text-left text-xs"><thead class="bg-slate-50 text-slate-500 uppercase text-[10px] border-b border-slate-200"><tr><th class="p-3">Produk</th><th class="p-3">Pembeli</th><th class="p-3">Penawaran</th><th class="p-3">Catatan</th><th class="p-3">Status</th><th class="p-3 text-right">Aksi</th></tr></thead><tbody class="divide-y divide-slate-100">${offers.map(o => `<tr><td class="p-3"><div class="font-bold text-slate-900">${o.productTitle}</div><div class="font-mono text-[10px] text-slate-500">${o.productCode}</div></td><td class="p-3 font-semibold">${o.buyerName}</td><td class="p-3 font-mono font-bold text-emerald-700">${this.formatRupiah(o.offerPrice)}<div class="text-[10px] font-normal text-slate-500">${o.quantity} ${o.unit}</div></td><td class="p-3 text-slate-600 max-w-[180px]">${o.note || '-'}</td><td class="p-3"><span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${o.status === 'accepted' ? 'bg-emerald-100 text-emerald-800' : o.status === 'rejected' ? 'bg-rose-100 text-rose-800' : 'bg-amber-100 text-amber-800'}">${labels[o.status]}</span></td><td class="p-3 text-right">${o.status === 'pending' ? `<button onclick="app.respondToOffer('${o.id}', 'accepted')" class="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold">Terima</button><button onclick="app.respondToOffer('${o.id}', 'rejected')" class="ml-1 px-2.5 py-1 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-bold">Tolak</button>` : '-'}</td></tr>`).join('')}</tbody></table>`;
+  }
+
+  respondToOffer(offerId, decision) {
+    const seller = this.store.getCurrentUser();
+    try {
+      const offer = this.store.respondToOffer(offerId, seller.id, decision);
+      this.renderSellerOffers();
+      this.showToast(`Penawaran ${offer.status === 'accepted' ? 'diterima' : 'ditolak'}; notifikasi telah dikirim kepada pembeli.`, offer.status === 'accepted' ? 'success' : 'warning');
+    } catch (error) { this.showToast(error.message, 'error'); }
   }
 
   renderSellerProductsTable() {
@@ -3800,6 +4016,29 @@ class BursaLimbahApp {
     const containerSelect = [REDACTED]'up-container-type');
     if (containerSelect && tier.containers) {
       containerSelect.innerHTML = tier.containers.map(c => `<option value="${c}">${c}</option>`).join('');
+    }
+
+    // Kebutuhan eviden mengikuti skala sumber limbah: rumah tangga 1, menengah 2, besar 3.
+    const household = tierId === 'source_household';
+    const mediumIndustry = tierId === 'source_medium_industry';
+    const evidenceHeading = [REDACTED]'up-evidence-heading');
+    const evidenceGrid = [REDACTED]'up-evidence-grid');
+    ['2', '3'].forEach(slot => {
+      const card = [REDACTED]`up-evidence-slot-${slot}`);
+      const input = [REDACTED]`up-foto-${slot}`);
+      const hideSlot = household || (mediumIndustry && slot === '3');
+      if (card) card.classList.toggle('hidden', hideSlot);
+      if (hideSlot && input) input.value = '';
+    });
+    if (evidenceHeading) evidenceHeading.textContent = household
+      ? '1 Foto Eviden Wadah (Wajib untuk Rumah Tangga)'
+      : mediumIndustry
+        ? '2 Foto Eviden: Fisik Keseluruhan & Sampel (Wajib)'
+        : '3 Foto Eviden Fisik & Tera Digital (Wajib)';
+    if (evidenceGrid) {
+      evidenceGrid.classList.toggle('grid-cols-1', household);
+      evidenceGrid.classList.toggle('grid-cols-2', mediumIndustry);
+      evidenceGrid.classList.toggle('grid-cols-3', !household && !mediumIndustry);
     }
 
     // Populate Satuan Dinamis
@@ -3929,7 +4168,128 @@ class BursaLimbahApp {
     this.switchAppTab('sell');
   }
 
-  handleUploadProduct(event) {
+  requestGpsLocation() {
+    const modal = [REDACTED]'modal-gps-location');
+    const status = [REDACTED]'gps-location-status');
+    const confirm = [REDACTED]'gps-location-confirm');
+    if (!modal) return;
+    if (!navigator.geolocation) {
+      this.showToast('Perangkat atau browser ini tidak mendukung pengambilan lokasi GPS.', 'error');
+      return;
+    }
+    if (status) {
+      status.classList.add('hidden');
+      status.textContent = '';
+    }
+    if (confirm) {
+      confirm.disabled = false;
+      confirm.classList.remove('opacity-60', 'cursor-not-allowed');
+      confirm.innerHTML = '<i class="fa-solid fa-location-dot mr-1"></i>Izinkan & Ambil Lokasi';
+    }
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+  }
+
+  async submitReceivingEvidence(event, orderId) {
+    event.preventDefault();
+    const weightInput = [REDACTED]'receipt-actual-weight');
+    const proofInput = [REDACTED]'receipt-weighing-proof');
+    const submitButton = event.submitter;
+    try {
+      if (submitButton) { submitButton.disabled = true; submitButton.textContent = 'Menyimpan…'; }
+      let proof = null;
+      if (proofInput?.files?.[0]) proof = await this.store.uploadWeighingProof(proofInput.files[0]);
+      this.store.recordReceivingEvidence(orderId, weightInput.value, proof);
+      this.showBookingReceipt(orderId);
+      this.showToast('Data penerimaan tersimpan. Scan QR Code kini dapat dilakukan.', 'success');
+    } catch (error) {
+      this.showToast(error.message, 'error');
+      if (submitButton) { submitButton.disabled = false; submitButton.innerHTML = '<i class="fa-solid fa-cloud-arrow-up mr-1"></i>Simpan Data Penerimaan'; }
+    }
+  }
+
+  scanOrderQr(orderId) {
+    const order = this.store.getOrderById(orderId);
+    if (!order?.qrCompletionReady) {
+      this.showToast('Simpan data penerimaan sebelum melakukan scan QR.', 'warning');
+      return;
+    }
+    const scannedCode = window.prompt('Scan QR menggunakan pemindai Anda, lalu masukkan kode hasil scan untuk verifikasi:', '');
+    if (scannedCode === null) return;
+    if (scannedCode.trim() !== order.qrCodeTrace) {
+      this.showToast('Kode QR tidak sesuai dengan transaksi ini.', 'error');
+      return;
+    }
+    this.store.completeOrder(orderId);
+    this.closeModals();
+    this.renderBuyerOrders();
+    this.showToast('QR valid. Transaksi selesai dan dana diproses kepada penjual.', 'success');
+  }
+
+  closeGpsLocationModal() {
+    const modal = [REDACTED]'modal-gps-location');
+    if (modal) {
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+  }
+
+  captureGpsLocation() {
+    const status = [REDACTED]'gps-location-status');
+    const confirm = [REDACTED]'gps-location-confirm');
+    if (!navigator.geolocation) return;
+    if (status) {
+      status.textContent = 'Meminta izin dan mengambil titik GPS…';
+      status.classList.remove('hidden');
+    }
+    if (confirm) {
+      confirm.disabled = true;
+      confirm.classList.add('opacity-60', 'cursor-not-allowed');
+      confirm.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i>Mengambil lokasi…';
+    }
+    navigator.geolocation.getCurrentPosition(
+      position => {
+        const coords = [REDACTED]'up-coords');
+        if (coords) coords.value = `${position.coords.latitude.toFixed(6)}, ${position.coords.longitude.toFixed(6)}`;
+        this.closeGpsLocationModal();
+        this.showToast(`Titik GPS berhasil diisi (akurasi ±${Math.round(position.coords.accuracy)} m).`, 'success');
+      },
+      error => {
+        const messages = {
+          1: 'Izin lokasi ditolak. Aktifkan izin lokasi pada browser untuk mengambil titik GPS.',
+          2: 'Lokasi tidak tersedia. Pastikan GPS/perangkat Anda aktif dan coba lagi.',
+          3: 'Pengambilan lokasi melebihi batas waktu. Coba lagi di area dengan sinyal lebih baik.'
+        };
+        if (status) {
+          status.textContent = messages[error.code] || 'Titik GPS gagal diambil. Silakan coba lagi.';
+          status.classList.remove('hidden');
+        }
+        if (confirm) {
+          confirm.disabled = false;
+          confirm.classList.remove('opacity-60', 'cursor-not-allowed');
+          confirm.innerHTML = '<i class="fa-solid fa-rotate-right mr-1"></i>Coba Lagi';
+        }
+      },
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+    );
+  }
+
+  handleEvidenceFileSelect(input, slot) {
+    const file = input.files && input.files[0];
+    if (!file) return;
+
+    const validTypes = ['image/jpeg', 'image/png', 'image/webp'];
+    if (!validTypes.includes(file.type) || file.size > 5 * 1024 * 1024) {
+      input.value = '';
+      this.showToast('Gunakan gambar JPG, PNG, atau WebP dengan ukuran maksimal 5 MB.', 'error');
+      return;
+    }
+
+    const label = [REDACTED]`up-foto-${slot}-label`);
+    if (label) label.innerHTML = '<i class="fa-solid fa-circle-check"></i> ' + file.name;
+  }
+
+  async handleUploadProduct(event) {
     event.preventDefault();
     const sourceType = [REDACTED]'up-source-type') ? [REDACTED]'up-source-type').value : null;
     if (!sourceType) {
@@ -3964,9 +4324,28 @@ class BursaLimbahApp {
     const isB3 = isB3Check ? isB3Check.checked : false;
     const b3Permit = [REDACTED]'up-b3-permit') ? [REDACTED]'up-b3-permit').value.trim() : null;
 
-    const foto1 = ([REDACTED]'up-foto-1') && [REDACTED]'up-foto-1').value) || "https://images.unsplash.com/photo-1578575437130-527eed3abbec?auto=format&fit=crop&w=800&q=80";
-    const foto2 = ([REDACTED]'up-foto-2') && [REDACTED]'up-foto-2').value) || "https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?auto=format&fit=crop&w=800&q=80";
-    const foto3 = ([REDACTED]'up-foto-3') && [REDACTED]'up-foto-3').value) || "https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=800&q=80";
+    const requiredEvidenceSlots = sourceType === 'source_household'
+      ? [1]
+      : sourceType === 'source_medium_industry' ? [1, 2] : [1, 2, 3];
+    const evidenceFiles = requiredEvidenceSlots
+      .map(slot => ([REDACTED]`up-foto-${slot}`) || {}).files?.[0])
+      .filter(Boolean);
+    if (evidenceFiles.length !== requiredEvidenceSlots.length) {
+      this.showToast(sourceType === 'source_household'
+        ? 'Unggah satu foto eviden wadah untuk limbah rumah tangga.'
+        : sourceType === 'source_medium_industry'
+          ? 'Lengkapi dua foto eviden: fisik keseluruhan dan sampel material.'
+          : 'Lengkapi tiga foto eviden: wadah, sampel material, dan struk timbangan.', 'warning');
+      return;
+    }
+
+    let uploadedEvidences;
+    try {
+      uploadedEvidences = await this.store.uploadProductEvidences(evidenceFiles);
+    } catch (error) {
+      this.showToast(error.message, 'error');
+      return;
+    }
 
     const cat = this.store.getCategoryById(catId);
     const user = this.store.getCurrentUser();
@@ -4004,11 +4383,18 @@ class BursaLimbahApp {
       lng: (coords && coords[1]) ? parseFloat(coords[1].trim()) : 106.8456,
       offerPrice: price,
       totalPrice: qty * price,
-      evidences: [
-        { type: "Wadah Keseluruhan", url: foto1, notes: "Wadah penyimpanan tersegel baik" },
-        { type: "Kualitas Sampel", url: foto2, notes: "Sampel fisik bersih bebas pengotor" },
-        { type: "Tera Timbangan", url: foto3, notes: "Slip kalibrasi timbangan tera digital sah" }
-      ]
+      evidences: sourceType === 'source_household'
+        ? [{ type: "Wadah Keseluruhan", url: uploadedEvidences[0].url, notes: "Eviden wadah limbah rumah tangga" }]
+        : sourceType === 'source_medium_industry'
+          ? [
+              { type: "Fisik Keseluruhan", url: uploadedEvidences[0].url, notes: "Kondisi fisik keseluruhan material dan wadah" },
+              { type: "Kualitas Sampel", url: uploadedEvidences[1].url, notes: "Sampel fisik material" }
+            ]
+          : [
+            { type: "Wadah Keseluruhan", url: uploadedEvidences[0].url, notes: "Wadah penyimpanan tersegel baik" },
+            { type: "Kualitas Sampel", url: uploadedEvidences[1].url, notes: "Sampel fisik bersih bebas pengotor" },
+            { type: "Tera Timbangan", url: uploadedEvidences[2].url, notes: "Slip kalibrasi timbangan tera digital sah" }
+          ]
     });
 
     this.closeModals();
@@ -4031,6 +4417,25 @@ class BursaLimbahApp {
   }
 
   // ================= 11. MODAL & UTILITAS =================
+  showHelpModal() {
+    const modal = [REDACTED]'modal-help');
+    if (!modal) return;
+
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+  }
+
+  toggleHelpAccordion(answerId, button) {
+    const answer = [REDACTED]answerId);
+    if (!answer || !button) return;
+
+    const willOpen = answer.classList.contains('hidden');
+    answer.classList.toggle('hidden', !willOpen);
+    button.setAttribute('aria-expanded', String(willOpen));
+    const icon = button.querySelector('.fa-chevron-down');
+    if (icon) icon.classList.toggle('rotate-180', willOpen);
+  }
+
   closeModals() {
     const modals = [
       'modal-product-detail',
@@ -4044,7 +4449,9 @@ class BursaLimbahApp {
       'modal-user-profile',
       'modal-mobile-quick-actions',
       'modal-mobile-dp-calculator',
-      'modal-admin-event'
+      'modal-admin-event',
+      'modal-help',
+      'modal-gps-location'
     ];
     modals.forEach(id => {
       const el = [REDACTED]id);
@@ -4309,7 +4716,7 @@ class BursaLimbahApp {
     }
   }
 
-  handleSubmitVerification(event) {
+  async handleSubmitVerification(event) {
     event.preventDefault();
     const user = this.store.getCurrentUser();
     if (!user) return;
@@ -4321,12 +4728,23 @@ class BursaLimbahApp {
     const ktpNumber = ([REDACTED]'verify-ktp-number') || {}).value || '';
     const npwpNumber = ([REDACTED]'verify-npwp-number') || {}).value || '';
 
+    let docUrl = null;
+    const documentFile = ([REDACTED]'verify-file-input') || {}).files?.[0];
+    if (documentFile) {
+      try {
+        docUrl = (await this.store.uploadIdentityDocument(documentFile)).storageKey;
+      } catch (error) {
+        this.showToast(error.message, 'error');
+        return;
+      }
+    }
+
     try {
       this.store.submitUserVerification(user.id, {
         type: selectedType,
         ktpNumber: ktpNumber.trim(),
         npwpNumber: npwpNumber.trim(),
-        docUrl: 'https://images.unsplash.com/photo-1589829545856-d10d557cf95f?auto=format&fit=crop&w=400&q=80'
+        docUrl
       });
 
       this.triggerConfetti();

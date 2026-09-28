@@ -2,18 +2,121 @@ const express = require('express');
 const cors = require('cors');
 const bcrypt = require('bcryptjs');
 const path = require('path');
+const fs = require('fs');
+const crypto = require('crypto');
+const multer = require('multer');
 const { pool, testConnection } = require('./db');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
+const MARKET_RATE_URL = 'https://open.er-api.com/v6/latest/USD';
+const MARKET_RATE_CACHE_MS = 10 * 60 * 1000;
+let marketRateCache = null;
 
 // Middleware
 app.use(cors());
 app.use(express.json({ limit: '20mb' }));
 app.use(express.urlencoded({ extended: true, limit: '20mb' }));
 
-// Sajikan file statis frontend (root folder Bursa Limbah)
+const UPLOAD_ROOT = path.join(__dirname, 'uploads');
+// Jangan izinkan file internal server, termasuk dokumen identitas, tersaji dari root frontend.
+app.use('/server', (_req, res) => res.status(404).end());
+// Sajikan file statis frontend (root folder Bursa Limbah).
 app.use(express.static(path.join(__dirname, '..')));
+// Hanya eviden produk yang boleh diakses publik. Dokumen KTP tetap tersimpan privat di server.
+app.use('/uploads/product-evidence', express.static(path.join(UPLOAD_ROOT, 'product-evidence'), {
+  dotfiles: 'deny',
+  index: false,
+  maxAge: '1d'
+}));
+
+const MAX_UPLOAD_SIZE = 5 * 1024 * 1024;
+const IMAGE_MIME_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
+const IDENTITY_MIME_TYPES = new Set([...IMAGE_MIME_TYPES, 'application/pdf']);
+
+function createUploadStorage(folder) {
+  return multer.diskStorage({
+    destination: (_req, _file, cb) => {
+      const destination = path.join(UPLOAD_ROOT, folder);
+      fs.mkdir(destination, { recursive: true }, err => cb(err, destination));
+    },
+    filename: (_req, file, cb) => {
+      const ext = path.extname(file.originalname || '').toLowerCase();
+      cb(null, `${Date.now()}-${crypto.randomUUID()}${ext}`);
+    }
+  });
+}
+
+function acceptMimeTypes(allowedTypes) {
+  return (_req, file, cb) => {
+    if (allowedTypes.has(file.mimetype)) return cb(null, true);
+    return cb(new multer.MulterError('LIMIT_UNEXPECTED_FILE', file.fieldname), false);
+  };
+}
+
+const productEvidenceUpload = multer({
+  storage: createUploadStorage('product-evidence'),
+  limits: { fileSize: MAX_UPLOAD_SIZE, files: 3 },
+  fileFilter: acceptMimeTypes(IMAGE_MIME_TYPES)
+});
+
+const identityDocumentUpload = multer({
+  storage: createUploadStorage('identity-documents'),
+  limits: { fileSize: MAX_UPLOAD_SIZE, files: 1 },
+  fileFilter: acceptMimeTypes(IDENTITY_MIME_TYPES)
+});
+
+const weighingProofUpload = multer({
+  storage: createUploadStorage('weighing-proofs'),
+  limits: { fileSize: MAX_UPLOAD_SIZE, files: 1 },
+  fileFilter: acceptMimeTypes(IDENTITY_MIME_TYPES)
+});
+
+function uploadedFileUrl(req, file) {
+  const relativePath = path.relative(UPLOAD_ROOT, file.path).split(path.sep).map(encodeURIComponent).join('/');
+  return `${req.protocol}://${req.get('host')}/uploads/${relativePath}`;
+}
+
+function privateFileKey(file) {
+  return path.relative(UPLOAD_ROOT, file.path).split(path.sep).join('/');
+}
+
+function hasExpectedFileSignature(buffer, mimeType) {
+  const signatures = {
+    'image/jpeg': [0xff, 0xd8, 0xff],
+    'image/png': [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a],
+    'image/webp': [0x52, 0x49, 0x46, 0x46],
+    'application/pdf': [0x25, 0x50, 0x44, 0x46, 0x2d]
+  };
+  const signature = signatures[mimeType];
+  if (!signature || buffer.length < signature.length) return false;
+  if (mimeType === 'image/webp') {
+    return signature.every((byte, index) => buffer[index] === byte) && buffer.subarray(8, 12).toString('ascii') === 'WEBP';
+  }
+  return signature.every((byte, index) => buffer[index] === byte);
+}
+
+async function verifyUploadedFileContent(req, res, next) {
+  const files = req.files || (req.file ? [req.file] : []);
+  try {
+    const checks = await Promise.all(files.map(async file => {
+      const handle = await fs.promises.open(file.path, 'r');
+      const header = Buffer.alloc(12);
+      await handle.read(header, 0, header.length, 0);
+      await handle.close();
+      return { file, valid: hasExpectedFileSignature(header, file.mimetype) };
+    }));
+
+    const invalidFiles = checks.filter(check => !check.valid).map(check => check.file);
+    if (invalidFiles.length > 0) {
+      await Promise.all(invalidFiles.map(file => fs.promises.unlink(file.path).catch(() => {})));
+      return res.status(400).json({ success: false, message: 'Isi berkas tidak sesuai dengan format yang diizinkan.' });
+    }
+    return next();
+  } catch (error) {
+    return next(error);
+  }
+}
 
 // =================================================================
 // HELPER: Map Data User dari Database
@@ -89,7 +192,10 @@ function mapProductFromDb(row, images = []) {
     sellerName: row.seller_name || row.company || 'Mitra Penjual',
     sellerPhone: row.seller_phone || '',
     sellerWhatsapp: row.seller_phone ? row.seller_phone.replace(/[^0-9]/g, '') : '',
-    evidences: images.map(img => img.image_url || img),
+    evidences: images.map((img, index) => ({
+      url: img.image_url || img,
+      type: img.caption || `Eviden ${index + 1}`
+    })),
     createdAt: row.created_at ? new Date(row.created_at).toISOString().replace('T', ' ').substring(0, 16) : ''
   };
 }
@@ -130,11 +236,16 @@ app.post('/api/auth/register', async (req, res) => {
       phone = '',
       location = 'Indonesia',
       bankAccount = '-',
-      tierId = 'tier_starter'
+      tierId = 'tier_starter',
+      termsAccepted = false,
+      termsVersion = ''
     } = req.body;
 
     if (!email || !email.includes('@')) {
       return res.status(400).json({ success: false, message: 'Alamat email tidak valid.' });
+    }
+    if (!['buyer', 'seller'].includes(role) || termsAccepted !== true) {
+      return res.status(400).json({ success: false, message: 'Syarat dan Ketentuan wajib disetujui sebelum membuat akun.' });
     }
 
     const cleanEmail = email.trim().toLowerCase();
@@ -167,7 +278,7 @@ app.post('/api/auth/register', async (req, res) => {
     const subscriptionExpiry = nextMonth.toISOString().split('T')[0];
     const verifiedBadge = role === 'seller' ? 'Pemasok Baru' : 'Pembeli Terdaftar';
 
-    // 4. Simpan ke database MySQL
+    // 4. Simpan akun beserta bukti persetujuan syarat dan ketentuan dalam satu transaksi.
     const insertQuery = `
       INSERT INTO users (
         id, name, email, phone, company, role, password_hash, auth_provider,
@@ -177,20 +288,28 @@ app.post('/api/auth/register', async (req, res) => {
       ) VALUES (?, ?, ?, ?, ?, ?, ?, 'local', ?, 1, ?, 0, 'unverified', ?, ?, ?, 0.00)
     `;
 
-    await pool.query(insertQuery, [
-      newId,
-      finalName,
-      cleanEmail,
-      defaultPhone,
-      finalCompany,
-      role,
-      passwordHash,
-      tierId,
-      subscriptionExpiry,
-      verifiedBadge,
-      bankAccount,
-      location
-    ]);
+    const [termsRows] = await pool.query("SELECT setting_key, setting_value FROM system_settings WHERE setting_key IN ('terms_title', 'terms_version')");
+    const termsSettings = Object.fromEntries(termsRows.map(row => [row.setting_key, row.setting_value]));
+    const activeTermsVersion = termsSettings.terms_version || '1.0';
+    if (termsVersion && termsVersion !== activeTermsVersion) {
+      return res.status(409).json({ success: false, message: 'Syarat dan Ketentuan telah diperbarui. Mohon setujui versi terbaru.' });
+    }
+    const connection = await pool.getConnection();
+    try {
+      await connection.beginTransaction();
+      await connection.query(insertQuery, [
+        newId, finalName, cleanEmail, defaultPhone, finalCompany, role, passwordHash, tierId,
+        subscriptionExpiry, verifiedBadge, bankAccount, location
+      ]);
+      await connection.query(
+        'INSERT INTO user_terms_acceptances (id, user_id, terms_version, terms_title) VALUES (?, ?, ?, ?)',
+        [`terms_${crypto.randomUUID()}`, newId, activeTermsVersion, termsSettings.terms_title || 'Syarat dan Ketentuan Penggunaan Bursa Limbah']
+      );
+      await connection.commit();
+    } catch (error) {
+      await connection.rollback();
+      throw error;
+    } finally { connection.release(); }
 
     const [rows] = await pool.query('SELECT * FROM users WHERE id = ?', [newId]);
     const newUser = mapUserFromDb(rows[0]);
@@ -472,7 +591,54 @@ app.post('/api/users/:id/verify', async (req, res) => {
 });
 
 // =================================================================
-// 6. MASTER KATEGORI (CATEGORIES)
+// 6. UPLOAD EVIDEN PRODUK & DOKUMEN IDENTITAS
+// =================================================================
+app.post('/api/uploads/product-evidence', productEvidenceUpload.array('files', 3), verifyUploadedFileContent, (req, res) => {
+  const files = req.files || [];
+  if (files.length === 0) {
+    return res.status(400).json({ success: false, message: 'Minimal satu gambar eviden wajib diunggah.' });
+  }
+
+  return res.status(201).json({
+    success: true,
+    message: `${files.length} gambar eviden berhasil diunggah.`,
+    files: files.map(file => ({
+      originalName: file.originalname,
+      mimeType: file.mimetype,
+      size: file.size,
+      url: uploadedFileUrl(req, file)
+    }))
+  });
+});
+
+app.post('/api/uploads/identity-document', identityDocumentUpload.single('file'), verifyUploadedFileContent, (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ success: false, message: 'Dokumen identitas wajib dipilih.' });
+  }
+
+  return res.status(201).json({
+    success: true,
+    message: 'Dokumen identitas berhasil diunggah.',
+    file: {
+      originalName: req.file.originalname,
+      mimeType: req.file.mimetype,
+      size: req.file.size,
+      storageKey: privateFileKey(req.file)
+    }
+  });
+});
+
+app.post('/api/uploads/weighing-proof', weighingProofUpload.single('file'), verifyUploadedFileContent, (req, res) => {
+  if (!req.file) return res.status(400).json({ success: false, message: 'Foto atau dokumen bukti timbang wajib dipilih.' });
+  return res.status(201).json({
+    success: true,
+    message: 'Bukti timbang berhasil diunggah.',
+    file: { originalName: req.file.originalname, mimeType: req.file.mimetype, size: req.file.size, storageKey: privateFileKey(req.file) }
+  });
+});
+
+// =================================================================
+// 7. MASTER KATEGORI (CATEGORIES)
 // =================================================================
 app.get('/api/categories', async (req, res) => {
   try {
@@ -484,7 +650,7 @@ app.get('/api/categories', async (req, res) => {
 });
 
 // =================================================================
-// 7. PRODUK & LISTING LIMBAH (PRODUCTS)
+// 8. PRODUK & LISTING LIMBAH (PRODUCTS)
 // =================================================================
 app.get('/api/products', async (req, res) => {
   try {
@@ -630,11 +796,13 @@ app.post('/api/products', async (req, res) => {
     // Simpan foto eviden jika ada
     if (Array.isArray(data.evidences) && data.evidences.length > 0) {
       for (let i = 0; i < data.evidences.length; i++) {
-        const imgUrl = typeof data.evidences[i] === 'string' ? data.evidences[i] : (data.evidences[i].url || '');
+        const evidence = data.evidences[i];
+        const imgUrl = typeof evidence === 'string' ? evidence : (evidence.url || '');
+        const caption = typeof evidence === 'string' ? null : (evidence.type || null);
         if (imgUrl) {
           await pool.query(
-            'INSERT INTO product_images (id, product_id, image_url, is_evidence) VALUES (?, ?, ?, 1)',
-            [`IMG-${id}-${i + 1}`, id, imgUrl]
+            'INSERT INTO product_images (id, product_id, image_url, caption, is_evidence) VALUES (?, ?, ?, ?, 1)',
+            [`IMG-${id}-${i + 1}`, id, imgUrl, caption]
           );
         }
       }
@@ -801,6 +969,65 @@ app.patch('/api/orders/:id/status', async (req, res) => {
 });
 
 // =================================================================
+// 8B. PENAWARAN HARGA & NOTIFIKASI TRANSAKSI
+// =================================================================
+app.get('/api/offers', async (req, res) => {
+  try {
+    const { buyerId, sellerId, status } = req.query;
+    let sql = `SELECT o.*, p.title AS product_title, p.code AS product_code, p.seller_id,
+      ub.name AS buyer_name, us.name AS seller_name
+      FROM offers o JOIN products p ON p.id = o.product_id
+      LEFT JOIN users ub ON ub.id = o.buyer_id LEFT JOIN users us ON us.id = p.seller_id WHERE 1=1`;
+    const params = [];
+    if (buyerId) { sql += ' AND o.buyer_id = ?'; params.push(buyerId); }
+    if (sellerId) { sql += ' AND p.seller_id = ?'; params.push(sellerId); }
+    if (status) { sql += ' AND o.status = ?'; params.push(status); }
+    sql += ' ORDER BY o.created_at DESC';
+    const [offers] = await pool.query(sql, params);
+    return res.json({ success: true, offers });
+  } catch (error) { return res.status(500).json({ success: false, message: error.message }); }
+});
+
+app.post('/api/offers', async (req, res) => {
+  try {
+    const data = req.body;
+    const id = data.id || `OFF-${Date.now()}`;
+    await pool.query(`INSERT INTO offers (id, product_id, buyer_id, offer_price, quantity, unit, note, status)
+      VALUES (?, ?, ?, ?, ?, ?, ?, 'pending')`, [id, data.productId, data.buyerId, Number(data.offerPrice), Number(data.quantity) || 1, data.unit || 'Kg', data.note || null]);
+    return res.status(201).json({ success: true, offerId: id });
+  } catch (error) { return res.status(500).json({ success: false, message: error.message }); }
+});
+
+app.patch('/api/offers/:id/status', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { sellerId, status } = req.body;
+    if (!['accepted', 'rejected'].includes(status)) return res.status(400).json({ success: false, message: 'Status penawaran tidak valid.' });
+    const [result] = await pool.query(`UPDATE offers o JOIN products p ON p.id = o.product_id
+      SET o.status = ? WHERE o.id = ? AND p.seller_id = ? AND o.status = 'pending'`, [status, id, sellerId]);
+    if (!result.affectedRows) return res.status(404).json({ success: false, message: 'Penawaran tidak ditemukan atau sudah diproses.' });
+    return res.json({ success: true, message: 'Status penawaran diperbarui.' });
+  } catch (error) { return res.status(500).json({ success: false, message: error.message }); }
+});
+
+app.get('/api/notifications', async (req, res) => {
+  try {
+    const { userId } = req.query;
+    const [notifications] = await pool.query(`SELECT * FROM notifications ${userId ? 'WHERE user_id = ?' : ''} ORDER BY created_at DESC LIMIT 100`, userId ? [userId] : []);
+    return res.json({ success: true, notifications });
+  } catch (error) { return res.status(500).json({ success: false, message: error.message }); }
+});
+
+app.post('/api/notifications', async (req, res) => {
+  try {
+    const n = req.body;
+    const id = n.id || `NTF-${Date.now()}`;
+    await pool.query('INSERT INTO notifications (id, user_id, type, title, message, link, is_read) VALUES (?, ?, ?, ?, ?, ?, ?)', [id, n.userId, n.type || 'info', n.title, n.message, n.link || null, n.isRead ? 1 : 0]);
+    return res.status(201).json({ success: true, notificationId: id });
+  } catch (error) { return res.status(500).json({ success: false, message: error.message }); }
+});
+
+// =================================================================
 // 9. EVENT & AGENDA (EVENTS)
 // =================================================================
 app.get('/api/events', async (req, res) => {
@@ -844,7 +1071,7 @@ app.post('/api/events', async (req, res) => {
       Number(data.registered) || 0,
       Number(data.price) || 0,
       data.image || null,
-      data.status || 'aktif',
+      data.status === 'published' ? 'aktif' : (data.status || 'aktif'),
       data.createdBy || 'user_admin_001'
     ]);
 
@@ -884,7 +1111,7 @@ app.put('/api/events/:id', async (req, res) => {
       data.quota ? Number(data.quota) : null,
       data.price !== undefined ? Number(data.price) : null,
       data.image || null,
-      data.status || null,
+      data.status === 'published' ? 'aktif' : (data.status || null),
       id
     ]);
 
@@ -902,6 +1129,101 @@ app.delete('/api/events/:id', async (req, res) => {
   } catch (error) {
     return res.status(500).json({ success: false, message: error.message });
   }
+});
+
+// =================================================================
+// 9B. MINAT, PESERTA, PENDAFTARAN, DAN PEMBAYARAN EVENT
+// =================================================================
+function validateEventParticipant(data) {
+  const fullName = String(data.fullName || '').trim();
+  const email = String(data.email || '').trim().toLowerCase();
+  const phone = String(data.phone || '').trim();
+  const attendeeCount = Math.max(1, Math.min(20, Number.parseInt(data.attendeeCount, 10) || 1));
+  if (!fullName || !email.includes('@') || !phone) return { error: 'Nama, email, dan nomor WhatsApp wajib diisi.' };
+  return { fullName, email, phone, company: String(data.company || '').trim() || null, attendeeCount };
+}
+
+async function upsertEventParticipant(connection, participant) {
+  const participantId = `EVP-${crypto.randomUUID()}`;
+  await connection.query(
+    `INSERT INTO event_participants (id, full_name, email, phone, company) VALUES (?, ?, ?, ?, ?)
+     ON DUPLICATE KEY UPDATE full_name = VALUES(full_name), phone = VALUES(phone), company = VALUES(company)`,
+    [participantId, participant.fullName, participant.email, participant.phone, participant.company]
+  );
+  const [rows] = await connection.query('SELECT id FROM event_participants WHERE email = ?', [participant.email]);
+  return rows[0].id;
+}
+
+app.post('/api/events/:id/interests', async (req, res) => {
+  const participant = validateEventParticipant(req.body);
+  if (participant.error) return res.status(400).json({ success: false, message: participant.error });
+  try {
+    const connection = await pool.getConnection();
+    try {
+      await connection.beginTransaction();
+      const [events] = await connection.query('SELECT id, status FROM events WHERE id = ?', [req.params.id]);
+      if (!events.length || !['aktif', 'published'].includes(events[0].status)) throw new Error('Event tidak tersedia.');
+      const participantId = await upsertEventParticipant(connection, participant);
+      const interestId = `EVI-${crypto.randomUUID()}`;
+      await connection.query('INSERT INTO event_interests (id, event_id, participant_id, attendee_count, note) VALUES (?, ?, ?, ?, ?)', [interestId, req.params.id, participantId, participant.attendeeCount, String(req.body.note || '').trim() || null]);
+      await connection.commit();
+      return res.status(201).json({ success: true, interestId, message: 'Minat Anda sudah dicatat. Tim event akan menghubungi Anda.' });
+    } catch (error) {
+      await connection.rollback();
+      return res.status(error.message === 'Event tidak tersedia.' ? 404 : 500).json({ success: false, message: error.message });
+    } finally { connection.release(); }
+  } catch (error) { return res.status(500).json({ success: false, message: error.message }); }
+});
+
+app.post('/api/events/:id/registrations', async (req, res) => {
+  const participant = validateEventParticipant(req.body);
+  if (participant.error) return res.status(400).json({ success: false, message: participant.error });
+  try {
+    const connection = await pool.getConnection();
+    try {
+      await connection.beginTransaction();
+      const [events] = await connection.query('SELECT id, title, price, quota, registered, status FROM events WHERE id = ? FOR UPDATE', [req.params.id]);
+      const event = events[0];
+      if (!event || !['aktif', 'published'].includes(event.status)) throw new Error('Event tidak tersedia untuk pendaftaran.');
+      if (Number(event.registered) + participant.attendeeCount > Number(event.quota)) throw new Error('Kuota event tidak mencukupi untuk jumlah peserta yang dipilih.');
+      const participantId = await upsertEventParticipant(connection, participant);
+      const [existing] = await connection.query('SELECT id FROM event_registrations_v2 WHERE event_id = ? AND participant_id = ?', [event.id, participantId]);
+      if (existing.length) throw new Error('Email ini sudah terdaftar pada event tersebut.');
+
+      const registrationId = `EVR-${crypto.randomUUID()}`;
+      const unitPrice = Number(event.price) || 0;
+      const totalAmount = unitPrice * participant.attendeeCount;
+      const isFree = totalAmount === 0;
+      const paymentId = `EVPAY-${crypto.randomUUID()}`;
+      await connection.query(`INSERT INTO event_registrations_v2
+        (id, event_id, participant_id, attendee_count, unit_price, total_amount, registration_status)
+        VALUES (?, ?, ?, ?, ?, ?, ?)`, [registrationId, event.id, participantId, participant.attendeeCount, unitPrice, totalAmount, isFree ? 'confirmed' : 'awaiting_payment']);
+      await connection.query('INSERT INTO event_payments (id, registration_id, amount, payment_status, paid_at) VALUES (?, ?, ?, ?, ?)', [paymentId, registrationId, totalAmount, isFree ? 'paid' : 'pending', isFree ? new Date() : null]);
+      await connection.query('UPDATE events SET registered = registered + ? WHERE id = ?', [participant.attendeeCount, event.id]);
+      await connection.commit();
+      return res.status(201).json({
+        success: true, registrationId, paymentId, paymentRequired: !isFree, totalAmount,
+        paymentInstructions: isFree ? null : { method: 'Transfer Bank', bank: 'BCA', accountName: 'PT Bursa Limbah Indonesia', accountNumber: '827199201122', amount: totalAmount },
+        message: isFree ? 'Pendaftaran berhasil dikonfirmasi.' : 'Pendaftaran dibuat. Selesaikan pembayaran sesuai total tagihan.'
+      });
+    } catch (error) {
+      await connection.rollback();
+      const clientErrors = ['Event tidak tersedia untuk pendaftaran.', 'Kuota event tidak mencukupi untuk jumlah peserta yang dipilih.', 'Email ini sudah terdaftar pada event tersebut.'];
+      return res.status(clientErrors.includes(error.message) ? 400 : 500).json({ success: false, message: error.message });
+    } finally { connection.release(); }
+  } catch (error) { return res.status(500).json({ success: false, message: error.message }); }
+});
+
+app.post('/api/event-payments/:registrationId/submit', async (req, res) => {
+  const reference = String(req.body.paymentReference || '').trim();
+  if (!reference) return res.status(400).json({ success: false, message: 'Masukkan nomor referensi pembayaran.' });
+  try {
+    const [result] = await pool.query(`UPDATE event_payments ep JOIN event_registrations_v2 er ON er.id = ep.registration_id
+      SET ep.payment_reference = ?, ep.payment_status = 'submitted', ep.paid_at = NOW(), er.registration_status = 'payment_review'
+      WHERE ep.registration_id = ? AND ep.payment_status = 'pending'`, [reference, req.params.registrationId]);
+    if (!result.affectedRows) return res.status(404).json({ success: false, message: 'Tagihan tidak ditemukan atau sudah diproses.' });
+    return res.json({ success: true, message: 'Konfirmasi pembayaran diterima dan menunggu verifikasi admin.' });
+  } catch (error) { return res.status(500).json({ success: false, message: error.message }); }
 });
 
 // =================================================================
@@ -1003,6 +1325,34 @@ app.post('/api/chats', async (req, res) => {
 // =================================================================
 // 11. PENGATURAN SISTEM (SYSTEM SETTINGS)
 // =================================================================
+// Kurs USD/IDR diproksikan dari server agar ticker tidak bergantung pada CORS
+// browser. Cache singkat menjaga API sumber dari request berulang.
+app.get('/api/market-prices', async (_req, res) => {
+  const now = Date.now();
+  if (marketRateCache && now - marketRateCache.fetchedAt < MARKET_RATE_CACHE_MS) {
+    return res.json({ success: true, ...marketRateCache.payload, cached: true });
+  }
+
+  try {
+    const response = await fetch(MARKET_RATE_URL, { signal: AbortSignal.timeout(8000) });
+    if (!response.ok) throw new Error(`Market API merespons HTTP ${response.status}`);
+    const data = await response.json();
+    const usdIdr = Number(data?.rates?.IDR);
+    if (!Number.isFinite(usdIdr) || usdIdr <= 0) throw new Error('Kurs IDR tidak tersedia dari Market API.');
+
+    const payload = {
+      source: 'ExchangeRate-API',
+      updatedAt: data.time_last_update_utc || new Date().toISOString(),
+      rates: { USD_IDR: Math.round(usdIdr) }
+    };
+    marketRateCache = { fetchedAt: now, payload };
+    return res.json({ success: true, ...payload, cached: false });
+  } catch (error) {
+    if (marketRateCache) return res.json({ success: true, ...marketRateCache.payload, cached: true, stale: true });
+    return res.status(502).json({ success: false, message: 'Market Price API tidak dapat dihubungi.', detail: error.message });
+  }
+});
+
 app.get('/api/settings', async (req, res) => {
   try {
     const [rows] = await pool.query('SELECT setting_key, setting_value FROM system_settings');
@@ -1027,6 +1377,23 @@ app.put('/api/settings', async (req, res) => {
   } catch (error) {
     return res.status(500).json({ success: false, message: error.message });
   }
+});
+
+// =================================================================
+// PENANGANAN ERROR UPLOAD
+// =================================================================
+app.use((error, _req, res, next) => {
+  if (!(error instanceof multer.MulterError)) return next(error);
+  if (error.code === 'LIMIT_FILE_SIZE') {
+    return res.status(413).json({ success: false, message: 'Ukuran berkas maksimal 5 MB.' });
+  }
+  if (error.code === 'LIMIT_FILE_COUNT') {
+    return res.status(400).json({ success: false, message: 'Maksimal tiga gambar eviden dapat diunggah.' });
+  }
+  return res.status(400).json({
+    success: false,
+    message: 'Format berkas tidak didukung. Eviden harus JPG, PNG, atau WebP; dokumen identitas dapat berupa JPG, PNG, WebP, atau PDF.'
+  });
 });
 
 // =================================================================

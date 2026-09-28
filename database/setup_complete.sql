@@ -411,6 +411,17 @@ CREATE TABLE IF NOT EXISTS `system_settings` (
   PRIMARY KEY (`setting_key`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE IF NOT EXISTS `user_terms_acceptances` (
+  `id`            VARCHAR(64)  NOT NULL,
+  `user_id`       VARCHAR(64)  NOT NULL,
+  `terms_version` VARCHAR(20)  NOT NULL,
+  `terms_title`   VARCHAR(200) NOT NULL,
+  `accepted_at`   TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_user_terms_version` (`user_id`, `terms_version`),
+  CONSTRAINT `fk_terms_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- ====================================================================
 -- TABEL 20: addresses (alamat pengiriman/penjemputan user)
 -- ====================================================================
@@ -438,6 +449,18 @@ CREATE TABLE IF NOT EXISTS `addresses` (
 INSERT INTO `system_settings` (`setting_key`, `setting_value`, `description`) VALUES
 ('dp_enabled',              'false',         'Aktifkan fitur uang muka (DP) 30%'),
 ('dp_percentage',           '30',            'Persentase DP dari total transaksi'),
+('dp_enabled',              'false',         'Aktivasi metode pembayaran DP'),
+('paymentGatewayEnabled',   'false',         'Aktivasi API payment gateway'),
+('paymentGatewayProvider',  'midtrans',      'Provider payment gateway'),
+('paymentGatewayEnvironment','sandbox',      'Lingkungan gateway: sandbox/production'),
+('paymentGatewayClientKey', '',              'Client/public key gateway; secret disimpan di environment server'),
+('ticker_enabled',           'true',         'Aktivasi ticker harga pasar pada halaman publik'),
+('ticker_title',             'Harga Pasar Terkini', 'Judul ticker harga pasar'),
+('ticker_refresh_minutes',   '15',           'Interval pembaruan ticker harga pasar dalam menit'),
+('terms_title',              'Syarat dan Ketentuan Penggunaan Bursa Limbah', 'Judul persetujuan pengguna baru'),
+('terms_version',            '1.0',          'Versi dokumen syarat dan ketentuan'),
+('terms_content',            'Dengan membuat akun, Anda menyatakan data yang diberikan benar dan menyetujui ketentuan penggunaan Bursa Limbah.', 'Isi persetujuan pengguna baru'),
+('handlingFeeByTier',       '{"tier_starter":15000,"tier_basic":10000,"tier_pro":7500,"tier_enterprise":5000}', 'Biaya penanganan berdasarkan tier pembeli'),
 ('service_fee_fixed',       '10000',         'Biaya layanan platform (Rupiah)'),
 ('service_fee_percentage',  '2',             'Biaya layanan platform (%)'),
 ('tier_starter_price',      '0',             'Harga tier Starter per bulan'),

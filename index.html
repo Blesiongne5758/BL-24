@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>BURSA LIMBAH — Limbah Terverifikasi. Transaksi Tepercaya.</title>
+  <title>BURSA LIMBAH — Limbah Terverifikasi. Transaksi Terpercaya.</title>
   <meta name="description" content="Platform bursa perdagangan limbah berbasis ketertelusuran (traceability) yang mempertemukan penjual dan pembeli limbah dalam satu ekosistem digital terverifikasi.">
   
   <!-- Tailwind CSS CDN -->
@@ -62,7 +62,7 @@
           </div>
         </div>
 
-        <!-- Desktop Navigation Tabs (Home, Mulai Jual, Berlangganan, Simulasi) -->
+        <!-- Desktop Navigation Tabs -->
         <nav class="hidden md:flex items-center space-x-1 text-xs font-semibold text-slate-600 bg-slate-100/80 p-1 rounded-2xl border border-slate-200/80">
           <button id="dnav-home" onclick="app.switchAppTab('home')" class="px-3.5 py-2 rounded-xl text-xs font-bold bg-emerald-50 text-emerald-800 border border-emerald-200 transition shadow-2xs flex items-center gap-1.5 cursor-pointer">
             <i class="fa-solid fa-house text-emerald-600"></i>
@@ -80,10 +80,14 @@
             <i class="fa-solid fa-calculator text-blue-500"></i>
             <span>Simulasi</span>
           </button>
+          <button id="dnav-solutions" onclick="app.switchAppTab('solutions')" class="px-3.5 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition flex items-center gap-1.5 cursor-pointer">
+            <i class="fa-solid fa-recycle text-teal-600"></i>
+            <span>Layanan Solusi Limbah</span>
+          </button>
         </nav>
 
         <!-- Right Quick Actions (Chat, Profile/Login, WhatsApp) -->
-        <div class="flex items-center gap-1.5 sm:gap-2">
+        <div class="mobile-header-actions flex items-center gap-1.5 sm:gap-2">
           <!-- Chat Button -->
           <button onclick="app.toggleChat()" class="relative w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center text-sm active:scale-95 transition cursor-pointer" title="Layar Chat Langsung">
             <i class="fa-solid fa-comment-dots text-emerald-700"></i>
@@ -99,7 +103,7 @@
           <div id="nav-action-container" class="flex items-center gap-1.5">
             <button onclick="app.showLoginPage()" class="flex items-center gap-1.5 px-3 py-2 text-xs font-bold rounded-xl border border-slate-300 hover:border-emerald-400 hover:text-emerald-700 bg-white text-slate-700 shadow-2xs transition active:scale-95 cursor-pointer">
               <i class="fa-solid fa-user text-emerald-600"></i>
-              <span class="hidden sm:inline">Akun / Masuk</span>
+              <span class="mobile-header-login-label hidden sm:inline">Akun / Masuk</span>
             </button>
           </div>
         </div>
@@ -107,6 +111,20 @@
       </div>
     </div>
   </header>
+
+  <!-- ================= TICKER HARGA PASAR ================= -->
+  <section id="market-price-ticker" class="bg-slate-950 text-white border-b border-slate-800 overflow-hidden" aria-label="Ticker harga pasar">
+    <div class="max-w-7xl mx-auto flex items-center min-h-10">
+      <div class="shrink-0 self-stretch flex items-center gap-2 px-3 sm:px-6 bg-slate-900 border-r border-slate-700 z-10">
+        <span class="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></span>
+        <span id="price-ticker-title" class="text-[10px] sm:text-xs font-bold uppercase tracking-wide text-emerald-300">Harga Pasar Terkini</span>
+        <span id="price-ticker-updated" class="hidden lg:inline text-[10px] text-slate-400">Memuat harga pasar…</span>
+      </div>
+      <div class="min-w-0 overflow-hidden py-1.5">
+        <div id="price-ticker-strip" class="animate-ticker items-center gap-3 px-3 text-xs whitespace-nowrap"></div>
+      </div>
+    </div>
+  </section>
 
   <!-- ================= BANNER INDIKATOR STATUS PERAN & TIER ================= -->
   <div id="role-context-banner" class="hidden bg-slate-900 text-slate-100 px-4 py-2.5 text-xs border-b border-slate-800 transition-all">
@@ -475,6 +493,23 @@
         </button>
       </div>
 
+      <!-- ================= PINTASAN UTAMA: GAYA MARKETPLACE MOBILE ================= -->
+      <section class="marketplace-mobile-shortcuts lg:hidden mx-3 mb-3" aria-label="Pintasan Bursa Limbah">
+        <div class="marketplace-mobile-summary">
+          <div>
+            <p class="marketplace-kicker"><i class="fa-solid fa-sparkles"></i> Bursa hari ini</p>
+            <p class="marketplace-summary-title">Temukan pasokan yang tepat</p>
+          </div>
+          <button type="button" onclick="app.navigateToSection('postingan-publik')" class="marketplace-see-all">Lihat bursa <i class="fa-solid fa-arrow-right"></i></button>
+        </div>
+        <div class="marketplace-shortcut-grid">
+          <button type="button" onclick="app.navigateToSection('postingan-publik')" class="marketplace-shortcut-card"><span class="marketplace-shortcut-icon icon-sky"><i class="fa-solid fa-chart-line"></i></span><span>Harga pasar</span><small>Update terkini</small></button>
+          <button type="button" onclick="app.handleMobileSellAction()" class="marketplace-shortcut-card"><span class="marketplace-shortcut-icon icon-emerald"><i class="fa-solid fa-circle-plus"></i></span><span>Pasang limbah</span><small>Jual lebih mudah</small></button>
+          <button type="button" onclick="app.openMobileDpSimulator()" class="marketplace-shortcut-card"><span class="marketplace-shortcut-icon icon-amber"><i class="fa-solid fa-calculator"></i></span><span>Simulasi DP</span><small>Hitung cepat</small></button>
+          <button type="button" onclick="app.navigateToSection('event')" class="marketplace-shortcut-card"><span class="marketplace-shortcut-icon icon-violet"><i class="fa-solid fa-calendar-star"></i></span><span>Event & lelang</span><small>Agenda pilihan</small></button>
+        </div>
+      </section>
+
       <!-- HERO SECTION UTAMA -->
       <section id="hero" class="relative overflow-hidden pt-6 pb-14 lg:pt-14 lg:pb-20 bg-gradient-to-b from-white via-slate-50 to-emerald-50/40">
         <div class="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-96 bg-gradient-to-r from-emerald-100/60 via-teal-50/40 to-cyan-100/50 blur-3xl -z-10 rounded-full pointer-events-none"></div>
@@ -493,7 +528,7 @@
               <h1 class="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-slate-900 leading-[1.18]">
                 Limbah Terverifikasi. <br>
                 <span class="text-transparent bg-clip-text bg-gradient-to-r from-brand-600 via-emerald-500 to-teal-600">
-                  Transaksi Tepercaya.
+                  Transaksi Terpercaya.
                 </span>
               </h1>
 
@@ -543,7 +578,7 @@
             <div class="lg:col-span-5 space-y-4">
               <div class="relative rounded-2xl overflow-hidden shadow-2xl border border-slate-200 bg-slate-900">
                 <div class="relative h-64 sm:h-72">
-                  <img src="assets/hero.jpg" onerror="if(this.src.indexOf('assets/hero.jpg') !== -1){ this.src='hero.jpg'; } else { this.src='assets/logo.png'; }" alt="Hero Bursa Limbah" class="w-full h-full object-cover opacity-85">
+                  <img src="hero.jpg" onerror="if(this.src.indexOf('hero.jpg') !== -1){ this.src='assets/hero.jpg'; } else { this.src='assets/logo.png'; }" alt="Hero Bursa Limbah" class="w-full h-full object-cover opacity-85">
                   <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent"></div>
                   
                   <div class="absolute top-3 left-3 bg-slate-900/85 backdrop-blur-md px-3 py-1 rounded-full text-white text-[11px] font-semibold border border-slate-700 flex items-center space-x-1.5">
@@ -1117,33 +1152,33 @@
           </div>
         </div>
 
-        <!-- 3 Foto Eviden Fisik -->
+        <!-- Eviden fisik: rumah tangga cukup satu foto, kategori industri tiga foto -->
         <div class="border-t border-slate-100 pt-2">
           <label class="block text-xs font-bold uppercase text-slate-600 mb-1.5 flex items-center">
             <i class="fa-solid fa-camera mr-1.5 text-emerald-600"></i>
-            <span>3 Foto Eviden Fisik & Tera Digital (Wajib)</span>
+            <span id="up-evidence-heading">3 Foto Eviden Fisik & Tera Digital (Wajib)</span>
           </label>
-          <div class="grid grid-cols-3 gap-2 text-xs">
-            <div class="p-2 rounded-xl bg-slate-50 border border-slate-200 text-center space-y-1">
+          <div id="up-evidence-grid" class="grid grid-cols-3 gap-2 text-xs">
+            <div id="up-evidence-slot-2" class="p-2 rounded-xl bg-slate-50 border border-slate-200 text-center space-y-1">
               <i class="fa-solid fa-boxes-stacked text-emerald-600 text-lg"></i>
               <div class="font-bold text-[11px] text-slate-700">1. Wadah Utuh</div>
               <p class="text-[10px] text-slate-400">Drum/IBC/bal tersegel</p>
-              <input type="hidden" id="up-foto-1" value="https://images.unsplash.com/photo-1578575437130-527eed3abbec?auto=format&fit=crop&w=800&q=80">
-              <span class="text-[10px] text-emerald-600 font-semibold"><i class="fa-solid fa-check"></i> Siap Diunggah</span>
+              <input type="file" id="up-foto-1" accept="image/jpeg,image/png,image/webp" class="hidden" onchange="app.handleEvidenceFileSelect(this, 1)">
+              <button type="button" onclick="[REDACTED]'up-foto-1').click()" id="up-foto-1-label" class="text-[10px] text-emerald-600 font-semibold hover:underline"><i class="fa-solid fa-cloud-arrow-up"></i> Pilih gambar</button>
             </div>
-            <div class="p-2 rounded-xl bg-slate-50 border border-slate-200 text-center space-y-1">
+            <div id="up-evidence-slot-3" class="p-2 rounded-xl bg-slate-50 border border-slate-200 text-center space-y-1">
               <i class="fa-solid fa-flask text-blue-600 text-lg"></i>
               <div class="font-bold text-[11px] text-slate-700">2. Sampel Material</div>
               <p class="text-[10px] text-slate-400">Detail kebersihan fisik</p>
-              <input type="hidden" id="up-foto-2" value="https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?auto=format&fit=crop&w=800&q=80">
-              <span class="text-[10px] text-emerald-600 font-semibold"><i class="fa-solid fa-check"></i> Siap Diunggah</span>
+              <input type="file" id="up-foto-2" accept="image/jpeg,image/png,image/webp" class="hidden" onchange="app.handleEvidenceFileSelect(this, 2)">
+              <button type="button" onclick="[REDACTED]'up-foto-2').click()" id="up-foto-2-label" class="text-[10px] text-emerald-600 font-semibold hover:underline"><i class="fa-solid fa-cloud-arrow-up"></i> Pilih gambar</button>
             </div>
             <div class="p-2 rounded-xl bg-slate-50 border border-slate-200 text-center space-y-1">
               <i class="fa-solid fa-scale-balanced text-amber-600 text-lg"></i>
               <div class="font-bold text-[11px] text-slate-700">3. Struk Timbangan</div>
               <p class="text-[10px] text-slate-400">Bukti tera kalibrasi sah</p>
-              <input type="hidden" id="up-foto-3" value="https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=800&q=80">
-              <span class="text-[10px] text-emerald-600 font-semibold"><i class="fa-solid fa-check"></i> Siap Diunggah</span>
+              <input type="file" id="up-foto-3" accept="image/jpeg,image/png,image/webp" class="hidden" onchange="app.handleEvidenceFileSelect(this, 3)">
+              <button type="button" onclick="[REDACTED]'up-foto-3').click()" id="up-foto-3-label" class="text-[10px] text-emerald-600 font-semibold hover:underline"><i class="fa-solid fa-cloud-arrow-up"></i> Pilih gambar</button>
             </div>
           </div>
         </div>
@@ -1164,7 +1199,10 @@
           </div>
           <div id="up-coords-box">
             <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Titik GPS (Lat, Lng)</label>
-            <input type="text" id="up-coords" value="-6.2845, 106.8421" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-2 py-2 text-xs font-mono focus:outline-none">
+            <div class="flex gap-2">
+              <input type="text" id="up-coords" value="" placeholder="Tekan tombol GPS untuk mengisi otomatis" readonly class="min-w-0 flex-1 bg-slate-50 border border-slate-300 rounded-xl px-2 py-2 text-xs font-mono focus:outline-none">
+              <button type="button" onclick="app.requestGpsLocation()" class="shrink-0 rounded-xl bg-emerald-600 px-3 py-2 text-xs font-bold text-white shadow-sm transition hover:bg-emerald-700" title="Ambil titik GPS saat ini"><i class="fa-solid fa-location-crosshairs mr-1"></i>GPS</button>
+            </div>
           </div>
         </div>
 
@@ -1381,6 +1419,27 @@
       </section>
 
       </div> <!-- /#tab-simulation -->
+
+      <!-- ================= TAB 5: LAYANAN SOLUSI LIMBAH ================= -->
+      <div id="tab-solutions" class="app-tab-pane hidden">
+        <section id="layanan-solusi-limbah" class="py-16 bg-gradient-to-br from-emerald-50 via-white to-teal-50 border-b border-emerald-100">
+          <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="max-w-2xl mb-10">
+              <span class="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-white px-3 py-1 text-xs font-bold text-emerald-800"><i class="fa-solid fa-leaf"></i>Layanan Terpadu</span>
+              <h2 class="mt-3 text-3xl font-extrabold tracking-tight text-slate-900">Apa Yang Anda Butuhkan?</h2>
+              <p class="mt-2 text-sm leading-relaxed text-slate-600">Pilih layanan solusi limbah yang sesuai untuk kebutuhan operasional dan kepatuhan bisnis Anda.</p>
+            </div>
+            <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+              <article class="rounded-2xl border border-emerald-100 bg-white p-5 shadow-sm"><div class="mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700"><i class="fa-solid fa-certificate"></i></div><h3 class="font-bold text-slate-900">Sertifikasi</h3><p class="mt-1 text-xs leading-relaxed text-slate-500">Pendampingan persiapan sertifikasi dan pemenuhan standar pengelolaan limbah.</p></article>
+              <article class="rounded-2xl border border-emerald-100 bg-white p-5 shadow-sm"><div class="mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-blue-100 text-blue-700"><i class="fa-solid fa-flask-vial"></i></div><h3 class="font-bold text-slate-900">Laboratorium</h3><p class="mt-1 text-xs leading-relaxed text-slate-500">Pengujian karakteristik, kualitas, dan parameter limbah melalui layanan laboratorium.</p></article>
+              <article class="rounded-2xl border border-emerald-100 bg-white p-5 shadow-sm"><div class="mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-teal-100 text-teal-700"><i class="fa-solid fa-recycle"></i></div><h3 class="font-bold text-slate-900">Pengelolaan Limbah</h3><p class="mt-1 text-xs leading-relaxed text-slate-500">Solusi pemilahan, pengangkutan, pengolahan, dan daur ulang limbah.</p></article>
+              <article class="rounded-2xl border border-emerald-100 bg-white p-5 shadow-sm"><div class="mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-amber-100 text-amber-700"><i class="fa-solid fa-file-signature"></i></div><h3 class="font-bold text-slate-900">Perizinan</h3><p class="mt-1 text-xs leading-relaxed text-slate-500">Bantuan kelengkapan dokumen dan proses perizinan terkait pengelolaan limbah.</p></article>
+              <article class="rounded-2xl border border-emerald-100 bg-white p-5 shadow-sm"><div class="mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-slate-100 text-slate-700"><i class="fa-solid fa-cloud"></i></div><h3 class="font-bold text-slate-900">Karbon Kredit</h3><p class="mt-1 text-xs leading-relaxed text-slate-500">Konsultasi pengukuran emisi dan peluang pengembangan kredit karbon.</p></article>
+            </div>
+            <a href="https://wa.me/628[REDACTED]7890?text=Halo%20Admin%20Bursa%20Limbah%2C%20saya%20ingin%20konsultasi%20Layanan%20Solusi%20Limbah" target="_blank" class="mt-7 inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-5 py-3 text-xs font-bold text-white shadow-sm transition hover:bg-emerald-700"><i class="fa-brands fa-whatsapp text-base"></i>Hubungi Tim Solusi Limbah</a>
+          </div>
+        </section>
+      </div> <!-- /#tab-solutions -->
 
       <!-- ================= TAB BAWAH A: CARI (PENCARIAN LIMBAH) ================= -->
       <div id="tab-cari" class="app-tab-pane hidden max-w-4xl mx-auto px-4 py-6 space-y-4">
@@ -1727,6 +1786,14 @@
         </div>
       </div>
 
+      <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden p-6 space-y-4">
+        <div>
+          <h3 class="text-lg font-bold text-slate-900">Penawaran Harga Masuk</h3>
+          <p class="text-xs text-slate-500">Terima atau tolak tawaran pembeli. Keputusan Anda akan langsung diberitahukan kepada pembeli.</p>
+        </div>
+        <div id="seller-offers-container" class="overflow-x-auto"></div>
+      </div>
+
     </div>
 
     <!-- ================= TAMPILAN 4: PUSAT PENGELOLA (ADMIN) ================= -->
@@ -2004,10 +2071,55 @@
                 </div>
               </div>
 
+              <div class="p-4 bg-white rounded-xl border border-slate-200 shadow-2xs space-y-3">
+                <label class="block text-xs font-bold uppercase text-slate-800">Biaya Penanganan Berdasarkan Tier Pembeli</label>
+                <p class="text-[11px] text-slate-500">Biaya ini menggantikan tarif flat saat checkout. Masukkan 0 jika tier dibebaskan dari biaya penanganan.</p>
+                <div class="grid grid-cols-2 gap-3">
+                  <label class="text-[11px] font-semibold text-slate-600">Starter <input type="number" id="setting-handling-tier-starter" min="0" class="mt-1 w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-sm font-mono"></label>
+                  <label class="text-[11px] font-semibold text-slate-600">Basic <input type="number" id="setting-handling-tier-basic" min="0" class="mt-1 w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-sm font-mono"></label>
+                  <label class="text-[11px] font-semibold text-slate-600">Pro <input type="number" id="setting-handling-tier-pro" min="0" class="mt-1 w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-sm font-mono"></label>
+                  <label class="text-[11px] font-semibold text-slate-600">Enterprise <input type="number" id="setting-handling-tier-enterprise" min="0" class="mt-1 w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-sm font-mono"></label>
+                </div>
+              </div>
+
+              <div class="p-4 bg-white rounded-xl border border-slate-200 shadow-2xs space-y-3">
+                <div class="flex items-center justify-between gap-3"><div><label class="block text-xs font-bold uppercase text-slate-800">API Payment Gateway</label><p class="text-[11px] text-slate-500 mt-0.5">Aktifkan pembayaran DP melalui provider pilihan. Kunci rahasia disimpan pada environment server.</p></div><label class="relative inline-flex items-center cursor-pointer"><input type="checkbox" id="setting-gateway-enabled" class="sr-only peer"><div class="w-11 h-6 bg-slate-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div></label></div>
+                <div class="grid sm:grid-cols-3 gap-3">
+                  <label class="text-[11px] font-semibold text-slate-600">Provider<select id="setting-gateway-provider" class="mt-1 w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-xs"><option value="midtrans">Midtrans</option><option value="xendit">Xendit</option></select></label>
+                  <label class="text-[11px] font-semibold text-slate-600">Lingkungan<select id="setting-gateway-environment" class="mt-1 w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-xs"><option value="sandbox">Sandbox</option><option value="production">Production</option></select></label>
+                  <label class="text-[11px] font-semibold text-slate-600">Client / Public Key<input id="setting-gateway-client-key" type="text" autocomplete="off" placeholder="SB-Mid-client-..." class="mt-1 w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-xs font-mono"></label>
+                </div>
+                <p class="text-[10px] text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-2"><i class="fa-solid fa-shield-halved mr-1"></i> Tambahkan <strong>MIDTRANS_SERVER_KEY</strong> atau <strong>XENDIT_SECRET_KEY</strong> di environment server sebelum memilih Production.</p>
+              </div>
+
+              <div class="p-4 bg-white rounded-xl border border-slate-200 shadow-2xs space-y-3">
+                <div class="flex items-center justify-between gap-3">
+                  <div>
+                    <label class="block text-xs font-bold uppercase text-slate-800">Ticker Harga Pasar</label>
+                    <p class="text-[11px] text-slate-500 mt-0.5">Menampilkan kurs USD/IDR dari Market Price API dan rata-rata harga listing aktif.</p>
+                  </div>
+                  <label class="relative inline-flex items-center cursor-pointer" title="Aktifkan atau nonaktifkan ticker harga pasar">
+                    <input type="checkbox" id="setting-ticker-enabled" class="sr-only peer">
+                    <div class="w-11 h-6 bg-slate-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
+                  </label>
+                </div>
+                <div class="grid sm:grid-cols-2 gap-3">
+                  <label class="text-[11px] font-semibold text-slate-600">Judul Ticker<input id="setting-ticker-title" type="text" maxlength="80" placeholder="Harga Pasar Terkini" class="mt-1 w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-xs"></label>
+                  <label class="text-[11px] font-semibold text-slate-600">Perbarui tiap (menit)<input id="setting-ticker-refresh-minutes" type="number" min="1" max="120" step="1" class="mt-1 w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-xs font-mono"></label>
+                </div>
+                <p class="text-[10px] text-sky-700 bg-sky-50 border border-sky-200 rounded-lg p-2"><i class="fa-solid fa-chart-line mr-1"></i> Sumber kurs: <strong>ExchangeRate-API</strong>, diakses server melalui endpoint <code>/api/market-prices</code> dan disimpan sementara selama 10 menit.</p>
+              </div>
+
+              <div class="p-4 bg-white rounded-xl border border-slate-200 shadow-2xs space-y-3">
+                <div><label class="block text-xs font-bold uppercase text-slate-800">Syarat &amp; Ketentuan Pendaftaran</label><p class="text-[11px] text-slate-500 mt-0.5">Ditampilkan wajib kepada pengguna baru sebelum formulir pembeli atau penjual dibuka.</p></div>
+                <div class="grid sm:grid-cols-3 gap-3"><label class="sm:col-span-2 text-[11px] font-semibold text-slate-600">Judul<input id="setting-terms-title" type="text" maxlength="120" class="mt-1 w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-xs"></label><label class="text-[11px] font-semibold text-slate-600">Versi<input id="setting-terms-version" type="text" maxlength="20" placeholder="1.0" class="mt-1 w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-xs font-mono"></label></div>
+                <label class="block text-[11px] font-semibold text-slate-600">Isi Syarat dan Ketentuan<textarea id="setting-terms-content" rows="7" maxlength="10000" class="mt-1 w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-xs leading-relaxed" placeholder="Masukkan syarat dan ketentuan…"></textarea></label>
+              </div>
+
               <div class="pt-2 flex justify-end">
                 <button type="submit" class="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-md transition flex items-center space-x-2">
                   <i class="fa-solid fa-floppy-disk"></i>
-                  <span>Simpan Pengaturan DP &amp; Biaya</span>
+                  <span>Simpan Pengaturan</span>
                 </button>
               </div>
             </form>
@@ -2032,7 +2144,7 @@
           <p class="text-slate-400 text-xs leading-relaxed">
             Platform bursa perdagangan limbah berbasis ketertelusuran (traceability) terkemuka di Indonesia. Menghubungkan pasokan limbah industri secara terverifikasi, transparan, dan terukur.
           </p>
-          <div class="text-[11px] text-emerald-400 font-mono">Limbah Terverifikasi. Transaksi Tepercaya.</div>
+          <div class="text-[11px] text-emerald-400 font-mono">Limbah Terverifikasi. Transaksi Terpercaya.</div>
         </div>
 
         <div>
@@ -2062,6 +2174,10 @@
             <li><i class="fa-solid fa-envelope mr-1.5 text-emerald-400"></i> kemitraan@bursalimbah.id</li>
             <li><i class="fa-solid fa-location-dot mr-1.5 text-emerald-400"></i> Sentra Inovasi Hijau BURSA LIMBAH Lt. 5, Jakarta Timur</li>
           </ul>
+          <button type="button" onclick="app.showHelpModal()" class="mt-4 inline-flex items-center gap-2 rounded-xl border border-emerald-400/40 bg-emerald-400/10 px-3 py-2 text-[11px] font-bold text-emerald-300 transition hover:bg-emerald-400/20 hover:text-white">
+            <i class="fa-solid fa-shield-heart"></i>
+            <span>Panduan Transaksi Aman</span>
+          </button>
         </div>
 
       </div>
@@ -2085,6 +2201,17 @@
   </div>
 
   <!-- ================= MODAL 2: PENDAFTARAN PEMBELI (CUKUP EMAIL, NAMA, WA, PASSWORD) ================= -->
+  <div id="modal-registration-terms" class="fixed inset-0 z-[60] bg-slate-950/75 backdrop-blur-sm hidden items-center justify-center p-4 overflow-y-auto" role="dialog" aria-modal="true" aria-labelledby="registration-terms-title">
+    <div class="bg-white rounded-3xl max-w-2xl w-full max-h-[90vh] flex flex-col shadow-2xl border border-slate-200">
+      <div class="p-6 border-b border-slate-100 flex items-start justify-between gap-4">
+        <div><div class="inline-flex px-2 py-1 rounded-full bg-emerald-50 text-emerald-700 text-[10px] font-bold mb-2"><i class="fa-solid fa-file-signature mr-1"></i> WAJIB DISETUJUI</div><h3 id="registration-terms-title" class="text-lg font-extrabold text-slate-900">Syarat dan Ketentuan</h3><p class="text-xs text-slate-500 mt-1">Untuk pendaftaran akun <strong id="registration-terms-role">Pembeli</strong> · <span id="registration-terms-version">Versi 1.0</span></p></div>
+        <button type="button" onclick="app.cancelRegistrationTerms()" class="p-2 text-slate-400 hover:text-slate-700"><i class="fa-solid fa-xmark text-lg"></i></button>
+      </div>
+      <div class="p-6 overflow-y-auto"><div id="registration-terms-content" class="whitespace-pre-wrap text-sm leading-7 text-slate-700 bg-slate-50 border border-slate-200 rounded-2xl p-4"></div></div>
+      <div class="p-5 border-t border-slate-100 flex justify-end gap-2"><button type="button" onclick="app.cancelRegistrationTerms()" class="px-4 py-2.5 rounded-xl border border-slate-300 text-xs font-bold">Tidak Setuju</button><button type="button" onclick="app.acceptRegistrationTerms()" class="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-sm"><i class="fa-solid fa-check mr-1"></i>Setuju &amp; Lanjutkan</button></div>
+    </div>
+  </div>
+
   <div id="modal-buyer-register" class="fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-sm hidden items-center justify-center p-4 overflow-y-auto">
     <div class="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl border border-slate-200 space-y-6">
       
@@ -2942,8 +3069,9 @@
 
         <div class="grid grid-cols-2 gap-3">
           <div>
-            <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Label Tiket / Harga *</label>
-            <input type="text" id="evt-price-label" placeholder="Contoh: Gratis atau Rp 350.000 / orang" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+            <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Harga Tiket per Peserta (Rp) *</label>
+            <input type="number" id="evt-price" min="0" step="1000" value="0" required class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-mono focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+            <p class="mt-1 text-[10px] text-slate-400">Isi 0 untuk event gratis.</p>
           </div>
           <div>
             <label class="block text-xs font-bold uppercase text-slate-600 mb-1">URL Foto Poster</label>
@@ -2969,34 +3097,136 @@
     </div>
   </div>
 
-  <!-- ================= DOCKED BOTTOM NAVIGATION BAR (MOBILE APP) ================= -->
-  <nav id="mobile-app-bottom-nav" class="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-xl border-t border-slate-200/90 shadow-[0_-4px_25px_rgba(0,0,0,0.08)] py-1.5 px-2">
-    <div id="bnav-grid" class="max-w-md mx-auto grid grid-cols-4 items-center text-center">
+  <!-- ================= MODAL: MINAT & PENDAFTARAN EVENT ================= -->
+  <div id="modal-event-registration" class="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm hidden items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-white rounded-3xl max-w-lg w-full shadow-2xl border border-slate-200 overflow-hidden">
+      <div class="p-5 border-b border-slate-100 flex items-start justify-between gap-3">
+        <div><h3 id="event-registration-title" class="text-base font-extrabold text-slate-900">Daftar Event</h3><p id="event-registration-price" class="text-xs text-indigo-700 font-bold mt-1"></p></div>
+        <button type="button" onclick="app.closeEventRegistrationModal()" class="text-slate-400 hover:text-slate-700 p-1"><i class="fa-solid fa-xmark text-lg"></i></button>
+      </div>
+      <form id="event-registration-form" onsubmit="app.submitEventRegistration(event)" class="p-5 space-y-3.5">
+        <input type="hidden" id="event-registration-id">
+        <div class="grid sm:grid-cols-2 gap-3"><label class="text-xs font-bold text-slate-700">Nama lengkap *<input id="event-participant-name" required class="mt-1.5 w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 text-sm"></label><label class="text-xs font-bold text-slate-700">WhatsApp *<input id="event-participant-phone" required type="tel" placeholder="08..." class="mt-1.5 w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 text-sm"></label></div>
+        <label class="block text-xs font-bold text-slate-700">Email *<input id="event-participant-email" required type="email" class="mt-1.5 w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 text-sm"></label>
+        <div class="grid sm:grid-cols-2 gap-3"><label class="text-xs font-bold text-slate-700">Instansi / perusahaan<input id="event-participant-company" class="mt-1.5 w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 text-sm"></label><label class="text-xs font-bold text-slate-700">Jumlah peserta *<input id="event-attendee-count" required type="number" min="1" max="20" value="1" class="mt-1.5 w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 text-sm font-mono"></label></div>
+        <label class="block text-xs font-bold text-slate-700">Catatan / kebutuhan khusus<textarea id="event-participant-note" rows="2" class="mt-1.5 w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 text-sm"></textarea></label>
+        <div class="rounded-xl bg-indigo-50 border border-indigo-100 p-3 text-xs text-indigo-900"><label class="flex gap-2 cursor-pointer"><input type="radio" name="event-action" value="interest" checked class="mt-0.5 accent-indigo-600"><span><strong>Nyatakan minat</strong><br><span class="text-[11px] text-indigo-700">Data disimpan, tim event akan menghubungi Anda.</span></span></label><label class="flex gap-2 cursor-pointer mt-2"><input type="radio" name="event-action" value="register" class="mt-0.5 accent-indigo-600"><span><strong>Daftar sekarang</strong><br><span class="text-[11px] text-indigo-700">Tagihan dibuat sesuai harga event dan jumlah peserta.</span></span></label></div>
+        <div class="flex justify-end gap-2 pt-2"><button type="button" onclick="app.closeEventRegistrationModal()" class="px-4 py-2.5 rounded-xl border border-slate-300 text-xs font-bold">Batal</button><button type="submit" class="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold">Kirim</button></div>
+      </form>
+      <div id="event-payment-panel" class="hidden p-5 space-y-3"></div>
+    </div>
+  </div>
 
-      <!-- 1. Cari -->
+  <!-- ================= MODAL: PANDUAN TRANSAKSI AMAN & FAQ ================= -->
+  <div id="modal-help" class="fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-sm hidden items-center justify-center p-4 overflow-y-auto" role="dialog" aria-modal="true" aria-labelledby="help-modal-title">
+    <div class="bg-white rounded-3xl max-w-2xl w-full max-h-[92vh] overflow-y-auto shadow-2xl border border-slate-200">
+      <div class="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-slate-100 bg-white/95 px-6 py-5 backdrop-blur">
+        <div>
+          <div class="mb-2 inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-emerald-700">
+            <i class="fa-solid fa-shield-halved"></i> Pusat Bantuan
+          </div>
+          <h3 id="help-modal-title" class="text-lg font-extrabold text-slate-900">Panduan Transaksi Aman</h3>
+          <p class="mt-1 text-xs leading-relaxed text-slate-500">Pahami setiap tahap sebelum memesan pasokan limbah.</p>
+        </div>
+        <button type="button" onclick="app.closeModals()" class="rounded-xl p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700" aria-label="Tutup panduan">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <div class="space-y-6 p-6">
+        <div class="rounded-2xl border border-emerald-100 bg-emerald-50 p-4 text-xs leading-relaxed text-emerald-900">
+          <div class="mb-1.5 flex items-center gap-2 font-bold"><i class="fa-solid fa-circle-info text-emerald-600"></i> Prinsip perlindungan transaksi</div>
+          Jangan melakukan pembayaran ke rekening pribadi. Pembayaran hanya diproses melalui rekening bersama Bursa Limbah setelah pesanan tercatat di sistem.
+        </div>
+
+        <section>
+          <h4 class="mb-4 text-xs font-bold uppercase tracking-wider text-slate-700">Perjalanan transaksi Anda</h4>
+          <ol class="space-y-0">
+            <li class="relative flex gap-3 pb-5 before:absolute before:left-4 before:top-8 before:h-full before:w-px before:bg-emerald-200 last:pb-0 last:before:hidden">
+              <span class="relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-600 text-xs font-extrabold text-white">1</span>
+              <div><p class="text-xs font-bold text-slate-800">Tinjau listing terverifikasi</p><p class="mt-0.5 text-[11px] leading-relaxed text-slate-500">Cek foto eviden, grade, volume, jadwal angkut, dan status verifikasi sebelum menghubungi penjual.</p></div>
+            </li>
+            <li class="relative flex gap-3 pb-5 before:absolute before:left-4 before:top-8 before:h-full before:w-px before:bg-emerald-200 last:pb-0 last:before:hidden">
+              <span class="relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-600 text-xs font-extrabold text-white">2</span>
+              <div><p class="text-xs font-bold text-slate-800">Pesan melalui sistem</p><p class="mt-0.5 text-[11px] leading-relaxed text-slate-500">Konfirmasi kuantitas dan detail pengambilan di layar chat, lalu buat pesanan agar nilai transaksi tercatat.</p></div>
+            </li>
+            <li class="relative flex gap-3 pb-5 before:absolute before:left-4 before:top-8 before:h-full before:w-px before:bg-emerald-200 last:pb-0 last:before:hidden">
+              <span class="relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-600 text-xs font-extrabold text-white">3</span>
+              <div><p class="text-xs font-bold text-slate-800">Bayar ke rekening bersama</p><p class="mt-0.5 text-[11px] leading-relaxed text-slate-500">DP atau pelunasan mengikuti pengaturan transaksi. Dana ditahan sampai bukti pengambilan tervalidasi.</p></div>
+            </li>
+            <li class="relative flex gap-3 last:pb-0">
+              <span class="relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-600 text-xs font-extrabold text-white">4</span>
+              <div><p class="text-xs font-bold text-slate-800">Pengambilan dan konfirmasi</p><p class="mt-0.5 text-[11px] leading-relaxed text-slate-500">Unggah surat jalan atau bukti timbang, lalu konfirmasi penerimaan untuk menyelesaikan transaksi.</p></div>
+            </li>
+          </ol>
+        </section>
+
+        <section>
+          <h4 class="mb-3 text-xs font-bold uppercase tracking-wider text-slate-700">Pertanyaan umum</h4>
+          <div class="divide-y divide-slate-200 overflow-hidden rounded-2xl border border-slate-200">
+            <div>
+              <button type="button" onclick="app.toggleHelpAccordion('help-answer-1', this)" class="flex w-full items-center justify-between gap-4 px-4 py-3.5 text-left text-xs font-bold text-slate-800 transition hover:bg-slate-50" aria-expanded="false">
+                <span>Bagaimana cara mengetahui listing sudah terverifikasi?</span><i class="fa-solid fa-chevron-down text-emerald-600 transition-transform"></i>
+              </button>
+              <div id="help-answer-1" class="hidden px-4 pb-4 text-[11px] leading-relaxed text-slate-500">Buka detail pasokan dan periksa dokumentasi eviden, status listing, asal material, serta informasi izin bila material termasuk B3.</div>
+            </div>
+            <div>
+              <button type="button" onclick="app.toggleHelpAccordion('help-answer-2', this)" class="flex w-full items-center justify-between gap-4 px-4 py-3.5 text-left text-xs font-bold text-slate-800 transition hover:bg-slate-50" aria-expanded="false">
+                <span>Kapan alamat dan nomor WhatsApp penjual terlihat?</span><i class="fa-solid fa-chevron-down text-emerald-600 transition-transform"></i>
+              </button>
+              <div id="help-answer-2" class="hidden px-4 pb-4 text-[11px] leading-relaxed text-slate-500">Data kontak dan alamat mengikuti hak akses paket pembeli. Anda tetap dapat memakai layar chat Bursa Limbah untuk menyepakati transaksi dengan aman.</div>
+            </div>
+            <div>
+              <button type="button" onclick="app.toggleHelpAccordion('help-answer-3', this)" class="flex w-full items-center justify-between gap-4 px-4 py-3.5 text-left text-xs font-bold text-slate-800 transition hover:bg-slate-50" aria-expanded="false">
+                <span>Apa yang dilakukan bila material tidak sesuai?</span><i class="fa-solid fa-chevron-down text-emerald-600 transition-transform"></i>
+              </button>
+              <div id="help-answer-3" class="hidden px-4 pb-4 text-[11px] leading-relaxed text-slate-500">Jangan konfirmasi penerimaan. Dokumentasikan kondisi material dan hubungi layanan resmi melalui chat atau WhatsApp agar tim dapat meninjau bukti transaksi.</div>
+            </div>
+          </div>
+        </section>
+
+        <div class="flex flex-col-reverse gap-2 border-t border-slate-100 pt-5 sm:flex-row sm:justify-end">
+          <button type="button" onclick="app.closeModals()" class="rounded-xl border border-slate-300 px-4 py-2.5 text-xs font-bold text-slate-700 transition hover:bg-slate-50">Tutup</button>
+          <a href="https://wa.me/628[REDACTED]7890?text=Halo%20Admin%20Bursa%20Limbah%2C%20saya%20butuh%20bantuan%20transaksi" target="_blank" class="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-bold text-white shadow-sm transition hover:bg-emerald-700"><i class="fa-brands fa-whatsapp"></i> Hubungi Layanan</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= DOCKED BOTTOM NAVIGATION BAR (MOBILE APP) ================= -->
+  <nav id="mobile-app-bottom-nav" class="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-xl border-t border-slate-200/90 shadow-[0_-4px_25px_rgba(0,0,0,0.08)] py-1.5 px-2 lg:hidden">
+    <div id="bnav-grid" class="max-w-md mx-auto grid grid-cols-5 items-center text-center">
+
+      <!-- 1. Beranda -->
+      <button type="button" onclick="app.switchAppTab('home')" id="bnav-home" class="bnav-item active flex flex-col items-center justify-center py-1 text-emerald-700 font-bold active:scale-90 transition cursor-pointer" aria-current="page">
+        <span class="bnav-icon-shell"><i class="fa-solid fa-house text-base"></i></span>
+        <span class="text-[10px] leading-tight">Beranda</span>
+        <span class="bnav-indicator w-1 h-1 bg-emerald-600 rounded-full mt-0.5 transition-all opacity-0"></span>
+      </button>
+
+      <!-- 2. Cari -->
       <button type="button" onclick="app.switchBottomTab('cari')" id="bnav-cari" class="bnav-item flex flex-col items-center justify-center py-1 text-slate-500 font-medium active:scale-90 transition cursor-pointer">
-        <i class="fa-solid fa-magnifying-glass text-lg mb-0.5"></i>
+        <span class="bnav-icon-shell"><i class="fa-solid fa-magnifying-glass text-base"></i></span>
         <span class="text-[10px] leading-tight">Cari</span>
         <span class="bnav-indicator w-1 h-1 bg-emerald-600 rounded-full mt-0.5 transition-all opacity-0"></span>
       </button>
 
-      <!-- 2. Event -->
-      <button type="button" onclick="app.switchBottomTab('event')" id="bnav-event" class="bnav-item flex flex-col items-center justify-center py-1 text-slate-500 font-medium active:scale-90 transition cursor-pointer">
-        <i class="fa-solid fa-calendar-star text-lg mb-0.5 text-violet-500"></i>
-        <span class="text-[10px] leading-tight">Event</span>
-        <span class="bnav-indicator w-1 h-1 bg-emerald-600 rounded-full mt-0.5 transition-all opacity-0"></span>
+      <!-- 3. Aksi utama -->
+      <button type="button" onclick="app.handleMobileSellAction()" id="bnav-sell" class="bnav-item bnav-create flex flex-col items-center justify-center py-1 text-emerald-700 font-bold active:scale-90 transition cursor-pointer">
+        <span class="bnav-create-icon"><i class="fa-solid fa-plus"></i></span>
+        <span class="text-[10px] leading-tight">Jual</span>
       </button>
 
-      <!-- 3. Pesan -->
+      <!-- 4. Pesan -->
       <button type="button" onclick="app.switchBottomTab('pesan')" id="bnav-pesan" class="bnav-item flex flex-col items-center justify-center py-1 text-slate-500 font-medium active:scale-90 transition cursor-pointer">
-        <i class="fa-solid fa-comment-dots text-lg mb-0.5 text-blue-500"></i>
+        <span class="bnav-icon-shell relative"><i class="fa-solid fa-comment-dots text-base"></i><span class="bnav-unread"></span></span>
         <span class="text-[10px] leading-tight">Pesan</span>
         <span id="bnav-pesan-badge" class="bnav-indicator w-1 h-1 bg-emerald-600 rounded-full mt-0.5 transition-all opacity-0"></span>
       </button>
 
-      <!-- 4. Saya -->
+      <!-- 5. Saya -->
       <button type="button" onclick="app.switchBottomTab('saya')" id="bnav-saya" class="bnav-item flex flex-col items-center justify-center py-1 text-slate-500 font-medium active:scale-90 transition cursor-pointer">
-        <i class="fa-solid fa-circle-user text-lg mb-0.5 text-emerald-600"></i>
+        <span class="bnav-icon-shell"><i class="fa-solid fa-circle-user text-base"></i></span>
         <span class="text-[10px] leading-tight">Saya</span>
         <span class="bnav-indicator w-1 h-1 bg-emerald-600 rounded-full mt-0.5 transition-all opacity-0"></span>
       </button>
@@ -3006,6 +3236,19 @@
 
   <!-- WADAH TOAST -->
   <div id="toast-container" class="fixed bottom-20 lg:bottom-5 right-5 z-50 flex flex-col space-y-2 pointer-events-none"></div>
+
+  <!-- Floating frame persetujuan pengambilan titik GPS -->
+  <div id="modal-gps-location" class="fixed inset-0 z-[70] hidden items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="gps-location-title">
+    <div class="w-full max-w-sm rounded-3xl border border-emerald-200 bg-white p-6 shadow-2xl">
+      <div class="mb-4 flex items-start gap-3">
+        <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-700"><i class="fa-solid fa-location-crosshairs text-lg"></i></div>
+        <div><h3 id="gps-location-title" class="font-bold text-slate-900">Ambil Titik GPS</h3><p class="mt-0.5 text-xs text-slate-500">Browser akan meminta izin untuk mengakses lokasi Anda.</p></div>
+      </div>
+      <div class="rounded-2xl border border-amber-200 bg-amber-50 p-3 text-xs leading-relaxed text-amber-900"><i class="fa-solid fa-triangle-exclamation mr-1 text-amber-600"></i> <strong>Pastikan posisi anda saat ini berada sama dengan posisi produk limbah yang anda tawarkan.</strong></div>
+      <p id="gps-location-status" class="mt-3 hidden text-xs text-slate-500"></p>
+      <div class="mt-5 flex justify-end gap-2"><button type="button" onclick="app.closeGpsLocationModal()" class="rounded-xl border border-slate-300 px-4 py-2.5 text-xs font-bold text-slate-700">Batal</button><button id="gps-location-confirm" type="button" onclick="app.captureGpsLocation()" class="rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-bold text-white transition hover:bg-emerald-700"><i class="fa-solid fa-location-dot mr-1"></i>Izinkan & Ambil Lokasi</button></div>
+    </div>
+  </div>
 
   <!-- ================= SKRIP DEPENDENSI ================= -->
   <!-- Leaflet Map JS -->
