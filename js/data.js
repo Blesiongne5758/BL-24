@@ -351,6 +351,12 @@ const INITIAL_SUBSCRIPTION_TIERS = [
     monthlyFee: 0,
     minPriceLimit: 1,
     maxPriceLimit: 200000, // s/d Rp 200.000
+    minBookingOfferPrice: 1,
+    maxBookingOfferPrice: 200000,
+    canBooking: true,
+    minBookingVolume: 1,
+    maxBookingVolume: 200,
+    volumeUnit: "Kg",
     allowAddress: "area_only", // Hanya kota/kabupaten umum
     allowGpsMap: false, // Peta GPS terkunci
     allowWhatsapp: false, // WA terkunci
@@ -367,6 +373,12 @@ const INITIAL_SUBSCRIPTION_TIERS = [
     badge: "Terpopuler",
     monthlyFee: 249000,
     maxPriceLimit: 50000000, // s/d Rp 50.000.000
+    minBookingOfferPrice: 1,
+    maxBookingOfferPrice: 50000000,
+    canBooking: true,
+    minBookingVolume: 10,
+    maxBookingVolume: 5000,
+    volumeUnit: "Kg",
     allowAddress: "full", // Alamat lengkap gudang terbuka
     allowGpsMap: true, // Peta GPS interaktif Leaflet aktif
     allowWhatsapp: false, // Disamarkan, gunakan Fitur Layar Chat
@@ -382,6 +394,12 @@ const INITIAL_SUBSCRIPTION_TIERS = [
     badge: "Akses Penuh",
     monthlyFee: 499000,
     maxPriceLimit: 0, // 0 = Unlimited / Tanpa Batas Rentang Nilai
+    minBookingOfferPrice: 1,
+    maxBookingOfferPrice: 0, // 0 = Unlimited
+    canBooking: true,
+    minBookingVolume: 50,
+    maxBookingVolume: 0, // 0 = Unlimited
+    volumeUnit: "Kg",
     allowAddress: "full", // Alamat lengkap 100%
     allowGpsMap: true, // Peta GPS presisi + rute
     allowWhatsapp: true, // Nomor WhatsApp penjual tampil & tombol direct chat wa.me
@@ -537,9 +555,20 @@ const INITIAL_SETTINGS = {
   // Gateway pembayaran: kunci rahasia selalu disimpan di environment server.
   paymentGatewayEnabled: false,
   paymentGatewayProvider: "midtrans",
-    paymentGatewayEnvironment: "sandbox",
-    paymentGatewayClientKey: "",
-    // Ticker harga pasar pada halaman publik
+  paymentGatewayEnvironment: "sandbox",
+  paymentGatewayClientKey: "",
+  paymentGatewayServerKey: "",
+  paymentGatewayMerchantId: "",
+  paymentGatewayChannels: ["qris", "bank_transfer", "gopay"],
+  paymentGatewayWebhookUrl: "https://bursalimbah.id/api/payment/webhook",
+  // Konfigurasi API Ekspedisi & Logistik
+  expeditionApiEnabled: false,
+  expeditionApiProvider: "rajaongkir",
+  expeditionApiKey: [REDACTED]
+  expeditionApiOrigin: "Jakarta Pusat (ID: 151)",
+  expeditionApiCouriers: ["jne", "jnt", "sicepat", "lalamove"],
+  expeditionApiWebhookUrl: "https://bursalimbah.id/api/shipping/webhook",
+  // Ticker harga pasar pada halaman publik
     tickerEnabled: true,
     tickerTitle: "Harga Pasar Terkini",
     tickerRefreshMinutes: 15,
@@ -555,10 +584,56 @@ const INITIAL_SETTINGS = {
   appFeePerTransaction: 5000, // Fee Aplikasi
   shippingServiceEnabled: true, // Jasa Pengiriman
   shippingFlatFee: 250000, // Tarif Jasa Pengiriman Flat Mitra BURSA LIMBAH
-  contactEmail: "kemitraan@bursalimbah.com",
+  supportSectionTitle: "Pusat Layanan Resmi",
+  contactEmail: "kemitraan@bursalimbah.id",
   contactPhone: "+62 812-3456-7890",
-  address: "Sentra Inovasi Hijau Bursa Limbah Lt. 5, Kawasan Industri Pulogadung, Jakarta Timur",
-  subscriptionTiers: [...INITIAL_SUBSCRIPTION_TIERS]
+  contactWaNumber: "628[REDACTED]7890",
+  contactWaMessage: "Halo Admin Bursa Limbah, saya ingin konsultasi transaksi",
+  address: "Sentra Inovasi Hijau BURSA LIMBAH Lt. 5, Jakarta Timur",
+  supportGuideBtnText: "Panduan Transaksi Aman",
+  supportGuideBtnAction: "modal", // 'modal' | 'url'
+  supportGuideBtnUrl: "",
+  supportGuideBtnEnabled: true,
+  supportOperationalHours: "Senin – Jumat: 08.00 – 17.00 WIB",
+  subscriptionTiers: [...INITIAL_SUBSCRIPTION_TIERS],
+  customFees: [
+    {
+      id: "fee_handling",
+      name: "Biaya Penanganan Rekber",
+      type: "fixed",
+      value: 10000,
+      target: "buyer",
+      enabled: true,
+      description: "Biaya administrasi penanganan rekening bersama escrow per transaksi"
+    },
+    {
+      id: "fee_app",
+      name: "Biaya Layanan Aplikasi",
+      type: "fixed",
+      value: 5000,
+      target: "buyer",
+      enabled: true,
+      description: "Pemeliharaan infrastruktur dan operasional platform Bursa Limbah"
+    },
+    {
+      id: "fee_escrow_protection",
+      name: "Jaminan Escrow & Proteksi Transaksi",
+      type: "percentage",
+      value: 0.5,
+      target: "buyer",
+      enabled: true,
+      description: "Garansi perlindungan dana escrow dan kesesuaian muatan limbah"
+    },
+    {
+      id: "fee_qc_check",
+      name: "Verifikasi Mutu & Sampel Tera (Opsional)",
+      type: "fixed",
+      value: 25000,
+      target: "buyer",
+      enabled: false,
+      description: "Uji lab dan inspeksi tera sampel di depo sebelum serah terima muatan"
+    }
+  ]
 };
 
 const INITIAL_USERS = [
@@ -615,6 +690,23 @@ const INITIAL_USERS = [
     verifiedBadge: "Pengepul Terverifikasi",
     location: "Pasar Minggu, Jakarta Selatan",
     bankAccount: "BCA 8271-992-102 a.n Budi Santoso",
+    paymentMethods: {
+      cash: {
+        enabled: true,
+        notes: "Pembayaran tunai di lokasi depo/gudang saat serah terima timbangan"
+      },
+      bankTransfer: {
+        enabled: true,
+        bankName: "Bank Central Asia (BCA)",
+        accountNumber: "8271-992-102",
+        accountHolder: "Budi Santoso"
+      },
+      qris: {
+        enabled: true,
+        merchantName: "Sentra Jelantah Sejahtera",
+        imageUrl: "https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=00020101021126570014ID.LINKAJA.WWW01189360091800000188210210Bursalimbah5204549953033605802ID5925Sentra%20Jelantah%20Sejahtera6007Jakarta61051254062070703A016304"
+      }
+    },
     balance: 14500000,
     password: [REDACTED]
   },
@@ -629,6 +721,23 @@ const INITIAL_USERS = [
     verifiedBadge: "Pemasok Industri Terverifikasi",
     location: "Cilegon, Banten",
     bankAccount: "Mandiri 137-00-982736-1 a.n PT Dwi Graha",
+    paymentMethods: {
+      cash: {
+        enabled: true,
+        notes: "Pembayaran tunai kasir timbangan gudang pabrik"
+      },
+      bankTransfer: {
+        enabled: true,
+        bankName: "Bank Mandiri",
+        accountNumber: "137-00-982736-1",
+        accountHolder: "PT Dwi Graha Rongsok Logam"
+      },
+      qris: {
+        enabled: true,
+        merchantName: "PT Dwi Graha Rongsok Logam",
+        imageUrl: "https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=00020101021126570014ID.LINKAJA.WWW01189360091800000188210210Bursalimbah5204549953033605802ID5926PT%20Dwi%20Graha%20Rongsok6007Cilegon61051254062070703A016304"
+      }
+    },
     balance: 42300000,
     password: [REDACTED]
   },
@@ -1625,14 +1734,221 @@ const INITIAL_ORDERS = [
     downPaymentRate: 30,
     downPaymentAmount: 3750000,
     handlingFee: 10000,
-    totalPaidNow: 3760000,
+    appFee: 5000,
+    shippingFee: 250000,
+    shippingMethod: "Jasa Pengiriman Mitra BURSA LIMBAH",
+    totalPaidNow: 4015000,
     remainingPayment: 8750000,
     paymentStatus: "DP Terbayar (30%)",
-    bookingStatus: "Jadwal Pengambilan Armada",
+    bookingStatus: "Dikirim oleh Pihak ke-3 / Ekspedisi",
+    shippingStatus: "shipped_third_party",
+    deliveryDetails: {
+      dispatchType: "third_party",
+      courierName: "PT Logistik Sirkular Nusantara",
+      trackingNumber: "LSN-EXP-2026-88912",
+      dispatchedAt: "2026-09-12 11:30",
+      notes: "Muatan 5 ton kardus bal press sudah diangkut armada fuso flatbed B 9301 UIK.",
+      proofImage: "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=600&q=80"
+    },
     pickupDate: "2026-09-14",
     createdAt: "2026-09-10 16:20",
     qrCodeTrace: "CIR-QR-BK9921-TERVERIFIKASI",
-    notes: "Armada truk pembeli siap tiba pukul 09:00 WIB di gudang Marunda Center."
+    sellerHandoverQr: "QR-HANDOVER-ORD-2026-0901",
+    notes: "Armada truk logistik mitra mengangkut dari gudang Marunda Center."
+  },
+  {
+    id: "ORD-2026-0902",
+    bookingCode: "CIR-BK-9922",
+    productId: "PRD-2026-001",
+    productTitle: "Minyak Jelantah Kualitas Resto Cepat Saji (FFA < 3%)",
+    categoryName: "Minyak Jelantah (UCO)",
+    buyerId: "user_buyer_1",
+    buyerName: "PT Hijau Lestari Biofuel",
+    sellerId: "user_seller_1",
+    sellerName: "Budi Santoso (Sentra Jelantah Sejahtera)",
+    quantity: 4000,
+    unit: "Liter",
+    unitPrice: 9500,
+    totalPrice: 38000000,
+    downPaymentRate: 30,
+    downPaymentAmount: 11400000,
+    handlingFee: 10000,
+    appFee: 5000,
+    shippingFee: 0,
+    shippingMethod: "Armada Mandiri Pembeli",
+    totalPaidNow: 11415000,
+    remainingPayment: 26600000,
+    paymentStatus: "DP Terbayar (30%)",
+    bookingStatus: "Diserahkan Langsung ke Pembeli",
+    shippingStatus: "handed_over",
+    deliveryDetails: {
+      dispatchType: "direct",
+      courierName: "Serah Terima Langsung di Depo",
+      trackingNumber: "DEP-BJS-JKT-0902",
+      dispatchedAt: "2026-09-18 10:15",
+      notes: "4 IBC Tank @1000L telah dimuat ke armada tangki pembeli B 9871 KLA. Siap validasi pembeli.",
+      proofImage: "https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=600&q=80",
+      handoverRecipient: "Supriyadi (Driver PT Hijau Lestari Biofuel)"
+    },
+    pickupDate: "2026-09-18",
+    createdAt: "2026-09-16 09:40",
+    qrCodeTrace: "CIR-QR-BK9922-TERVERIFIKASI",
+    sellerHandoverQr: "QR-HANDOVER-ORD-2026-0902",
+    qrCompletionReady: true,
+    notes: "Telah diuji tera refractometer FFA 2.4% di lokasi."
+  },
+  {
+    id: "ORD-2026-0903",
+    bookingCode: "CIR-BK-9923",
+    productId: "PRD-2026-002",
+    productTitle: "Scrap Besi Tua Campur Konstruksi & H-Beam",
+    categoryName: "Besi & Logam Scrap",
+    buyerId: "user_buyer_2",
+    buyerName: "PT Daur Nusantara Sukses",
+    sellerId: "user_seller_1",
+    sellerName: "Budi Santoso (Sentra Jelantah Sejahtera)",
+    quantity: 8000,
+    unit: "Kg",
+    unitPrice: 6500,
+    totalPrice: 52000000,
+    downPaymentRate: 30,
+    downPaymentAmount: 15600000,
+    handlingFee: 10000,
+    appFee: 5000,
+    shippingFee: 350000,
+    shippingMethod: "Jasa Pengiriman Mitra BURSA LIMBAH",
+    totalPaidNow: 15965000,
+    remainingPayment: 36400000,
+    paymentStatus: "DP Terbayar (30%)",
+    bookingStatus: "Menunggu Pengiriman / Serah Terima",
+    shippingStatus: "pending_dispatch",
+    pickupDate: "2026-10-06",
+    createdAt: "2026-10-02 14:10",
+    qrCodeTrace: "CIR-QR-BK9923-TERVERIFIKASI",
+    sellerHandoverQr: "QR-HANDOVER-ORD-2026-0903",
+    notes: "Penjual menyiapkan muatan scrap di depo Pasar Minggu."
+  },
+  {
+    id: "ORD-2026-0904",
+    bookingCode: "CIR-BK-9924",
+    productId: "PRD-2026-003",
+    productTitle: "Botol Plastik PET Bening Bal Press Kering Bersih",
+    categoryName: "Plastik PET (Polyethylene)",
+    buyerId: "user_buyer_free",
+    buyerName: "Ahmad Fauzi (UMKM Daur Mandiri)",
+    sellerId: "user_seller_1",
+    sellerName: "Budi Santoso (Sentra Jelantah Sejahtera)",
+    quantity: 2500,
+    unit: "Kg",
+    unitPrice: 5200,
+    totalPrice: 13000000,
+    downPaymentRate: 30,
+    downPaymentAmount: 3900000,
+    handlingFee: 15000,
+    appFee: 5000,
+    shippingFee: 0,
+    shippingMethod: "Armada Mandiri Pembeli",
+    totalPaidNow: 13000000,
+    remainingPayment: 0,
+    paymentStatus: "Lunas (Selesai)",
+    bookingStatus: "Selesai (Lunas)",
+    shippingStatus: "delivered",
+    escrowStatus: "completed",
+    actualReceivedWeight: 2500,
+    completedAt: "2026-09-29 16:45",
+    deliveryDetails: {
+      dispatchType: "direct",
+      courierName: "Serah Terima Mandiri UMKM",
+      trackingNumber: "TRX-SLS-2026-0904",
+      dispatchedAt: "2026-09-29 14:00",
+      notes: "Barang telah diterima dan diverifikasi sesuai tera jembatan timbang.",
+      handoverRecipient: "Ahmad Fauzi"
+    },
+    pickupDate: "2026-09-29",
+    createdAt: "2026-09-25 11:00",
+    qrCodeTrace: "CIR-QR-BK9924-TERVERIFIKASI",
+    sellerHandoverQr: "QR-HANDOVER-ORD-2026-0904",
+    qrCompletionReady: true,
+    notes: "Transaksi tuntas, dana escrow telah diteruskan ke saldo dompet penjual."
+  }
+];
+
+const INITIAL_OFFERS = [
+  {
+    id: "OFF-2026-001",
+    productId: "PRD-2026-001",
+    productTitle: "Minyak Jelantah Kualitas Resto Cepat Saji (FFA < 3%)",
+    productCode: "PRD-UCO-001",
+    sellerId: "user_seller_1",
+    sellerName: "Budi Santoso (Sentra Jelantah Sejahtera)",
+    buyerId: "user_buyer_1",
+    buyerName: "PT Hijau Lestari Biofuel",
+    originalPrice: 9500,
+    offerPrice: 9200,
+    quantity: 4000,
+    unit: "Liter",
+    note: "Volume 4000 Liter siap ambil rutin tiap minggu jika harga disetujui Rp9.200/Liter.",
+    status: "accepted",
+    isConvertedToOrder: false,
+    createdAt: "2026-09-28 10:15",
+    respondedAt: "2026-09-28 14:30"
+  },
+  {
+    id: "OFF-2026-002",
+    productId: "PRD-2026-002",
+    productTitle: "Scrap Besi Tua Campur Konstruksi & H-Beam",
+    productCode: "PRD-FE-002",
+    sellerId: "user_seller_1",
+    sellerName: "Budi Santoso (Sentra Jelantah Sejahtera)",
+    buyerId: "user_buyer_2",
+    buyerName: "PT Daur Nusantara Sukses",
+    originalPrice: 6500,
+    offerPrice: 6200,
+    quantity: 8000,
+    unit: "Kg",
+    note: "Truk tronton kami siap ambil muatan 8 Ton langsung di gudang Pasar Minggu.",
+    status: "accepted",
+    isConvertedToOrder: true,
+    convertedOrderId: "ORD-2026-0903",
+    createdAt: "2026-10-01 11:00",
+    respondedAt: "2026-10-01 13:20"
+  },
+  {
+    id: "OFF-2026-003",
+    productId: "PRD-2026-004",
+    productTitle: "Kardus OCC Corrugated Tebal Kering Gudang Logistik",
+    productCode: "PRD-OCC-004",
+    sellerId: "user_seller_2",
+    sellerName: "PT Dwi Graha Rongsok Logam",
+    buyerId: "user_buyer_1",
+    buyerName: "PT Hijau Lestari Biofuel",
+    originalPrice: 2500,
+    offerPrice: 2400,
+    quantity: 6000,
+    unit: "Kg",
+    note: "Untuk kebutuhan bahan pulp daur ulang pabrik kertas mitra.",
+    status: "accepted",
+    isConvertedToOrder: false,
+    createdAt: "2026-10-02 09:20",
+    respondedAt: "2026-10-02 11:45"
+  },
+  {
+    id: "OFF-2026-004",
+    productId: "PRD-2026-003",
+    productTitle: "Botol Plastik PET Bening Bal Press Kering Bersih",
+    productCode: "PRD-PET-003",
+    sellerId: "user_seller_1",
+    sellerName: "Budi Santoso (Sentra Jelantah Sejahtera)",
+    buyerId: "user_buyer_free",
+    buyerName: "Ahmad Fauzi (UMKM Daur Mandiri)",
+    originalPrice: 5200,
+    offerPrice: 4900,
+    quantity: 1500,
+    unit: "Kg",
+    note: "Mohon pertimbangan harga penawaran khusus UMKM pencacah plastik daur ulang.",
+    status: "pending",
+    isConvertedToOrder: false,
+    createdAt: "2026-10-04 15:40"
   }
 ];
 
@@ -1821,3 +2137,70 @@ const INITIAL_SUBSCRIPTION_REQUESTS = [
     approvedAt: "2026-09-22 09:05 WIB"
   }
 ];
+
+// ====================================================================
+// DATA AWAL: TIKET EVENT RESMI & QR CODE PRESENSI KEDATANGAN
+// ====================================================================
+const INITIAL_EVENT_TICKETS = [
+  {
+    id: "tkt_1",
+    ticketCode: "BL-TKT-2026-9812",
+    eventId: "evt_1",
+    eventTitle: "Workshop Pengelolaan & Monetisasi Minyak Jelantah (UCO) untuk Biodiesel",
+    eventDate: "2026-09-22",
+    eventTime: "09.00 – 15.00 WIB",
+    eventLocation: "Balai Kartini, Jakarta Selatan",
+    ticketType: "entry",
+    ticketTypeLabel: "Tiket Masuk Resmi (Entrance Pass)",
+    holderName: "Budi Santoso, S.T.",
+    companyName: "PT Hijau Lestari Biofuel",
+    phone: "+62 811-9876-5432",
+    email: "pengadaan@hijaulestari.co.id",
+    gateOrSeat: "Gate A - Meja Registrasi 01",
+    notes: "Tunjukkan QR Code ini kepada panitia registrasi di pintu masuk acara.",
+    status: "checked_in",
+    checkedInAt: "2026-09-22 08:42 WIB",
+    createdAt: "2026-09-20 10:15:00"
+  },
+  {
+    id: "tkt_2",
+    ticketCode: "BL-TKT-2026-5524",
+    eventId: "evt_2",
+    eventTitle: "Business Matching: Pengepul Limbah Logam Jawa Timur × Smelter Nasional",
+    eventDate: "2026-10-05",
+    eventTime: "08.00 – 17.00 WIB",
+    eventLocation: "Hotel Grand Mercure, Surabaya",
+    ticketType: "attendance",
+    ticketTypeLabel: "Tiket Absen Kedatangan (Attendance Check-In)",
+    holderName: "Dewi Maharani, M.M.",
+    companyName: "PT Karawang Steel Perkasa",
+    phone: "+62 813-8822-1144",
+    email: "dewi@karawangsteel.co.id",
+    gateOrSeat: "Lobby Utama - Meja Presensi 2",
+    notes: "Pindai QR Code untuk verifikasi presensi kehadiran & pengambilan seminar kit.",
+    status: "issued",
+    checkedInAt: null,
+    createdAt: "2026-10-02 14:30:00"
+  },
+  {
+    id: "tkt_3",
+    ticketCode: "BL-TKT-2026-7731",
+    eventId: "evt_4",
+    eventTitle: "INDONESIA RECYCLE EXPO 2026 — Pameran Daur Ulang & Ekonomi Sirkular Nasional",
+    eventDate: "2026-11-20",
+    eventTime: "3 Hari (20–22 Nov)",
+    eventLocation: "JIExpo Kemayoran, Jakarta Pusat",
+    ticketType: "vip",
+    ticketTypeLabel: "VIP Guest & Buyer Pass",
+    holderName: "Ir. Hendra Kusuma",
+    companyName: "Asosiasi Daur Ulang Plastik Indonesia (ADUPI)",
+    phone: "+62 812-3456-7890",
+    email: "hendra@adupi.or.id",
+    gateOrSeat: "VIP Lounge - Hall B3",
+    notes: "Akses prioritas VIP Lounge, ruang temu bisnis, dan jamuan makan siang.",
+    status: "issued",
+    checkedInAt: null,
+    createdAt: "2026-10-03 09:10:00"
+  }
+];
+

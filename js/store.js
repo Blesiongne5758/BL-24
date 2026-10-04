@@ -120,12 +120,39 @@ class BursaLimbahStore {
             paymentGatewayProvider: remote.paymentGatewayProvider || this.state.settings.paymentGatewayProvider,
             paymentGatewayEnvironment: remote.paymentGatewayEnvironment || this.state.settings.paymentGatewayEnvironment,
             paymentGatewayClientKey: remote.paymentGatewayClientKey || this.state.settings.paymentGatewayClientKey,
+            paymentGatewayServerKey: remote.paymentGatewayServerKey || this.state.settings.paymentGatewayServerKey,
+            paymentGatewayMerchantId: remote.paymentGatewayMerchantId || this.state.settings.paymentGatewayMerchantId,
+            paymentGatewayChannels: remote.paymentGatewayChannels ? (typeof remote.paymentGatewayChannels === 'string' ? JSON.parse(remote.paymentGatewayChannels) : remote.paymentGatewayChannels) : this.state.settings.paymentGatewayChannels,
+            paymentGatewayWebhookUrl: remote.paymentGatewayWebhookUrl || this.state.settings.paymentGatewayWebhookUrl,
+            expeditionApiEnabled: remote.expeditionApiEnabled === undefined ? this.state.settings.expeditionApiEnabled : remote.expeditionApiEnabled === 'true',
+            expeditionApiProvider: remote.expeditionApiProvider || this.state.settings.expeditionApiProvider,
+            expeditionApiKey: [REDACTED]
+            expeditionApiOrigin: remote.expeditionApiOrigin || this.state.settings.expeditionApiOrigin,
+            expeditionApiCouriers: remote.expeditionApiCouriers ? (typeof remote.expeditionApiCouriers === 'string' ? JSON.parse(remote.expeditionApiCouriers) : remote.expeditionApiCouriers) : this.state.settings.expeditionApiCouriers,
+            expeditionApiWebhookUrl: remote.expeditionApiWebhookUrl || this.state.settings.expeditionApiWebhookUrl,
             tickerEnabled: remote.ticker_enabled === undefined ? this.state.settings.tickerEnabled : remote.ticker_enabled === 'true',
             tickerTitle: remote.ticker_title || this.state.settings.tickerTitle,
             tickerRefreshMinutes: Math.min(120, Math.max(1, Number(remote.ticker_refresh_minutes) || this.state.settings.tickerRefreshMinutes || 15)),
             termsTitle: remote.terms_title || this.state.settings.termsTitle,
             termsVersion: remote.terms_version || this.state.settings.termsVersion,
-            termsContent: remote.terms_content || this.state.settings.termsContent
+            termsContent: remote.terms_content || this.state.settings.termsContent,
+            supportSectionTitle: remote.support_section_title || this.state.settings.supportSectionTitle || "Pusat Layanan Resmi",
+            contactPhone: remote.contact_phone || this.state.settings.contactPhone || "+62 812-3456-7890",
+            contactWaNumber: remote.contact_wa_number || this.state.settings.contactWaNumber || "628[REDACTED]7890",
+            contactWaMessage: remote.contact_wa_message || this.state.settings.contactWaMessage || "Halo Admin Bursa Limbah, saya ingin konsultasi transaksi",
+            contactEmail: remote.contact_email || this.state.settings.contactEmail || "kemitraan@bursalimbah.id",
+            address: remote.contact_address || this.state.settings.address || "Sentra Inovasi Hijau BURSA LIMBAH Lt. 5, Jakarta Timur",
+            supportGuideBtnText: remote.support_guide_btn_text || this.state.settings.supportGuideBtnText || "Panduan Transaksi Aman",
+            supportGuideBtnAction: remote.support_guide_btn_action || this.state.settings.supportGuideBtnAction || "modal",
+            supportGuideBtnUrl: remote.support_guide_btn_url || this.state.settings.supportGuideBtnUrl || "",
+            supportGuideBtnEnabled: remote.support_guide_btn_enabled === undefined ? (this.state.settings.supportGuideBtnEnabled !== false) : remote.support_guide_btn_enabled === 'true',
+            supportOperationalHours: remote.support_operational_hours || this.state.settings.supportOperationalHours || "Senin – Jumat: 08.00 – 17.00 WIB",
+            supportMapsUrl: remote.support_maps_url || this.state.settings.supportMapsUrl || "",
+            customFees: (() => {
+              try {
+                return remote.custom_fees ? JSON.parse(remote.custom_fees) : this.state.settings.customFees;
+              } catch (_) { return this.state.settings.customFees; }
+            })()
           };
         }
       }
@@ -184,6 +211,7 @@ class BursaLimbahStore {
         buyerRequests: [...INITIAL_BUYER_REQUESTS],
         chats: [...INITIAL_CHATS],
         events: (typeof INITIAL_EVENTS !== 'undefined' ? [...INITIAL_EVENTS] : []),
+        eventTickets: (typeof INITIAL_EVENT_TICKETS !== 'undefined' ? [...INITIAL_EVENT_TICKETS] : []),
         subscriptionRequests: (typeof INITIAL_SUBSCRIPTION_REQUESTS !== 'undefined' ? [...INITIAL_SUBSCRIPTION_REQUESTS] : []),
         currentRole: "public", // 'public', 'buyer', 'seller', 'admin'
         activeUserId: null,
@@ -199,26 +227,61 @@ class BursaLimbahStore {
         if (!this.state.settings) {
           this.state.settings = { ...INITIAL_SETTINGS };
         } else {
+          const storedCustomFees = this.state.settings.customFees;
           this.state.settings = { ...INITIAL_SETTINGS, ...this.state.settings };
+          // Preserve stored customFees array if it exists, else use defaults
+          if (Array.isArray(storedCustomFees) && storedCustomFees.length > 0) {
+            this.state.settings.customFees = storedCustomFees;
+          } else if (!Array.isArray(this.state.settings.customFees)) {
+            this.state.settings.customFees = [...INITIAL_SETTINGS.customFees];
+          }
         }
         if (!this.state.settings.subscriptionTiers || this.state.settings.subscriptionTiers.length === 0) {
           this.state.settings.subscriptionTiers = [...INITIAL_SUBSCRIPTION_TIERS];
         } else {
-          // Sinkronisasi pembaruan Tier Gratis (Rp 1 - Rp 200.000)
-          const starterTier = this.state.settings.subscriptionTiers.find(t => t.id === 'tier_starter');
-          if (starterTier) {
-            starterTier.name = "Paket Gratis (Starter)";
-            starterTier.badge = "Gratis Rp 0";
-            starterTier.monthlyFee = 0;
-            starterTier.minPriceLimit = 1;
-            starterTier.maxPriceLimit = 200000;
-            starterTier.tagline = "Gratis — Harga Penawaran Rp 1 s/d Rp 200.000";
-            starterTier.description = "Khusus pembeli pemula & UMKM, membuka akses harga penawaran Rp 1 hingga Rp 200.000.";
-            starterTier.isFree = true;
+          // Sinkronisasi data & rules transaksi tiap tier
+          this.state.settings.subscriptionTiers.forEach(t => {
+            const initT = INITIAL_SUBSCRIPTION_TIERS.find(it => it.id === t.id);
+            if (initT) {
+              if (t.minBookingOfferPrice === undefined) t.minBookingOfferPrice = initT.minBookingOfferPrice;
+              if (t.maxBookingOfferPrice === undefined) t.maxBookingOfferPrice = initT.maxBookingOfferPrice;
+              if (t.canBooking === undefined) t.canBooking = initT.canBooking;
+              if (t.minBookingVolume === undefined) t.minBookingVolume = initT.minBookingVolume;
+              if (t.maxBookingVolume === undefined) t.maxBookingVolume = initT.maxBookingVolume;
+              if (t.volumeUnit === undefined) t.volumeUnit = initT.volumeUnit;
+            }
+          });
+        }
+        if (!this.state.users) {
+          this.state.users = [...INITIAL_USERS];
+        } else {
+          // Pastikan data paymentMethods tersedia pada akun penjual
+          this.state.users.forEach(u => {
+            if (u.role === 'seller' && (!u.paymentMethods || !u.paymentMethods.bankTransfer)) {
+              const initU = INITIAL_USERS.find(iu => iu.id === u.id);
+              u.paymentMethods = initU?.paymentMethods || {
+                cash: { enabled: true, notes: "Pembayaran tunai di lokasi depo/gudang saat serah terima timbangan" },
+                bankTransfer: { enabled: true, bankName: "Bank Central Asia (BCA)", accountNumber: u.bankAccount || "8271-992-102", accountHolder: u.name },
+                qris: { enabled: true, merchantName: u.name, imageUrl: "https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=00020101021126570014ID.LINKAJA.WWW01189360091800000188210210Bursalimbah5204549953033605802ID5925Sentra%20Jelantah6007Jakarta61051254062070703A016304" }
+              };
+            }
+          });
+        }
+        if (!Array.isArray(this.state.orders) || this.state.orders.length <= 1) {
+          const existingIds = new Set((this.state.orders || []).map(o => o.id));
+          const newOrders = (typeof INITIAL_ORDERS !== 'undefined' ? INITIAL_ORDERS : []).filter(o => !existingIds.has(o.id));
+          this.state.orders = [...(this.state.orders || []), ...newOrders];
+        }
+        if (!Array.isArray(this.state.offers) || this.state.offers.length === 0) {
+          this.state.offers = (typeof INITIAL_OFFERS !== 'undefined' ? [...INITIAL_OFFERS] : []);
+        } else {
+          // Merge missing initial offers
+          const existingOfferIds = new Set((this.state.offers || []).map(o => o.id));
+          const newOffers = (typeof INITIAL_OFFERS !== 'undefined' ? INITIAL_OFFERS : []).filter(o => !existingOfferIds.has(o.id));
+          if (newOffers.length > 0) {
+            this.state.offers = [...this.state.offers, ...newOffers];
           }
         }
-        if (!this.state.users) this.state.users = [...INITIAL_USERS];
-        if (!Array.isArray(this.state.offers)) this.state.offers = [];
         if (!Array.isArray(this.state.notifications)) this.state.notifications = [];
         // Pastikan akun demo user_buyer_free terdaftar di users
         if (!this.state.users.some(u => u.id === 'user_buyer_free')) {
@@ -242,6 +305,10 @@ class BursaLimbahStore {
         // Sinkronisasi antrean Permohonan Langganan Pembeli
         if (!this.state.subscriptionRequests || this.state.subscriptionRequests.length === 0) {
           this.state.subscriptionRequests = (typeof INITIAL_SUBSCRIPTION_REQUESTS !== 'undefined' ? [...INITIAL_SUBSCRIPTION_REQUESTS] : []);
+        }
+        // Sinkronisasi data Tiket & QR Code Event
+        if (!this.state.eventTickets || this.state.eventTickets.length === 0) {
+          this.state.eventTickets = (typeof INITIAL_EVENT_TICKETS !== 'undefined' ? [...INITIAL_EVENT_TICKETS] : []);
         }
         // Status DP saat ini: SET OFF (Nonaktif) secara default
         if (this.state.settings.dpEnabled === undefined) {
@@ -710,15 +777,44 @@ class BursaLimbahStore {
     const user = this.state.users.find(u => u.id === userId);
     if (!user) throw new Error("Pengguna tidak ditemukan.");
 
-    if (data.name) user.name = data.name;
-    if (data.company) user.company = data.company;
-    if (data.phone) user.phone = data.phone;
-    if (data.location) user.location = data.location;
-    if (data.bankAccount) user.bankAccount = data.bankAccount;
-    if (data.avatar) user.avatar = data.avatar;
-    if (data.nib) user.nib = data.nib;
+    if (data.name !== undefined) user.name = data.name;
+    if (data.company !== undefined) user.company = data.company;
+    if (data.phone !== undefined) user.phone = data.phone;
+    if (data.location !== undefined) user.location = data.location;
+    if (data.bankAccount !== undefined) user.bankAccount = data.bankAccount;
+    if (data.avatar !== undefined) user.avatar = data.avatar;
+    if (data.nib !== undefined) user.nib = data.nib;
+
+    if (data.paymentMethods) {
+      user.paymentMethods = {
+        ...(user.paymentMethods || {}),
+        ...data.paymentMethods
+      };
+      // Sinkronkan string bankAccount ringkas jika transfer bank terisi
+      if (user.paymentMethods.bankTransfer && user.paymentMethods.bankTransfer.accountNumber) {
+        const bt = user.paymentMethods.bankTransfer;
+        user.bankAccount = `${bt.bankName || 'Bank'} ${bt.accountNumber} a.n ${bt.accountHolder || user.name}`.trim();
+      }
+    }
 
     this.save();
+
+    if (this.isBackendConnected) {
+      fetch(`${this.apiBaseUrl}/api/users/${userId}/profile`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: user.name,
+          company: user.company,
+          phone: user.phone,
+          location: user.location,
+          bankAccount: user.bankAccount,
+          avatar: user.avatar,
+          paymentMethods: user.paymentMethods
+        })
+      }).catch(e => console.warn('[Update User Profile API Error]', e));
+    }
+
     return user;
   }
 
@@ -1290,6 +1386,58 @@ class BursaLimbahStore {
     return this.state.orders.find(o => o.id === id);
   }
 
+  validateTierBookingRules(buyer, product, qty = 1) {
+    if (!buyer || buyer.role !== 'buyer') return { valid: true };
+    const tierId = buyer.subscriptionTier || 'tier_starter';
+    const tier = this.getSubscriptionTierById(tierId);
+    if (!tier) return { valid: true };
+
+    if (tier.canBooking === false) {
+      return {
+        valid: false,
+        message: `Paket ${tier.name} Anda saat ini tidak diizinkan melakukan booking transaksi. Silakan hubungi admin atau tingkatkan paket Anda.`
+      };
+    }
+
+    const offerPrice = Number(product.offerPrice || product.askingPrice) || 0;
+    const minPrice = Number(tier.minBookingOfferPrice) || 0;
+    const maxPrice = Number(tier.maxBookingOfferPrice) || 0;
+
+    if (minPrice > 0 && offerPrice < minPrice) {
+      return {
+        valid: false,
+        message: `Nilai penawaran Rp ${offerPrice.toLocaleString('id-ID')} berada di bawah batas minimum booking paket ${tier.name} (Min. Rp ${minPrice.toLocaleString('id-ID')}).`
+      };
+    }
+
+    if (maxPrice > 0 && offerPrice > maxPrice) {
+      return {
+        valid: false,
+        message: `Nilai penawaran Rp ${offerPrice.toLocaleString('id-ID')} melebihi batas maksimal booking paket ${tier.name} (Maks. Rp ${maxPrice.toLocaleString('id-ID')}). Silakan upgrade paket langganan Anda.`
+      };
+    }
+
+    const orderQty = Number(qty) || Number(product.volume || product.weight) || 1;
+    const minVol = Number(tier.minBookingVolume) || 0;
+    const maxVol = Number(tier.maxBookingVolume) || 0;
+
+    if (minVol > 0 && orderQty < minVol) {
+      return {
+        valid: false,
+        message: `Volume booking (${Number(orderQty).toLocaleString('id-ID')} ${product.unit || 'Kg'}) kurang dari batas minimum tier ${tier.name} (${Number(minVol).toLocaleString('id-ID')} ${tier.volumeUnit || 'Kg'}).`
+      };
+    }
+
+    if (maxVol > 0 && orderQty > maxVol) {
+      return {
+        valid: false,
+        message: `Volume booking (${Number(orderQty).toLocaleString('id-ID')} ${product.unit || 'Kg'}) melebihi kuota maksimal tier ${tier.name} (${Number(maxVol).toLocaleString('id-ID')} ${tier.volumeUnit || 'Kg'}). Silakan upgrade paket langganan Anda.`
+      };
+    }
+
+    return { valid: true };
+  }
+
   createBooking({ productId, buyerId, pickupDate, notes, shippingMethod, shippingFee }) {
     const product = this.getProductById(productId);
     if (!product) throw new Error("Produk limbah tidak ditemukan");
@@ -1299,6 +1447,13 @@ class BursaLimbahStore {
     const buyer = this.state.users.find(u => u.id === buyerId) || this.getCurrentUser();
 
     const quantity = product.volume > 0 ? product.volume : product.weight;
+
+    // Validasi Rules Transaksi Tiap Tiers
+    const ruleCheck = this.validateTierBookingRules(buyer, product, quantity);
+    if (!ruleCheck.valid) {
+      throw new Error(ruleCheck.message);
+    }
+
     const totalPrice = product.totalPrice || (quantity * product.offerPrice);
     const isDp = this.isDpEnabled();
     const dpPercent = settings.downPaymentPercent || 30;
@@ -1344,6 +1499,8 @@ class BursaLimbahStore {
       shippingFee: finalShippingFee,
       totalPaidNow,
       remainingPayment,
+      remainingPaymentStatus: remainingPayment > 0 ? 'unpaid' : 'not_applicable',
+      remainingPaymentProof: null,
       escrowBankInfo,
       paymentStatus: isDp ? `DP Terbayar (${dpPercent}%)` : "Lunas via Rekber (100%)",
       bookingStatus: "Jadwal Pengambilan Armada",
@@ -1402,6 +1559,115 @@ class BursaLimbahStore {
     return null;
   }
 
+  submitRemainingPaymentProof(orderId, proofData = {}) {
+    const order = this.getOrderById(orderId);
+    if (!order) throw new Error("Pesanan tidak ditemukan.");
+
+    const now = new Date().toISOString().replace('T', ' ').substring(0, 19);
+
+    order.remainingPaymentProof = {
+      method: proofData.method || 'bank_transfer',
+      senderBank: proofData.senderBank || '',
+      senderAccount: proofData.senderAccount || '',
+      referenceNumber: proofData.referenceNumber || `REF-${Date.now()}`,
+      notes: proofData.notes || '',
+      proofImageUrl: proofData.proofImageUrl || proofData.imageUrl || '',
+      uploadedAt: now,
+      verifiedBySeller: false,
+      verifiedBySellerName: null,
+      verifiedBySellerAt: null,
+      verifiedByAdmin: false,
+      verifiedByAdminName: null,
+      verifiedByAdminAt: null
+    };
+
+    order.remainingPaymentStatus = 'proof_submitted';
+    order.paymentStatus = 'Bukti Sisa Diunggah (Menunggu Verifikasi)';
+
+    this.createNotification(
+      order.sellerId,
+      'info',
+      'Bukti Sisa Pembayaran Diterima',
+      `Pembeli ${order.buyerName} telah mengunggah bukti pelunasan sisa (${this.formatRupiah ? this.formatRupiah(order.remainingPayment) : 'Rp ' + order.remainingPayment}) untuk pesanan ${order.bookingCode}. Silakan tinjau dan konfirmasi.`,
+      `/seller/orders/${order.id}`
+    );
+
+    this.createNotification(
+      'user_admin_1',
+      'info',
+      'Bukti Sisa Pembayaran (Pelunasan)',
+      `Bukti sisa pembayaran ${order.bookingCode} telah diunggah oleh pembeli dan menunggu verifikasi admin.`,
+      `/admin/orders/${order.id}`
+    );
+
+    this.save();
+
+    if (this.isBackendConnected) {
+      fetch(`${this.apiBaseUrl}/api/orders/${orderId}/remaining-proof`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(order.remainingPaymentProof)
+      }).catch(e => console.warn('[Remaining Proof API Error]', e));
+    }
+
+    return order;
+  }
+
+  verifyRemainingPayment(orderId, verifierRole = 'seller', verifierName = '') {
+    const order = this.getOrderById(orderId);
+    if (!order) throw new Error("Pesanan tidak ditemukan.");
+    if (!order.remainingPaymentProof) throw new Error("Belum ada bukti sisa pembayaran yang diunggah untuk pesanan ini.");
+
+    const now = new Date().toISOString().replace('T', ' ').substring(0, 19);
+
+    if (verifierRole === 'seller') {
+      order.remainingPaymentProof.verifiedBySeller = true;
+      order.remainingPaymentProof.verifiedBySellerName = verifierName || 'Penjual';
+      order.remainingPaymentProof.verifiedBySellerAt = now;
+      order.remainingPaymentStatus = order.remainingPaymentProof.verifiedByAdmin ? 'completed' : 'verified_by_seller';
+      this.createNotification(
+        order.buyerId,
+        'success',
+        'Sisa Pembayaran Dikonfirmasi Penjual',
+        `Penjual telah memvalidasi bukti pelunasan sisa Anda untuk booking ${order.bookingCode}.`,
+        `/buyer/orders/${order.id}`
+      );
+    } else if (verifierRole === 'admin') {
+      order.remainingPaymentProof.verifiedByAdmin = true;
+      order.remainingPaymentProof.verifiedByAdminName = verifierName || 'Pengelola Rekber';
+      order.remainingPaymentProof.verifiedByAdminAt = now;
+      order.remainingPaymentStatus = 'verified_by_admin';
+      order.paymentStatus = 'Lunas 100% (Terverifikasi)';
+
+      this.createNotification(
+        order.buyerId,
+        'success',
+        'Pelunasan Sisa Terverifikasi Admin',
+        `Admin Rekening Bersama telah memverifikasi pelunasan sisa pesanan ${order.bookingCode}. Transaksi lunas 100%.`,
+        `/buyer/orders/${order.id}`
+      );
+      this.createNotification(
+        order.sellerId,
+        'success',
+        'Pelunasan Diverifikasi Admin',
+        `Admin telah memverifikasi pelunasan pesanan ${order.bookingCode}.`,
+        `/seller/orders/${order.id}`
+      );
+    }
+
+    this.save();
+
+    if (this.isBackendConnected) {
+      fetch(`${this.apiBaseUrl}/api/orders/${orderId}/verify-remaining`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ verifierRole, verifierName, verifiedAt: now })
+      }).catch(e => console.warn('[Verify Remaining API Error]', e));
+    }
+
+    return order;
+  }
+
   recordReceivingEvidence(orderId, actualWeight, weighingProof = null) {
     const order = this.getOrderById(orderId);
     if (!order) throw new Error('Data transaksi tidak ditemukan.');
@@ -1412,6 +1678,272 @@ class BursaLimbahStore {
     order.qrCompletionReady = true;
     this.save();
     return order;
+  }
+
+  // ================= LAPORAN & LOGISTIK TRANSAKSI =================
+  getOrdersForSeller(sellerId) {
+    return (this.state.orders || []).filter(o => o.sellerId === sellerId).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  }
+
+  getOrdersForBuyer(buyerId) {
+    return (this.state.orders || []).filter(o => o.buyerId === buyerId).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  }
+
+  getOffersForBuyer(buyerId) {
+    return (this.state.offers || []).filter(o => o.buyerId === buyerId).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  }
+
+  getAcceptedOffersForSeller(sellerId) {
+    return (this.state.offers || []).filter(o => o.sellerId === sellerId && o.status === 'accepted').sort((a, b) => new Date(b.respondedAt || b.createdAt) - new Date(a.respondedAt || a.createdAt));
+  }
+
+  getAcceptedOffersForBuyer(buyerId) {
+    return (this.state.offers || []).filter(o => o.buyerId === buyerId && o.status === 'accepted').sort((a, b) => new Date(b.respondedAt || b.createdAt) - new Date(a.respondedAt || a.createdAt));
+  }
+
+  dispatchOrder({ orderId, sellerId, dispatchType, courierName, trackingNumber, notes, proofImage, handoverRecipient }) {
+    const order = this.getOrderById(orderId);
+    if (!order) throw new Error('Transaksi tidak ditemukan.');
+    if (order.sellerId !== sellerId) throw new Error('Anda tidak memiliki wewenang untuk memproses pengiriman pesanan ini.');
+
+    const isThirdParty = dispatchType === 'third_party';
+    order.shippingStatus = isThirdParty ? 'shipped_third_party' : 'handed_over';
+    order.bookingStatus = isThirdParty ? 'Dikirim oleh Pihak ke-3 / Ekspedisi' : 'Diserahkan Langsung ke Pembeli';
+    order.sellerHandoverQr = order.sellerHandoverQr || `QR-HANDOVER-${order.id}`;
+    order.qrCompletionReady = true;
+
+    order.deliveryDetails = {
+      dispatchType: isThirdParty ? 'third_party' : 'direct',
+      courierName: isThirdParty ? (courierName || 'Ekspedisi Logistik Mitra') : 'Serah Terima Langsung di Depo',
+      trackingNumber: trackingNumber || (isThirdParty ? `EXP-${Date.now().toString().slice(-6)}` : `DIR-${order.bookingCode}`),
+      dispatchedAt: new Date().toISOString().replace('T', ' ').substring(0, 16),
+      notes: notes || '',
+      proofImage: proofImage || null,
+      handoverRecipient: handoverRecipient || ''
+    };
+
+    this.createNotification(
+      order.buyerId,
+      'info',
+      isThirdParty ? 'Barang Dalam Pengiriman Ekspedisi' : 'Barang Telah Diserahkan Penjual',
+      isThirdParty 
+        ? `Pesanan ${order.productTitle} telah dikirim via ${order.deliveryDetails.courierName} (No. Resi: ${order.deliveryDetails.trackingNumber}).`
+        : `Pesanan ${order.productTitle} telah diserahkan di lokasi depo oleh penjual. Silakan validasi penerimaan barang.`,
+      `/buyer/orders/${order.id}`
+    );
+
+    this.save();
+    return order;
+  }
+
+  validateOrderDelivery({ orderId, buyerId, actualWeight, handoverQrCode, notes, proofImage }) {
+    const order = this.getOrderById(orderId);
+    if (!order) throw new Error('Data transaksi tidak ditemukan.');
+    if (order.buyerId !== buyerId && buyerId !== 'admin') throw new Error('Anda tidak memiliki hak validasi untuk transaksi ini.');
+
+    // Jika scan QR code diverifikasi
+    if (handoverQrCode) {
+      const cleanInput = String(handoverQrCode).trim();
+      const validQr1 = order.sellerHandoverQr || `QR-HANDOVER-${order.id}`;
+      const validQr2 = order.qrCodeTrace;
+      if (cleanInput !== validQr1 && cleanInput !== validQr2 && !cleanInput.includes(order.bookingCode)) {
+        throw new Error('Kode QR Penjual tidak valid atau tidak cocok dengan transaksi ini.');
+      }
+    }
+
+    if (actualWeight !== undefined && actualWeight !== null && Number(actualWeight) > 0) {
+      order.actualReceivedWeight = Number(actualWeight);
+    } else if (!order.actualReceivedWeight) {
+      order.actualReceivedWeight = order.quantity;
+    }
+
+    if (proofImage) {
+      order.weighingProof = proofImage;
+    }
+    if (notes) {
+      order.buyerReceiveNotes = String(notes).trim();
+    }
+
+    order.shippingStatus = 'delivered';
+    order.bookingStatus = 'Selesai (Barang Diterima & Lunas)';
+    order.paymentStatus = 'Lunas (Selesai)';
+    order.escrowStatus = 'completed';
+    order.completedAt = new Date().toISOString().replace('T', ' ').substring(0, 16);
+
+    // Cairkan dana pelunasan ke penjual
+    const seller = this.state.users.find(u => u.id === order.sellerId);
+    if (seller) {
+      seller.balance = (seller.balance || 0) + order.totalPrice;
+    }
+
+    // Notifikasi ke penjual
+    this.createNotification(
+      order.sellerId,
+      'success',
+      'Barang Diterima & Dana Dicairkan!',
+      `Pembeli ${order.buyerName} telah memvalidasi penerimaan ${order.productTitle}. Dana transaksi sebesar Rp${order.totalPrice.toLocaleString('id-ID')} telah diteruskan ke saldo dompet Anda.`,
+      `/seller/sales`
+    );
+
+    this.save();
+    return order;
+  }
+
+  getSellerSalesReport(sellerId, filters = {}) {
+    let orders = this.getOrdersForSeller(sellerId);
+    if (filters.status && filters.status !== 'all') {
+      orders = orders.filter(o => {
+        if (filters.status === 'completed') return o.escrowStatus === 'completed' || o.shippingStatus === 'delivered';
+        if (filters.status === 'pending_dispatch') return !o.shippingStatus || o.shippingStatus === 'pending_dispatch';
+        if (filters.status === 'in_delivery') return o.shippingStatus === 'shipped_third_party' || o.shippingStatus === 'handed_over';
+        return true;
+      });
+    }
+    if (filters.startDate) {
+      orders = orders.filter(o => (o.createdAt || '') >= filters.startDate);
+    }
+    if (filters.endDate) {
+      orders = orders.filter(o => (o.createdAt || '').substring(0, 10) <= filters.endDate);
+    }
+
+    const totalOrders = orders.length;
+    const completedOrders = orders.filter(o => o.escrowStatus === 'completed' || o.shippingStatus === 'delivered');
+    const totalVolume = orders.reduce((acc, o) => acc + (Number(o.actualReceivedWeight) || Number(o.quantity) || 0), 0);
+    const totalGrossRevenue = orders.reduce((acc, o) => acc + (Number(o.totalPrice) || 0), 0);
+    const settledRevenue = completedOrders.reduce((acc, o) => acc + (Number(o.totalPrice) || 0), 0);
+    const pendingRevenue = totalGrossRevenue - settledRevenue;
+
+    return {
+      orders,
+      totalOrders,
+      completedOrdersCount: completedOrders.length,
+      pendingOrdersCount: totalOrders - completedOrders.length,
+      totalVolume,
+      totalGrossRevenue,
+      settledRevenue,
+      pendingRevenue
+    };
+  }
+
+  getBuyerPurchaseReport(buyerId, filters = {}) {
+    let orders = this.getOrdersForBuyer(buyerId);
+    if (filters.status && filters.status !== 'all') {
+      orders = orders.filter(o => {
+        if (filters.status === 'completed') return o.escrowStatus === 'completed' || o.shippingStatus === 'delivered';
+        if (filters.status === 'in_delivery') return o.shippingStatus === 'shipped_third_party' || o.shippingStatus === 'handed_over';
+        if (filters.status === 'pending_dispatch') return !o.shippingStatus || o.shippingStatus === 'pending_dispatch';
+        return true;
+      });
+    }
+    if (filters.startDate) {
+      orders = orders.filter(o => (o.createdAt || '') >= filters.startDate);
+    }
+    if (filters.endDate) {
+      orders = orders.filter(o => (o.createdAt || '').substring(0, 10) <= filters.endDate);
+    }
+
+    const totalOrders = orders.length;
+    const completedOrders = orders.filter(o => o.escrowStatus === 'completed' || o.shippingStatus === 'delivered');
+    const totalVolume = orders.reduce((acc, o) => acc + (Number(o.actualReceivedWeight) || Number(o.quantity) || 0), 0);
+    const totalSpend = orders.reduce((acc, o) => acc + (Number(o.totalPrice) || 0), 0);
+    const totalEscrowPaid = orders.reduce((acc, o) => acc + (Number(o.totalPaidNow) || 0), 0);
+
+    return {
+      orders,
+      totalOrders,
+      completedOrdersCount: completedOrders.length,
+      pendingOrdersCount: totalOrders - completedOrders.length,
+      totalVolume,
+      totalSpend,
+      totalEscrowPaid
+    };
+  }
+
+  getAdminFinancialReport(filters = {}) {
+    let orders = [...(this.state.orders || [])];
+    if (filters.startDate) {
+      orders = orders.filter(o => (o.createdAt || '') >= filters.startDate);
+    }
+    if (filters.endDate) {
+      orders = orders.filter(o => (o.createdAt || '').substring(0, 10) <= filters.endDate);
+    }
+
+    let totalGrossGMV = 0;
+    let totalEscrowInflow = 0;
+    let totalPlatformFees = 0;
+    let totalDisbursedToSellers = 0;
+    let totalEscrowHeld = 0;
+    let totalShippingCollected = 0;
+
+    orders.forEach(o => {
+      const gmv = Number(o.totalPrice) || 0;
+      const dp = Number(o.downPaymentAmount) || gmv;
+      const handling = Number(o.handlingFee) || 0;
+      const app = Number(o.appFee) || 0;
+      const shipping = Number(o.shippingFee) || 0;
+
+      totalGrossGMV += gmv;
+      totalPlatformFees += (handling + app);
+      totalShippingCollected += shipping;
+      totalEscrowInflow += (Number(o.totalPaidNow) || (dp + handling + app + shipping));
+
+      if (o.escrowStatus === 'completed' || o.shippingStatus === 'delivered') {
+        totalDisbursedToSellers += gmv;
+      } else {
+        totalEscrowHeld += dp;
+      }
+    });
+
+    return {
+      orders,
+      totalOrders: orders.length,
+      totalGrossGMV,
+      totalEscrowInflow,
+      totalPlatformFees,
+      totalDisbursedToSellers,
+      totalEscrowHeld,
+      totalShippingCollected
+    };
+  }
+
+  getAdminSalesAndPurchaseReport(filters = {}) {
+    let orders = [...(this.state.orders || [])];
+    if (filters.startDate) {
+      orders = orders.filter(o => (o.createdAt || '') >= filters.startDate);
+    }
+    if (filters.endDate) {
+      orders = orders.filter(o => (o.createdAt || '').substring(0, 10) <= filters.endDate);
+    }
+    if (filters.category && filters.category !== 'all') {
+      orders = orders.filter(o => o.categoryName === filters.category);
+    }
+
+    // Commodity breakdown
+    const commodityMap = {};
+    orders.forEach(o => {
+      const cat = o.categoryName || 'Lainnya';
+      if (!commodityMap[cat]) {
+        commodityMap[cat] = { category: cat, volume: 0, unit: o.unit || 'Kg', gmv: 0, orderCount: 0 };
+      }
+      commodityMap[cat].volume += (Number(o.actualReceivedWeight) || Number(o.quantity) || 0);
+      commodityMap[cat].gmv += (Number(o.totalPrice) || 0);
+      commodityMap[cat].orderCount += 1;
+    });
+
+    const commodities = Object.values(commodityMap).sort((a, b) => b.gmv - a.gmv);
+    const totalVolume = orders.reduce((acc, o) => acc + (Number(o.actualReceivedWeight) || Number(o.quantity) || 0), 0);
+    const totalGMV = orders.reduce((acc, o) => acc + (Number(o.totalPrice) || 0), 0);
+    const completedCount = orders.filter(o => o.escrowStatus === 'completed' || o.shippingStatus === 'delivered').length;
+
+    return {
+      orders,
+      commodities,
+      totalOrders: orders.length,
+      completedCount,
+      activeCount: orders.length - completedCount,
+      totalVolume,
+      totalGMV
+    };
   }
 
   // ================= SETTINGS & DP CONFIGURATION =================
@@ -1466,6 +1998,19 @@ class BursaLimbahStore {
       if (apiSettings.termsTitle !== undefined) { apiSettings.terms_title = apiSettings.termsTitle; delete apiSettings.termsTitle; }
       if (apiSettings.termsVersion !== undefined) { apiSettings.terms_version = apiSettings.termsVersion; delete apiSettings.termsVersion; }
       if (apiSettings.termsContent !== undefined) { apiSettings.terms_content = apiSettings.termsContent; delete apiSettings.termsContent; }
+      if (apiSettings.supportSectionTitle !== undefined) { apiSettings.support_section_title = apiSettings.supportSectionTitle; delete apiSettings.supportSectionTitle; }
+      if (apiSettings.contactPhone !== undefined) { apiSettings.contact_phone = apiSettings.contactPhone; delete apiSettings.contactPhone; }
+      if (apiSettings.contactWaNumber !== undefined) { apiSettings.contact_wa_number = apiSettings.contactWaNumber; delete apiSettings.contactWaNumber; }
+      if (apiSettings.contactWaMessage !== undefined) { apiSettings.contact_wa_message = apiSettings.contactWaMessage; delete apiSettings.contactWaMessage; }
+      if (apiSettings.contactEmail !== undefined) { apiSettings.contact_email = apiSettings.contactEmail; delete apiSettings.contactEmail; }
+      if (apiSettings.address !== undefined) { apiSettings.contact_address = apiSettings.address; delete apiSettings.address; }
+      if (apiSettings.supportGuideBtnText !== undefined) { apiSettings.support_guide_btn_text = apiSettings.supportGuideBtnText; delete apiSettings.supportGuideBtnText; }
+      if (apiSettings.supportGuideBtnAction !== undefined) { apiSettings.support_guide_btn_action = apiSettings.supportGuideBtnAction; delete apiSettings.supportGuideBtnAction; }
+      if (apiSettings.supportGuideBtnUrl !== undefined) { apiSettings.support_guide_btn_url = apiSettings.supportGuideBtnUrl; delete apiSettings.supportGuideBtnUrl; }
+      if (apiSettings.supportGuideBtnEnabled !== undefined) { apiSettings.support_guide_btn_enabled = String(apiSettings.supportGuideBtnEnabled); delete apiSettings.supportGuideBtnEnabled; }
+      if (apiSettings.supportOperationalHours !== undefined) { apiSettings.support_operational_hours = apiSettings.supportOperationalHours; delete apiSettings.supportOperationalHours; }
+      if (apiSettings.supportMapsUrl !== undefined) { apiSettings.support_maps_url = apiSettings.supportMapsUrl; delete apiSettings.supportMapsUrl; }
+      if (apiSettings.customFees !== undefined) { apiSettings.custom_fees = JSON.stringify(apiSettings.customFees); delete apiSettings.customFees; }
       fetch(`${this.apiBaseUrl}/api/settings`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -1474,6 +2019,97 @@ class BursaLimbahStore {
     }
 
     return this.state.settings;
+  }
+
+  // ================= CUSTOM FEES CRUD =================
+  getCustomFees() {
+    const fees = this.state.settings && this.state.settings.customFees;
+    return Array.isArray(fees) ? fees : [];
+  }
+
+  addCustomFee(fee) {
+    if (!Array.isArray(this.state.settings.customFees)) {
+      this.state.settings.customFees = [];
+    }
+    const newFee = {
+      id: 'fee_custom_' + Date.now(),
+      name: String(fee.name || 'Biaya Baru').trim(),
+      type: fee.type === 'percentage' ? 'percentage' : 'fixed',
+      value: Number(fee.value) || 0,
+      target: ['buyer', 'seller', 'both'].includes(fee.target) ? fee.target : 'buyer',
+      enabled: fee.enabled !== false,
+      description: String(fee.description || '').trim()
+    };
+    this.state.settings.customFees.push(newFee);
+    this.save();
+    if (this.isBackendConnected) {
+      fetch(`${this.apiBaseUrl}/api/settings`, {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ custom_fees: JSON.stringify(this.state.settings.customFees) })
+      }).catch(e => console.warn('[CustomFee Add API Error]', e));
+    }
+    return newFee;
+  }
+
+  updateCustomFee(id, patch) {
+    const fees = this.getCustomFees();
+    const idx = fees.findIndex(f => f.id === id);
+    if (idx === -1) return null;
+    fees[idx] = { ...fees[idx], ...patch };
+    this.state.settings.customFees = fees;
+    this.save();
+    if (this.isBackendConnected) {
+      fetch(`${this.apiBaseUrl}/api/settings`, {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ custom_fees: JSON.stringify(fees) })
+      }).catch(e => console.warn('[CustomFee Update API Error]', e));
+    }
+    return fees[idx];
+  }
+
+  deleteCustomFee(id) {
+    const fees = this.getCustomFees().filter(f => f.id !== id);
+    this.state.settings.customFees = fees;
+    this.save();
+    if (this.isBackendConnected) {
+      fetch(`${this.apiBaseUrl}/api/settings`, {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ custom_fees: JSON.stringify(fees) })
+      }).catch(e => console.warn('[CustomFee Delete API Error]', e));
+    }
+    return fees;
+  }
+
+  toggleCustomFee(id) {
+    const fees = this.getCustomFees();
+    const fee = fees.find(f => f.id === id);
+    if (!fee) return null;
+    fee.enabled = !fee.enabled;
+    this.state.settings.customFees = fees;
+    this.save();
+    if (this.isBackendConnected) {
+      fetch(`${this.apiBaseUrl}/api/settings`, {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ custom_fees: JSON.stringify(fees) })
+      }).catch(e => console.warn('[CustomFee Toggle API Error]', e));
+    }
+    return fee;
+  }
+
+  calculateCustomFees(totalPrice, role) {
+    const fees = this.getCustomFees();
+    let total = 0;
+    const breakdown = [];
+    fees.forEach(fee => {
+      if (!fee.enabled) return;
+      if (fee.target !== 'both' && fee.target !== role) return;
+      let amount = fee.type === 'percentage'
+        ? Math.round(totalPrice * (fee.value / 100))
+        : Number(fee.value);
+      total += amount;
+      breakdown.push({ id: fee.id, name: fee.name, type: fee.type, value: fee.value, amount, target: fee.target });
+    });
+    return { total, breakdown };
   }
 
   recordReceivingEvidence(orderId, actualWeight, weighingProof = null) {
@@ -1652,6 +2288,97 @@ class BursaLimbahStore {
       }).catch(e => console.warn('[Delete Event API Error]', e));
     }
 
+    return true;
+  }
+
+  // ================= EVENT TICKETS & QR CODE MANAGEMENT =================
+  getEventTickets(eventId = null) {
+    if (!this.state.eventTickets) {
+      this.state.eventTickets = (typeof INITIAL_EVENT_TICKETS !== 'undefined' ? [...INITIAL_EVENT_TICKETS] : []);
+      this.save();
+    }
+    if (!eventId || eventId === 'all') {
+      return this.state.eventTickets;
+    }
+    return this.state.eventTickets.filter(t => t.eventId === eventId);
+  }
+
+  getEventTicketById(id) {
+    const tickets = this.getEventTickets();
+    return tickets.find(t => t.id === id) || null;
+  }
+
+  getEventTicketByCode(code) {
+    if (!code) return null;
+    const clean = code.trim().toUpperCase();
+    const tickets = this.getEventTickets();
+    return tickets.find(t => t.ticketCode.toUpperCase() === clean || t.id === code) || null;
+  }
+
+  addEventTicket(ticketData) {
+    const newId = "tkt_" + Date.now();
+    const code = ticketData.ticketCode || ("BL-TKT-" + (new Date()).getFullYear() + "-" + Math.floor(1000 + Math.random() * 9000));
+    const now = new Date();
+    const createdAt = now.getFullYear() + "-" + String(now.getMonth() + 1).padStart(2, '0') + "-" + String(now.getDate()).padStart(2, '0') + " " + String(now.getHours()).padStart(2, '0') + ":" + String(now.getMinutes()).padStart(2, '0') + ":" + String(now.getSeconds()).padStart(2, '0');
+
+    const newTicket = {
+      id: newId,
+      ticketCode: code,
+      eventId: ticketData.eventId || "",
+      eventTitle: ticketData.eventTitle || "Kegiatan Resmi Bursa Limbah",
+      eventDate: ticketData.eventDate || "",
+      eventTime: ticketData.eventTime || "",
+      eventLocation: ticketData.eventLocation || "",
+      ticketType: ticketData.ticketType || "entry",
+      ticketTypeLabel: ticketData.ticketTypeLabel || "Tiket Masuk Resmi (Entrance Pass)",
+      holderName: ticketData.holderName || "Tamu Undangan",
+      companyName: ticketData.companyName || "-",
+      phone: ticketData.phone || "",
+      email: ticketData.email || "",
+      gateOrSeat: ticketData.gateOrSeat || "Gate Masuk Utama",
+      notes: ticketData.notes || "Tunjukkan kode QR ini pada petugas untuk validasi.",
+      status: ticketData.status || "issued",
+      checkedInAt: ticketData.status === 'checked_in' ? createdAt : null,
+      createdAt: createdAt
+    };
+
+    if (!this.state.eventTickets) this.state.eventTickets = [];
+    this.state.eventTickets.unshift(newTicket);
+    this.save();
+    return newTicket;
+  }
+
+  checkInEventTicket(ticketCodeOrId) {
+    const ticket = this.getEventTicketByCode(ticketCodeOrId) || this.getEventTicketById(ticketCodeOrId);
+    if (!ticket) return { success: false, message: "Kode tiket tidak ditemukan di sistem." };
+
+    if (ticket.status === 'checked_in') {
+      return { 
+        success: false, 
+        alreadyCheckedIn: true, 
+        ticket, 
+        message: `Tiket sudah divalidasi sebelumnya pada ${ticket.checkedInAt}.` 
+      };
+    }
+
+    const now = new Date();
+    const timeStr = String(now.getDate()).padStart(2, '0') + "/" + String(now.getMonth() + 1).padStart(2, '0') + "/" + now.getFullYear() + " " + String(now.getHours()).padStart(2, '0') + ":" + String(now.getMinutes()).padStart(2, '0') + " WIB";
+    
+    ticket.status = 'checked_in';
+    ticket.checkedInAt = timeStr;
+    this.save();
+
+    return {
+      success: true,
+      ticket,
+      message: `Presensi Berhasil! ${ticket.holderName} resmi check-in pada ${timeStr}.`
+    };
+  }
+
+  deleteEventTicket(id) {
+    if (!this.state.eventTickets) return false;
+    this.state.eventTickets = this.state.eventTickets.filter(t => t.id !== id);
+    this.save();
     return true;
   }
 

@@ -1,0 +1,7 @@
+node_modules/
+server/node_modules/
+test_audit.js
+test_logic.js
+*.log
+.DS_Store
+Thumbs.db

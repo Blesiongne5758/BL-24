@@ -145,6 +145,12 @@ function mapUserFromDb(row) {
     location: row.location || 'Indonesia',
     balance: parseFloat(row.balance) || 0,
     avatar: row.avatar || null,
+    paymentMethods: (() => {
+      try {
+        if (!row.payment_methods) return null;
+        return typeof row.payment_methods === 'string' ? JSON.parse(row.payment_methods) : row.payment_methods;
+      } catch (_) { return null; }
+    })(),
     createdAt: row.created_at,
     updatedAt: row.updated_at
   };
@@ -526,7 +532,7 @@ app.get('/api/users', async (req, res) => {
 app.put('/api/users/:id/profile', async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, company, phone, location, bankAccount, avatar } = req.body;
+    const { name, company, phone, location, bankAccount, avatar, paymentMethods } = req.body;
 
     const [users] = await pool.query('SELECT * FROM users WHERE id = ?', [id]);
     if (users.length === 0) {
@@ -541,6 +547,10 @@ app.put('/api/users/:id/profile', async (req, res) => {
     if (location) { updates.push('location = ?'); params.push(location); }
     if (bankAccount) { updates.push('bank_account = ?'); params.push(bankAccount); }
     if (avatar) { updates.push('avatar = ?'); params.push(avatar); }
+    if (paymentMethods !== undefined) {
+      updates.push('payment_methods = ?');
+      params.push(typeof paymentMethods === 'object' ? JSON.stringify(paymentMethods) : paymentMethods);
+    }
 
     if (updates.length > 0) {
       params.push(id);
@@ -963,6 +973,77 @@ app.patch('/api/orders/:id/status', async (req, res) => {
     }
 
     return res.json({ success: true, message: `Status order diperbarui: ${escrowStatus}` });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+app.post('/api/orders/:id/remaining-proof', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const proofData = req.body || {};
+    const now = new Date().toISOString().replace('T', ' ').substring(0, 19);
+    try {
+      await pool.query(
+        `UPDATE orders SET 
+          escrow_status = 'proof_submitted',
+          remaining_payment_status = 'proof_submitted',
+          remaining_payment_proof = ?,
+          remaining_payment_notes = ?,
+          remaining_payment_submitted_at = ?,
+          notes = CONCAT(COALESCE(notes, ''), ' [Bukti Pelunasan Diunggah Ref: ', ?, ']')
+        WHERE id = ?`,
+        [
+          proofData.proofImageUrl || proofData.imageUrl || '',
+          proofData.notes || '',
+          now,
+          proofData.referenceNumber || proofData.method || 'Non-Tunai',
+          id
+        ]
+      );
+    } catch (dbErr) {
+      console.warn('[DB Warning] remaining-proof update fallback:', dbErr.message);
+      await pool.query("UPDATE orders SET escrow_status = 'proof_submitted' WHERE id = ?", [id]).catch(() => {});
+    }
+    return res.json({ success: true, message: 'Bukti sisa pembayaran berhasil dikirim dan menunggu verifikasi.' });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+app.post('/api/orders/:id/verify-remaining', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { verifierRole, verifierName } = req.body;
+    const now = new Date().toISOString().replace('T', ' ').substring(0, 19);
+    const newStatus = verifierRole === 'admin' ? 'completed' : 'verified_by_seller';
+    const remainingStatus = verifierRole === 'admin' ? 'paid' : 'verified_by_seller';
+    const verifierInfo = `${verifierName || verifierRole} (${verifierRole})`;
+
+    try {
+      await pool.query(
+        `UPDATE orders SET 
+          escrow_status = ?,
+          remaining_payment_status = ?,
+          remaining_payment_verified_at = ?,
+          remaining_payment_verified_by = ?
+        WHERE id = ?`,
+        [newStatus, remainingStatus, now, verifierInfo, id]
+      );
+
+      if (verifierRole === 'admin') {
+        const [order] = await pool.query('SELECT product_id FROM orders WHERE id = ?', [id]);
+        if (order.length > 0 && order[0].product_id) {
+          await pool.query("UPDATE products SET status = 'completed' WHERE id = ?", [order[0].product_id]);
+        }
+      }
+    } catch (dbErr) {
+      console.warn('[DB Warning] verify-remaining update fallback:', dbErr.message);
+      if (verifierRole === 'admin') {
+        await pool.query("UPDATE orders SET escrow_status = 'completed' WHERE id = ?", [id]).catch(() => {});
+      }
+    }
+    return res.json({ success: true, message: `Verifikasi pelunasan oleh ${verifierName || verifierRole} berhasil dicatat.` });
   } catch (error) {
     return res.status(500).json({ success: false, message: error.message });
   }
@@ -1397,6 +1478,55 @@ app.use((error, _req, res, next) => {
 });
 
 // =================================================================
+// SKEMA DATABASE AUTO-MIGRATION
+// Memastikan kolom payment_methods & kolom pelunasan DP tersedia
+// =================================================================
+async function ensureDatabaseSchema() {
+  try {
+    // 1. users: payment_methods
+    const [userCols] = await pool.query(
+      "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'users' AND COLUMN_NAME = 'payment_methods'"
+    );
+    if (userCols.length === 0) {
+      await pool.query("ALTER TABLE users ADD COLUMN `payment_methods` LONGTEXT DEFAULT NULL");
+      console.log('  [DB Migration] Kolom payment_methods berhasil ditambahkan ke tabel users.');
+    }
+
+    // 2. orders: kolom order_code, DP, remaining payment proof & verification
+    const orderColumnDefs = [
+      { name: 'order_code', def: 'VARCHAR(50) DEFAULT NULL' },
+      { name: 'buyer_company', def: 'VARCHAR(150) DEFAULT NULL' },
+      { name: 'dp_percentage', def: 'DECIMAL(5,2) DEFAULT 30.00' },
+      { name: 'remaining_amount', def: 'DECIMAL(14,2) DEFAULT 0.00' },
+      { name: 'handling_fee', def: 'DECIMAL(14,2) DEFAULT 10000.00' },
+      { name: 'escrow_status', def: "VARCHAR(50) DEFAULT 'dp_secured'" },
+      { name: 'pickup_date', def: 'VARCHAR(50) DEFAULT NULL' },
+      { name: 'notes', def: 'TEXT DEFAULT NULL' },
+      { name: 'shipping_method', def: "VARCHAR(100) DEFAULT 'Armada Mandiri Pembeli'" },
+      { name: 'remaining_payment_status', def: "VARCHAR(50) DEFAULT 'unpaid'" },
+      { name: 'remaining_payment_proof', def: 'LONGTEXT DEFAULT NULL' },
+      { name: 'remaining_payment_notes', def: 'TEXT DEFAULT NULL' },
+      { name: 'remaining_payment_submitted_at', def: 'VARCHAR(50) DEFAULT NULL' },
+      { name: 'remaining_payment_verified_at', def: 'VARCHAR(50) DEFAULT NULL' },
+      { name: 'remaining_payment_verified_by', def: 'VARCHAR(100) DEFAULT NULL' }
+    ];
+
+    for (const col of orderColumnDefs) {
+      const [cols] = await pool.query(
+        "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'orders' AND COLUMN_NAME = ?",
+        [col.name]
+      );
+      if (cols.length === 0) {
+        await pool.query(`ALTER TABLE orders ADD COLUMN \`${col.name}\` ${col.def}`);
+        console.log(`  [DB Migration] Kolom ${col.name} berhasil ditambahkan ke tabel orders.`);
+      }
+    }
+  } catch (err) {
+    console.warn('[DB Migration Notice]', err.message);
+  }
+}
+
+// =================================================================
 // START SERVER
 // =================================================================
 app.listen(PORT, async () => {
@@ -1405,5 +1535,8 @@ app.listen(PORT, async () => {
   console.log(`  URL: http://localhost:${PORT}`);
   console.log(`  REST API siap: /api/auth, /api/products, /api/orders, /api/events, /api/chats`);
   console.log('=====================================================');
-  await testConnection();
+  const connected = await testConnection();
+  if (connected) {
+    await ensureDatabaseSchema();
+  }
 });

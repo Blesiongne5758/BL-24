@@ -43,6 +43,9 @@
   <!-- Leaflet Map CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 
+  <!-- QRCode Generator CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
   <!-- Custom Stylesheet -->
   <link rel="stylesheet" href="css/style.css?v=3">
 </head>
@@ -1585,23 +1588,30 @@
           </div>
 
           <!-- Tombol Navigasi Tab & Aksi Ganti Tier & Keluar -->
-          <div class="flex items-center space-x-2 shrink-0">
-            <button id="buyer-tab-market" onclick="app.switchBuyerTab('market')" class="px-4 py-2 rounded-xl text-xs font-bold bg-brand-600 text-white shadow-sm transition">
-              <i class="fa-solid fa-store mr-1.5"></i>Katalog Pasokan
+          <div class="flex items-center space-x-2 shrink-0 overflow-x-auto">
+            <button id="buyer-tab-market" onclick="app.switchBuyerTab('market')" class="px-3.5 py-2 rounded-xl text-xs font-bold bg-brand-600 text-white shadow-sm transition shrink-0 flex items-center gap-1.5">
+              <i class="fa-solid fa-store"></i><span>Katalog</span>
             </button>
-            <button id="buyer-tab-orders" onclick="app.switchBuyerTab('orders')" class="px-4 py-2 rounded-xl text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 transition flex items-center">
-              <i class="fa-solid fa-receipt mr-1.5"></i>Pesanan DP Saya
-              <span id="buyer-order-count-badge" class="ml-1.5 px-1.5 py-0.2 bg-slate-800 text-white text-[10px] rounded-full">1</span>
+            <button id="buyer-tab-orders" onclick="app.switchBuyerTab('orders')" class="px-3.5 py-2 rounded-xl text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 transition flex items-center gap-1.5 shrink-0">
+              <i class="fa-solid fa-receipt"></i><span>Pesanan DP</span>
+              <span id="buyer-order-count-badge" class="ml-1 px-1.5 py-0.2 bg-slate-800 text-white text-[10px] rounded-full">1</span>
             </button>
-            <button onclick="app.showBuyerRegisterModal()" class="px-3.5 py-2 rounded-xl text-xs font-bold border border-emerald-500 text-emerald-700 hover:bg-emerald-50 transition flex items-center space-x-1">
+            <button id="buyer-tab-offers" onclick="app.switchBuyerTab('offers')" class="px-3.5 py-2 rounded-xl text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 transition flex items-center gap-1.5 shrink-0">
+              <i class="fa-solid fa-handshake text-emerald-600"></i><span>Penawaran Disetujui</span>
+              <span id="buyer-offers-count-badge" class="ml-1 px-1.5 py-0.2 bg-emerald-600 text-white text-[10px] rounded-full">0</span>
+            </button>
+            <button id="buyer-tab-reports" onclick="app.switchBuyerTab('reports')" class="px-3.5 py-2 rounded-xl text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 transition flex items-center gap-1.5 shrink-0">
+              <i class="fa-solid fa-chart-pie text-violet-600"></i><span>Laporan Pembelian</span>
+            </button>
+            <button onclick="app.showBuyerRegisterModal()" class="px-3 py-2 rounded-xl text-xs font-bold border border-emerald-500 text-emerald-700 hover:bg-emerald-50 transition flex items-center space-x-1 shrink-0">
               <i class="fa-solid fa-arrows-rotate"></i>
               <span>Ganti Tier</span>
             </button>
-            <button onclick="app.showUserProfileModal()" class="px-3.5 py-2 rounded-xl text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 transition flex items-center space-x-1.5 shadow-2xs">
+            <button onclick="app.showUserProfileModal()" class="px-3 py-2 rounded-xl text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 transition flex items-center space-x-1.5 shadow-2xs shrink-0">
               <i class="fa-solid fa-gear text-emerald-600"></i>
-              <span>Menu Pengaturan</span>
+              <span>Pengaturan</span>
             </button>
-            <button onclick="app.logout()" class="px-3.5 py-2 rounded-xl text-xs font-bold border border-slate-300 text-slate-600 hover:text-rose-700 hover:border-rose-300 hover:bg-rose-50 transition flex items-center space-x-1">
+            <button onclick="app.logout()" class="px-3 py-2 rounded-xl text-xs font-bold border border-slate-300 text-slate-600 hover:text-rose-700 hover:border-rose-300 hover:bg-rose-50 transition flex items-center space-x-1 shrink-0">
               <i class="fa-solid fa-right-from-bracket"></i>
               <span>Keluar</span>
             </button>
@@ -1666,13 +1676,106 @@
 
       </div>
 
-      <!-- KONTEN TAB PEMBELI: PESANAN SAYA -->
+      <!-- KONTEN TAB PEMBELI: PESANAN SAYA & VALIDASI PENERIMAAN -->
       <div id="buyer-content-orders" class="space-y-6 hidden">
-        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden p-6">
-          <h3 class="text-lg font-bold text-slate-900 mb-1">Daftar Pemesanan DP & Rekening Bersama (Escrow)</h3>
-          <p class="text-xs text-slate-500 mb-4">Setiap transaksi dilindungi oleh sistem Rekening Bersama BURSA LIMBAH dan surat jalan digital terverifikasi.</p>
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden p-6 space-y-4">
+          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div>
+              <h3 class="text-lg font-bold text-slate-900 mb-1">Daftar Pemesanan DP, Pengiriman &amp; Validasi Penerimaan</h3>
+              <p class="text-xs text-slate-500">Pantau resi pihak ke-3, serah terima depo, validasi barang telah diterima atau scan QR Code langsung dari penjual.</p>
+            </div>
+            <div class="flex items-center gap-2">
+              <button onclick="app.showQuickScanQrModal()" class="px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold shadow transition flex items-center gap-1.5 shrink-0">
+                <i class="fa-solid fa-qrcode text-emerald-400"></i>
+                <span>Scan QR Penjual</span>
+              </button>
+            </div>
+          </div>
           <div id="buyer-orders-table-container" class="overflow-x-auto">
             <!-- Diisi oleh app.renderBuyerOrders() -->
+          </div>
+        </div>
+      </div>
+
+      <!-- KONTEN TAB PEMBELI: PENAWARAN DISETUJUI PENJUAL -->
+      <div id="buyer-content-offers" class="space-y-6 hidden">
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-4">
+          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <div class="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-300 mb-2">
+                <i class="fa-solid fa-badge-check"></i>
+                <span>Kesepakatan Harga B2B Deal</span>
+              </div>
+              <h3 class="text-lg font-bold text-slate-900">Penawaran yang Disetujui Penjual</h3>
+              <p class="text-xs text-slate-500">Penjual telah menerima penawaran harga Anda. Amankan pasokan segera dengan checkout dan membayar DP 30% ke rekening bersama escrow.</p>
+            </div>
+          </div>
+        </div>
+        <div id="buyer-accepted-offers-list" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <!-- Diisi otomatis oleh JavaScript app.renderBuyerAcceptedOffers() -->
+        </div>
+      </div>
+
+      <!-- KONTEN TAB PEMBELI: LAPORAN PEMBELIAN -->
+      <div id="buyer-content-reports" class="space-y-6 hidden">
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-4">
+          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <div class="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full text-xs font-bold bg-violet-100 text-violet-800 border border-violet-300 mb-2">
+                <i class="fa-solid fa-chart-pie"></i>
+                <span>Laporan Belanja &amp; Pasokan</span>
+              </div>
+              <h3 class="text-lg font-bold text-slate-900">Laporan Pembelian Limbah &amp; Arus Escrow</h3>
+              <p class="text-xs text-slate-500">Rekapitulasi total tonase pasokan limbah yang berhasil didapatkan, total belanja, dan status pencairan jaminan escrow.</p>
+            </div>
+            <div class="flex items-center gap-2">
+              <button onclick="app.printBuyerPurchaseReport()" class="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold shadow transition flex items-center gap-1.5">
+                <i class="fa-solid fa-print"></i>
+                <span>Cetak Laporan Pembelian</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Filter Bar Laporan Pembelian -->
+          <div class="pt-4 border-t border-slate-100 grid grid-cols-1 sm:grid-cols-4 gap-3 text-xs">
+            <div>
+              <label class="block text-[11px] font-bold text-slate-600 mb-1">Status Transaksi</label>
+              <select id="buyer-report-filter-status" onchange="app.renderBuyerPurchaseReport()" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-violet-500">
+                <option value="all">Semua Status</option>
+                <option value="completed">Selesai &amp; Diterima</option>
+                <option value="in_delivery">Dalam Pengiriman / Diserahkan</option>
+                <option value="pending_dispatch">Menunggu Pengiriman</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-[11px] font-bold text-slate-600 mb-1">Dari Tanggal</label>
+              <input type="date" id="buyer-report-filter-start" onchange="app.renderBuyerPurchaseReport()" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-violet-500">
+            </div>
+            <div>
+              <label class="block text-[11px] font-bold text-slate-600 mb-1">Sampai Tanggal</label>
+              <input type="date" id="buyer-report-filter-end" onchange="app.renderBuyerPurchaseReport()" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-violet-500">
+            </div>
+            <div class="flex items-end">
+              <button type="button" onclick="app.resetBuyerReportFilter()" class="w-full py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition">
+                Reset Filter
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- KPI Ringkasan Laporan Pembelian -->
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4" id="buyer-report-kpi-container">
+          <!-- Diisi otomatis oleh JavaScript -->
+        </div>
+
+        <!-- Tabel Riwayat Pembelian -->
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden p-6 space-y-4">
+          <div class="flex items-center justify-between">
+            <h4 class="text-sm font-bold text-slate-900">Rincian Transaksi Pengadaan Limbah</h4>
+            <span class="text-xs text-slate-500" id="buyer-report-count-label">0 Transaksi</span>
+          </div>
+          <div id="buyer-report-table-container" class="overflow-x-auto">
+            <!-- Diisi otomatis oleh JavaScript -->
           </div>
         </div>
       </div>
@@ -1768,8 +1871,26 @@
         </div>
       </div>
 
-      <!-- Tabel Daftar Pasokan Penjual -->
-      <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden p-6 space-y-4">
+      <!-- Navigasi Tab Dashboard Penjual -->
+      <div class="flex border-b border-slate-200 bg-white rounded-2xl p-1.5 shadow-2xs gap-1.5 overflow-x-auto">
+        <button id="seller-tab-btn-products" onclick="app.switchSellerTab('products')" class="px-4 py-2.5 rounded-xl text-xs font-bold bg-brand-600 text-white shadow-xs transition flex items-center gap-1.5 shrink-0">
+          <i class="fa-solid fa-boxes-stacked"></i>
+          <span>Katalog Pasokan Saya</span>
+        </button>
+        <button id="seller-tab-btn-sales" onclick="app.switchSellerTab('sales')" class="px-4 py-2.5 rounded-xl text-xs font-bold text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition flex items-center gap-1.5 shrink-0">
+          <i class="fa-solid fa-chart-line text-emerald-600"></i>
+          <span>Laporan Penjualan &amp; Pengiriman</span>
+          <span id="seller-sales-pending-badge" class="ml-1 px-1.5 py-0.2 bg-amber-500 text-white rounded-full text-[10px]">0</span>
+        </button>
+        <button id="seller-tab-btn-offers" onclick="app.switchSellerTab('offers')" class="px-4 py-2.5 rounded-xl text-xs font-bold text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition flex items-center gap-1.5 shrink-0">
+          <i class="fa-solid fa-handshake text-blue-600"></i>
+          <span>Laporan Penawaran Disetujui</span>
+          <span id="seller-offers-badge" class="ml-1 px-1.5 py-0.2 bg-blue-600 text-white rounded-full text-[10px]">0</span>
+        </button>
+      </div>
+
+      <!-- KONTEN 1: KATALOG PASOKAN SAYA -->
+      <div id="seller-content-products" class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden p-6 space-y-4">
         <div class="flex items-center justify-between">
           <div>
             <h3 class="text-lg font-bold text-slate-900">Daftar Pasokan Limbah Saya</h3>
@@ -1786,12 +1907,127 @@
         </div>
       </div>
 
-      <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden p-6 space-y-4">
-        <div>
-          <h3 class="text-lg font-bold text-slate-900">Penawaran Harga Masuk</h3>
-          <p class="text-xs text-slate-500">Terima atau tolak tawaran pembeli. Keputusan Anda akan langsung diberitahukan kepada pembeli.</p>
+      <!-- KONTEN 2: LAPORAN PENJUALAN & STATUS PENGIRIMAN -->
+      <div id="seller-content-sales" class="space-y-6 hidden">
+        <!-- Header & Action Cetak -->
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-4">
+          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <div class="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-300 mb-2">
+                <i class="fa-solid fa-receipt"></i>
+                <span>Rekapitulasi Penjualan &amp; Logistik</span>
+              </div>
+              <h3 class="text-lg font-bold text-slate-900">Laporan Penjualan &amp; Status Pengiriman Barang</h3>
+              <p class="text-xs text-slate-500">Pantau seluruh order masuk, atur penyerahan langsung ke pembeli atau pengiriman via pihak ke-3 / ekspedisi.</p>
+            </div>
+            <div class="flex items-center gap-2">
+              <button onclick="app.printSellerSalesReport()" class="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold shadow transition flex items-center gap-1.5">
+                <i class="fa-solid fa-print"></i>
+                <span>Cetak Laporan Penjualan</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Filter Bar Laporan Penjualan -->
+          <div class="pt-4 border-t border-slate-100 grid grid-cols-1 sm:grid-cols-4 gap-3 text-xs">
+            <div>
+              <label class="block text-[11px] font-bold text-slate-600 mb-1">Status Logistik / Transaksi</label>
+              <select id="seller-sales-filter-status" onchange="app.renderSellerSalesReport()" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                <option value="all">Semua Status</option>
+                <option value="pending_dispatch">Menunggu Pengiriman / Serah Terima</option>
+                <option value="in_delivery">Dalam Pengiriman / Diserahkan</option>
+                <option value="completed">Selesai &amp; Lunas</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-[11px] font-bold text-slate-600 mb-1">Dari Tanggal</label>
+              <input type="date" id="seller-sales-filter-start" onchange="app.renderSellerSalesReport()" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500">
+            </div>
+            <div>
+              <label class="block text-[11px] font-bold text-slate-600 mb-1">Sampai Tanggal</label>
+              <input type="date" id="seller-sales-filter-end" onchange="app.renderSellerSalesReport()" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500">
+            </div>
+            <div class="flex items-end">
+              <button type="button" onclick="app.resetSellerSalesFilter()" class="w-full py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition">
+                Reset Filter
+              </button>
+            </div>
+          </div>
         </div>
-        <div id="seller-offers-container" class="overflow-x-auto"></div>
+
+        <!-- KPI Ringkasan Laporan Penjualan -->
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4" id="seller-sales-kpi-container">
+          <!-- Diisi otomatis oleh JavaScript app.renderSellerSalesReport() -->
+        </div>
+
+        <!-- Tabel Riwayat Penjualan & Aksi Pengiriman -->
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden p-6 space-y-4">
+          <div class="flex items-center justify-between">
+            <h4 class="text-sm font-bold text-slate-900">Rincian Transaksi Penjualan Limbah</h4>
+            <span class="text-xs text-slate-500" id="seller-sales-count-label">0 Transaksi</span>
+          </div>
+          <div id="seller-sales-table-container" class="overflow-x-auto">
+            <!-- Diisi otomatis oleh JavaScript -->
+          </div>
+        </div>
+      </div>
+
+      <!-- KONTEN 3: LAPORAN PENAWARAN DISETUJUI & MASUK -->
+      <div id="seller-content-offers" class="space-y-6 hidden">
+        <!-- Header & Action Cetak -->
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-4">
+          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <div class="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full text-xs font-bold bg-blue-100 text-blue-800 border border-blue-300 mb-2">
+                <i class="fa-solid fa-handshake"></i>
+                <span>Tawar-Menawar Harga B2B</span>
+              </div>
+              <h3 class="text-lg font-bold text-slate-900">Laporan Penawaran yang Disetujui Penjual</h3>
+              <p class="text-xs text-slate-500">Rekapitulasi kesepakatan harga dari pembeli yang telah Anda setujui serta antrean tawaran yang menunggu keputusan.</p>
+            </div>
+            <div class="flex items-center gap-2">
+              <button onclick="app.printSellerOffersReport()" class="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold shadow transition flex items-center gap-1.5">
+                <i class="fa-solid fa-print"></i>
+                <span>Cetak Laporan Penawaran</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- KPI Ringkasan Penawaran -->
+        <div class="grid grid-cols-2 lg:grid-cols-3 gap-4" id="seller-offers-kpi-container">
+          <!-- Diisi otomatis oleh JavaScript -->
+        </div>
+
+        <!-- Tabel 1: Penawaran yang Disetujui (Accepted) -->
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden p-6 space-y-4">
+          <div class="flex items-center justify-between">
+            <div>
+              <h4 class="text-sm font-bold text-slate-900 flex items-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                <span>Daftar Kesepakatan Harga (Penawaran Telah Disetujui)</span>
+              </h4>
+              <p class="text-xs text-slate-500">Pembeli dapat langsung mengunci pesanan dan membayar DP berdasarkan harga deal ini.</p>
+            </div>
+          </div>
+          <div id="seller-accepted-offers-container" class="overflow-x-auto">
+            <!-- Diisi otomatis oleh JavaScript -->
+          </div>
+        </div>
+
+        <!-- Tabel 2: Penawaran Masuk yang Menunggu Keputusan (Pending) -->
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden p-6 space-y-4">
+          <div>
+            <h4 class="text-sm font-bold text-slate-900 flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
+              <span>Antrean Penawaran Harga Masuk (Menunggu Keputusan)</span>
+            </h4>
+            <p class="text-xs text-slate-500">Terima atau tolak tawaran pembeli. Keputusan Anda akan langsung diberitahukan kepada pembeli.</p>
+          </div>
+          <div id="seller-offers-container" class="overflow-x-auto">
+            <!-- Diisi otomatis oleh JavaScript -->
+          </div>
+        </div>
       </div>
 
     </div>
@@ -1889,6 +2125,14 @@
             <i class="fa-solid fa-handshake"></i>
             <span>Audit Transaksi</span>
           </button>
+          <button id="admin-tab-btn-financial" onclick="app.switchAdminTab('financial')" class="px-4 py-2.5 text-xs font-bold text-slate-600 hover:text-slate-900 rounded-t-lg transition flex items-center space-x-1.5 shrink-0 text-emerald-700">
+            <i class="fa-solid fa-coins text-emerald-600"></i>
+            <span>Laporan Keuangan</span>
+          </button>
+          <button id="admin-tab-btn-reports" onclick="app.switchAdminTab('reports')" class="px-4 py-2.5 text-xs font-bold text-slate-600 hover:text-slate-900 rounded-t-lg transition flex items-center space-x-1.5 shrink-0 text-blue-700">
+            <i class="fa-solid fa-chart-column text-blue-600"></i>
+            <span>Laporan Jual &amp; Beli</span>
+          </button>
           <button id="admin-tab-btn-subscriptions" onclick="app.switchAdminTab('subscriptions')" class="px-4 py-2.5 text-xs font-bold text-slate-600 hover:text-slate-900 rounded-t-lg transition flex items-center space-x-1.5 shrink-0 text-emerald-700">
             <i class="fa-solid fa-user-check text-emerald-600"></i>
             <span>Approval Berlangganan</span>
@@ -1898,6 +2142,11 @@
             <i class="fa-solid fa-calendar-days text-indigo-600"></i>
             <span>Manajemen Event</span>
           </button>
+          <button id="admin-tab-btn-tickets" onclick="app.switchAdminTab('tickets')" class="px-4 py-2.5 text-xs font-bold text-slate-600 hover:text-slate-900 rounded-t-lg transition flex items-center space-x-1.5 shrink-0 text-violet-700">
+            <i class="fa-solid fa-qrcode text-violet-600"></i>
+            <span>Pencetak Tiket &amp; QR Event</span>
+            <span id="admin-tab-tickets-badge" class="ml-1 px-1.5 py-0.2 bg-violet-600 text-white rounded-full text-[10px]">0</span>
+          </button>
           <button id="admin-tab-btn-tiers" onclick="app.switchAdminTab('tiers')" class="px-4 py-2.5 text-xs font-bold text-slate-600 hover:text-slate-900 rounded-t-lg transition flex items-center space-x-1.5 shrink-0">
             <i class="fa-solid fa-crown text-amber-500"></i>
             <span>Paket &amp; Tarif Langganan</span>
@@ -1905,6 +2154,10 @@
           <button id="admin-tab-btn-settings" onclick="app.switchAdminTab('settings')" class="px-4 py-2.5 text-xs font-bold text-slate-600 hover:text-slate-900 rounded-t-lg transition flex items-center space-x-1.5 shrink-0">
             <i class="fa-solid fa-sliders"></i>
             <span>Pengaturan DP &amp; Biaya</span>
+          </button>
+          <button id="admin-tab-btn-support" onclick="app.switchAdminTab('support')" class="px-4 py-2.5 text-xs font-bold text-slate-600 hover:text-slate-900 rounded-t-lg transition flex items-center space-x-1.5 shrink-0 text-emerald-700">
+            <i class="fa-solid fa-headset text-emerald-600"></i>
+            <span>Pusat Layanan Resmi</span>
           </button>
         </div>
 
@@ -1929,6 +2182,133 @@
           </div>
           <div id="admin-orders-table-container" class="overflow-x-auto">
             <!-- Diisi otomatis oleh JavaScript -->
+          </div>
+        </div>
+
+        <!-- Konten 2B: LAPORAN TRANSAKSI KEUANGAN -->
+        <div id="admin-content-financial" class="p-6 hidden space-y-6">
+          <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-4">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div>
+                <div class="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-300 mb-2">
+                  <i class="fa-solid fa-coins"></i>
+                  <span>Laporan Finansial &amp; Escrow Platform</span>
+                </div>
+                <h3 class="text-lg font-bold text-slate-900">Laporan Transaksi Keuangan Bursa Limbah</h3>
+                <p class="text-xs text-slate-500">Rekapitulasi arus dana escrow masuk, pendapatan platform (Handling &amp; App Fee), dana ongkos kirim, dan pencairan ke rekening penjual.</p>
+              </div>
+              <div class="flex items-center gap-2">
+                <button onclick="app.printAdminFinancialReport()" class="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold shadow transition flex items-center gap-1.5">
+                  <i class="fa-solid fa-print"></i>
+                  <span>Cetak Laporan Keuangan</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Filter Bar Laporan Keuangan -->
+            <div class="pt-4 border-t border-slate-100 grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+              <div>
+                <label class="block text-[11px] font-bold text-slate-600 mb-1">Dari Tanggal</label>
+                <input type="date" id="admin-fin-filter-start" onchange="app.renderAdminFinancialReport()" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500">
+              </div>
+              <div>
+                <label class="block text-[11px] font-bold text-slate-600 mb-1">Sampai Tanggal</label>
+                <input type="date" id="admin-fin-filter-end" onchange="app.renderAdminFinancialReport()" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500">
+              </div>
+              <div class="flex items-end">
+                <button type="button" onclick="app.resetAdminFinFilter()" class="w-full py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition">
+                  Reset Filter
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- KPI Ringkasan Keuangan -->
+          <div class="grid grid-cols-2 lg:grid-cols-4 gap-4" id="admin-fin-kpi-container">
+            <!-- Diisi otomatis oleh JavaScript app.renderAdminFinancialReport() -->
+          </div>
+
+          <!-- Tabel Rincian Arus Kas & Biaya Platform -->
+          <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden p-6 space-y-4">
+            <div class="flex items-center justify-between">
+              <h4 class="text-sm font-bold text-slate-900">Rincian Buku Kas Escrow &amp; Bagi Hasil Platform</h4>
+              <span class="text-xs text-slate-500" id="admin-fin-count-label">0 Entri Transaksi</span>
+            </div>
+            <div id="admin-financial-table-container" class="overflow-x-auto">
+              <!-- Diisi otomatis oleh JavaScript -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Konten 2C: LAPORAN PENJUALAN DAN PEMBELIAN -->
+        <div id="admin-content-reports" class="p-6 hidden space-y-6">
+          <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-4">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div>
+                <div class="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full text-xs font-bold bg-blue-100 text-blue-800 border border-blue-300 mb-2">
+                  <i class="fa-solid fa-chart-column"></i>
+                  <span>Analisis Pasar Sirkular Nasional</span>
+                </div>
+                <h3 class="text-lg font-bold text-slate-900">Laporan Penjualan dan Pembelian Platform</h3>
+                <p class="text-xs text-slate-500">Statistik agregat volume komoditas limbah, perputaran nilai transaksi bruto, rasio transaksi sukses, dan rincian transaksi menyeluruh.</p>
+              </div>
+              <div class="flex items-center gap-2">
+                <button onclick="app.printAdminSalesPurchaseReport()" class="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold shadow transition flex items-center gap-1.5">
+                  <i class="fa-solid fa-print"></i>
+                  <span>Cetak Laporan Jual-Beli</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Filter Bar Laporan Penjualan & Pembelian -->
+            <div class="pt-4 border-t border-slate-100 grid grid-cols-1 sm:grid-cols-4 gap-3 text-xs">
+              <div>
+                <label class="block text-[11px] font-bold text-slate-600 mb-1">Kategori Komoditas</label>
+                <select id="admin-report-filter-cat" onchange="app.renderAdminSalesPurchaseReport()" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-blue-500">
+                  <option value="all">Semua Komoditas</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-[11px] font-bold text-slate-600 mb-1">Dari Tanggal</label>
+                <input type="date" id="admin-report-filter-start" onchange="app.renderAdminSalesPurchaseReport()" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-blue-500">
+              </div>
+              <div>
+                <label class="block text-[11px] font-bold text-slate-600 mb-1">Sampai Tanggal</label>
+                <input type="date" id="admin-report-filter-end" onchange="app.renderAdminSalesPurchaseReport()" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-blue-500">
+              </div>
+              <div class="flex items-end">
+                <button type="button" onclick="app.resetAdminReportFilter()" class="w-full py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition">
+                  Reset Filter
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- KPI Ringkasan Platform -->
+          <div class="grid grid-cols-2 lg:grid-cols-4 gap-4" id="admin-reports-kpi-container">
+            <!-- Diisi otomatis oleh JavaScript app.renderAdminSalesPurchaseReport() -->
+          </div>
+
+          <!-- Distribusi Komoditas -->
+          <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-4">
+            <h4 class="text-sm font-bold text-slate-900 flex items-center gap-2">
+              <i class="fa-solid fa-chart-pie text-blue-600"></i>
+              <span>Sebaran Perdagangan Berdasarkan Komoditas Limbah</span>
+            </h4>
+            <div id="admin-reports-commodity-container" class="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
+              <!-- Diisi otomatis oleh JavaScript -->
+            </div>
+          </div>
+
+          <!-- Tabel Komprehensif Seluruh Transaksi Jual & Beli -->
+          <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden p-6 space-y-4">
+            <div class="flex items-center justify-between">
+              <h4 class="text-sm font-bold text-slate-900">Daftar Transaksi Perdagangan Platform</h4>
+              <span class="text-xs text-slate-500" id="admin-reports-count-label">0 Transaksi</span>
+            </div>
+            <div id="admin-reports-table-container" class="overflow-x-auto">
+              <!-- Diisi otomatis oleh JavaScript -->
+            </div>
           </div>
         </div>
 
@@ -2005,11 +2385,16 @@
                 </div>
                 <h3 class="text-lg font-bold text-slate-900">Manajemen Event &amp; Kegiatan Bursa Limbah</h3>
                 <p class="text-xs text-slate-500">Kelola agenda seminar, workshop, expo, dan forum pertemuan penjual-pembeli limbah.</p>
+              <div class="flex items-center gap-2">
+                <button onclick="app.switchAdminTab('tickets')" class="px-3.5 py-2.5 rounded-xl border border-violet-200 bg-violet-50 hover:bg-violet-100 text-violet-800 text-xs font-bold transition flex items-center space-x-1.5 shadow-2xs">
+                  <i class="fa-solid fa-qrcode text-violet-600"></i>
+                  <span>Pencetak Tiket &amp; QR</span>
+                </button>
+                <button onclick="app.showAddEventModal()" class="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-md transition flex items-center space-x-2">
+                  <i class="fa-solid fa-calendar-plus"></i>
+                  <span>Tambah Event Baru</span>
+                </button>
               </div>
-              <button onclick="app.showAddEventModal()" class="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-md transition flex items-center space-x-2">
-                <i class="fa-solid fa-calendar-plus"></i>
-                <span>Tambah Event Baru</span>
-              </button>
             </div>
 
             <div id="admin-events-table-container" class="overflow-x-auto">
@@ -2018,102 +2403,757 @@
           </div>
         </div>
 
+        <!-- Konten 5B: GENERATOR & PENCETAK TIKET EVENT (QR CODE & ABSENSI) -->
+        <div id="admin-content-tickets" class="p-6 hidden">
+          <div class="space-y-6">
+
+            <!-- Header & Action Quick Links -->
+            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-200 pb-4">
+              <div>
+                <div class="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full text-xs font-bold bg-violet-100 text-violet-800 border border-violet-300 mb-1.5">
+                  <i class="fa-solid fa-qrcode text-violet-600"></i>
+                  <span>Generator &amp; Pencetak Tiket Event</span>
+                </div>
+                <h3 class="text-lg sm:text-xl font-bold text-slate-900">Penerbitan Tiket Masuk &amp; Barcode QR Absensi Event</h3>
+                <p class="text-xs text-slate-500">Terbitkan tiket masuk resmi, atur identitas tamu/peserta, cetak kartu tiket siap pakai, serta catat presensi kehadiran pengunjung via QR Code.</p>
+              </div>
+              <div class="flex flex-wrap items-center gap-2">
+                <button type="button" onclick="app.printCurrentTicket()" class="px-4 py-2 rounded-xl bg-violet-700 hover:bg-violet-800 text-white text-xs font-bold transition flex items-center gap-2 shadow-md">
+                  <i class="fa-solid fa-print"></i>
+                  <span>Cetak Tiket (Print / PDF)</span>
+                </button>
+                <button type="button" onclick="[REDACTED]'ticket-scanner-input')?.focus(); [REDACTED]'ticket-scanner-section')?.scrollIntoView({behavior:'smooth'});" class="px-3.5 py-2 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold transition flex items-center gap-1.5 shadow-2xs">
+                  <i class="fa-solid fa-barcode text-slate-500"></i>
+                  <span>Absen / Scan QR</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Kartu Statistik Tiket -->
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div class="p-4 rounded-2xl bg-gradient-to-br from-violet-50 to-white border border-violet-100 shadow-2xs">
+                <div class="flex items-center justify-between text-slate-500 text-[11px] font-semibold mb-1">
+                  <span>Total Diterbitkan</span>
+                  <i class="fa-solid fa-ticket text-violet-500"></i>
+                </div>
+                <div id="stat-tickets-total" class="text-2xl font-extrabold text-slate-900 font-mono">0</div>
+                <div class="text-[10px] text-slate-400 mt-0.5">Seluruh tiket terdaftar</div>
+              </div>
+              <div class="p-4 rounded-2xl bg-gradient-to-br from-emerald-50 to-white border border-emerald-100 shadow-2xs">
+                <div class="flex items-center justify-between text-emerald-700 text-[11px] font-semibold mb-1">
+                  <span>Sudah Hadir (Checked-In)</span>
+                  <i class="fa-solid fa-circle-check text-emerald-500"></i>
+                </div>
+                <div id="stat-tickets-checkedin" class="text-2xl font-extrabold text-emerald-700 font-mono">0</div>
+                <div class="text-[10px] text-emerald-600 mt-0.5">Tervalidasi presensi</div>
+              </div>
+              <div class="p-4 rounded-2xl bg-gradient-to-br from-amber-50 to-white border border-amber-100 shadow-2xs">
+                <div class="flex items-center justify-between text-amber-700 text-[11px] font-semibold mb-1">
+                  <span>Menunggu Kehadiran</span>
+                  <i class="fa-solid fa-clock text-amber-500"></i>
+                </div>
+                <div id="stat-tickets-pending" class="text-2xl font-extrabold text-amber-700 font-mono">0</div>
+                <div class="text-[10px] text-amber-600 mt-0.5">Belum scan di pintu masuk</div>
+              </div>
+              <div class="p-4 rounded-2xl bg-gradient-to-br from-indigo-50 to-white border border-indigo-100 shadow-2xs">
+                <div class="flex items-center justify-between text-indigo-700 text-[11px] font-semibold mb-1">
+                  <span>Agenda Aktif</span>
+                  <i class="fa-solid fa-calendar-check text-indigo-500"></i>
+                </div>
+                <div id="stat-tickets-events" class="text-2xl font-extrabold text-indigo-800 font-mono">0</div>
+                <div class="text-[10px] text-indigo-600 mt-0.5">Event tersedia</div>
+              </div>
+            </div>
+
+            <!-- Grid Generator Form (Kiri) & Live Printable Ticket (Kanan) -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+              <!-- Kolom Formulir Generator (5 cols) -->
+              <div class="lg:col-span-5 space-y-4">
+                <form id="admin-ticket-generator-form" onsubmit="app.handleIssueTicketSubmit(event)" class="bg-slate-50 p-5 rounded-2xl border border-slate-200 shadow-2xs space-y-4">
+                  
+                  <div class="flex items-center justify-between border-b border-slate-200 pb-2.5">
+                    <span class="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+                      <i class="fa-solid fa-sliders text-violet-600"></i>
+                      <span>Konfigurasi &amp; Terbitkan Tiket</span>
+                    </span>
+                    <button type="button" onclick="app.generateNewTicketCode()" class="text-[11px] text-violet-700 hover:text-violet-900 font-bold transition flex items-center gap-1">
+                      <i class="fa-solid fa-shuffle"></i>
+                      <span>Acak Kode</span>
+                    </button>
+                  </div>
+
+                  <!-- 1. Pilih Event -->
+                  <div>
+                    <label class="block text-[11px] font-semibold text-slate-700 mb-1">Pilih Event / Agenda Resmi <span class="text-rose-500">*</span></label>
+                    <select id="ticket-form-event" onchange="app.handleTicketEventChange()" required class="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-violet-500">
+                      <!-- Diisi dinamis dari store -->
+                    </select>
+                  </div>
+
+                  <!-- 2. Jenis / Tujuan Tiket -->
+                  <div>
+                    <label class="block text-[11px] font-semibold text-slate-700 mb-1">Peruntukan / Jenis Tiket <span class="text-rose-500">*</span></label>
+                    <select id="ticket-form-type" onchange="app.updateLiveTicketPreview()" class="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-violet-500">
+                      <option value="entry">Tiket Masuk Resmi (Entrance Pass)</option>
+                      <option value="attendance">Tiket Absen Kedatangan (Attendance Check-In)</option>
+                      <option value="vip">VIP Guest &amp; Keynote Speaker</option>
+                      <option value="committee">Staff &amp; Panitia Pelaksana</option>
+                    </select>
+                  </div>
+
+                  <!-- 3. Identitas Pemegang Tiket -->
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label class="block text-[11px] font-semibold text-slate-700 mb-1">Nama Lengkap Peserta <span class="text-rose-500">*</span></label>
+                      <input type="text" id="ticket-form-name" required placeholder="Contoh: Budi Santoso" oninput="app.updateLiveTicketPreview()" class="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-violet-500">
+                    </div>
+                    <div>
+                      <label class="block text-[11px] font-semibold text-slate-700 mb-1">Perusahaan / Instansi</label>
+                      <input type="text" id="ticket-form-company" placeholder="Contoh: PT Hijau Mandiri" oninput="app.updateLiveTicketPreview()" class="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-violet-500">
+                    </div>
+                  </div>
+
+                  <!-- 4. Kontak Peserta -->
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label class="block text-[11px] font-semibold text-slate-700 mb-1">Nomor WhatsApp / HP</label>
+                      <input type="tel" id="ticket-form-phone" placeholder="08[REDACTED]7890" oninput="app.updateLiveTicketPreview()" class="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs font-mono text-slate-800 focus:outline-none focus:ring-2 focus:ring-violet-500">
+                    </div>
+                    <div>
+                      <label class="block text-[11px] font-semibold text-slate-700 mb-1">Alamat Email (Opsional)</label>
+                      <input type="email" id="ticket-form-email" placeholder="peserta@email.com" class="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-violet-500">
+                    </div>
+                  </div>
+
+                  <!-- 5. Gate / Meja & Kode Tiket -->
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label class="block text-[11px] font-semibold text-slate-700 mb-1">Gate / Meja Registrasi</label>
+                      <input type="text" id="ticket-form-gate" placeholder="Gate A - Meja Presensi 1" oninput="app.updateLiveTicketPreview()" class="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-violet-500">
+                    </div>
+                    <div>
+                      <label class="block text-[11px] font-semibold text-slate-700 mb-1">Kode Unik Tiket</label>
+                      <input type="text" id="ticket-form-code" readonly class="w-full bg-slate-100 border border-slate-300 rounded-xl px-3 py-2 text-xs font-mono font-bold text-violet-800 cursor-not-allowed">
+                    </div>
+                  </div>
+
+                  <!-- 6. Instruksi / Catatan Masuk -->
+                  <div>
+                    <label class="block text-[11px] font-semibold text-slate-700 mb-1">Instruksi Khusus / Ketentuan Acara</label>
+                    <textarea id="ticket-form-notes" rows="2" placeholder="Tunjukkan kode QR ini kepada panitia registrasi untuk presensi kehadiran." oninput="app.updateLiveTicketPreview()" class="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs leading-relaxed text-slate-700 focus:outline-none focus:ring-2 focus:ring-violet-500"></textarea>
+                  </div>
+
+                  <!-- Tombol Aksi Form -->
+                  <div class="pt-2 flex items-center justify-between gap-2">
+                    <button type="button" onclick="app.resetTicketGeneratorForm()" class="px-3 py-2 rounded-xl border border-slate-300 bg-white hover:bg-slate-100 text-slate-700 text-xs font-semibold transition">
+                      Reset
+                    </button>
+                    <button type="submit" class="px-5 py-2.5 rounded-xl bg-violet-700 hover:bg-violet-800 text-white text-xs font-bold transition flex items-center gap-2 shadow-md">
+                      <i class="fa-solid fa-plus-circle"></i>
+                      <span>Terbitkan &amp; Simpan Tiket</span>
+                    </button>
+                  </div>
+
+                </form>
+              </div>
+
+              <!-- Kolom Pratinjau Tiket Siap Cetak (7 cols) -->
+              <div class="lg:col-span-7">
+                <div class="sticky top-20 space-y-4">
+                  
+                  <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2 text-xs font-bold text-slate-700 uppercase tracking-wider">
+                      <i class="fa-solid fa-eye text-violet-600"></i>
+                      <span>Pratinjau Kartu Tiket Siap Cetak (Badge Pass)</span>
+                    </div>
+                    <span class="text-[10px] font-mono bg-violet-100 text-violet-800 px-2 py-0.5 rounded-full font-bold">Printable PDF &amp; Hardcopy</span>
+                  </div>
+
+                  <!-- PRINTABLE WRAPPER (Target @media print) -->
+                  <div id="printable-ticket-wrapper" class="w-full">
+                    
+                    <!-- Kartu Tiket Boarding Pass Modern -->
+                    <div id="ticket-badge-card" class="bg-white rounded-3xl border-2 border-slate-800/10 shadow-2xl overflow-hidden relative flex flex-col md:flex-row transition-all max-w-2xl mx-auto">
+                      
+                      <!-- Sisi Kiri: Informasi Acara & Peserta (Utama) -->
+                      <div class="p-6 md:p-7 flex-1 flex flex-col justify-between border-b md:border-b-0 md:border-r border-dashed border-slate-300 relative bg-gradient-to-b from-white to-slate-50/50">
+                        
+                        <!-- Top Header Brand & Badge -->
+                        <div>
+                          <div class="flex items-center justify-between gap-3 mb-3">
+                            <div class="flex items-center gap-2">
+                              <img src="assets/logo.png" alt="Bursa Limbah" class="h-9 w-auto object-contain bg-slate-900/5 p-1 rounded-xl">
+                              <div>
+                                <span class="text-[11px] font-extrabold tracking-wider text-slate-900 uppercase block leading-tight">BURSA LIMBAH</span>
+                                <span class="text-[9px] text-emerald-600 font-semibold uppercase tracking-widest block">Official Event Pass</span>
+                              </div>
+                            </div>
+                            <span id="ticket-preview-badge" class="px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-violet-100 text-violet-900 border border-violet-300 uppercase tracking-wider">
+                              TIKET MASUK RESMI
+                            </span>
+                          </div>
+
+                          <!-- Judul Event -->
+                          <h2 id="ticket-preview-title" class="text-base sm:text-lg font-extrabold text-slate-900 leading-snug line-clamp-2 mt-2">
+                            Workshop Pengelolaan &amp; Monetisasi Minyak Jelantah (UCO) untuk Biodiesel
+                          </h2>
+
+                          <!-- Jadwal & Lokasi -->
+                          <div class="mt-3.5 space-y-1.5 text-xs text-slate-600">
+                            <div class="flex items-center gap-2">
+                              <i class="fa-solid fa-calendar-day text-violet-600 w-4 text-center"></i>
+                              <span id="ticket-preview-date" class="font-bold text-slate-800">22 September 2026</span>
+                              <span class="text-slate-300">•</span>
+                              <i class="fa-solid fa-clock text-violet-600 w-4 text-center"></i>
+                              <span id="ticket-preview-time" class="font-medium">09.00 – 15.00 WIB</span>
+                            </div>
+                            <div class="flex items-start gap-2">
+                              <i class="fa-solid fa-location-dot text-rose-500 w-4 text-center mt-0.5 shrink-0"></i>
+                              <span id="ticket-preview-location" class="font-semibold text-slate-700 leading-tight">Balai Kartini, Jakarta Selatan</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <!-- Info Peserta -->
+                        <div class="mt-6 pt-4 border-t border-slate-200/80">
+                          <div class="grid grid-cols-2 gap-3 text-xs">
+                            <div>
+                              <span class="text-[10px] text-slate-400 uppercase font-bold tracking-wider block">Pemegang Tiket</span>
+                              <span id="ticket-preview-name" class="font-extrabold text-slate-900 text-sm block truncate">Budi Santoso, S.T.</span>
+                              <span id="ticket-preview-company" class="text-[11px] text-slate-500 block truncate">PT Hijau Lestari Biofuel</span>
+                            </div>
+                            <div>
+                              <span class="text-[10px] text-slate-400 uppercase font-bold tracking-wider block">Akses / Penempatan</span>
+                              <span id="ticket-preview-gate" class="font-bold text-slate-800 text-xs block truncate">Gate A - Meja Registrasi 01</span>
+                              <span class="text-[10px] text-emerald-600 font-semibold block mt-0.5">
+                                <i class="fa-solid fa-shield-check"></i> Terverifikasi Sah
+                              </span>
+                            </div>
+                          </div>
+                          <p id="ticket-preview-notes" class="text-[10px] text-slate-500 italic mt-3 bg-slate-100 p-2 rounded-xl">
+                            Tunjukkan QR Code ini kepada panitia registrasi di pintu masuk acara.
+                          </p>
+                        </div>
+
+                        <!-- Half Circle Cutouts (Left & Right for Perforation) -->
+                        <div class="hidden md:block absolute -top-3 -right-3 w-6 h-6 rounded-full bg-slate-50 border border-slate-300/80"></div>
+                        <div class="hidden md:block absolute -bottom-3 -right-3 w-6 h-6 rounded-full bg-slate-50 border border-slate-300/80"></div>
+                      </div>
+
+                      <!-- Sisi Kanan: Stub Tiket & Barcode QR Code -->
+                      <div class="p-6 md:p-7 md:w-64 bg-slate-900 text-white flex flex-col items-center justify-between text-center relative">
+                        
+                        <div class="w-full">
+                          <span class="text-[10px] text-violet-300 font-bold uppercase tracking-wider block mb-1">Scan Check-In / Presensi</span>
+                          <span id="ticket-preview-code" class="text-xs font-mono font-bold text-amber-300 tracking-wider block">
+                            BL-TKT-2026-9812
+                          </span>
+                        </div>
+
+                        <!-- QR Code Container -->
+                        <div class="my-4 p-3 bg-white rounded-2xl shadow-lg border-2 border-violet-400/30 flex items-center justify-center">
+                          <div id="ticket-qr-container" class="w-32 h-32 flex items-center justify-center">
+                            <!-- Diisi oleh app.renderQrCodeInto() -->
+                          </div>
+                        </div>
+
+                        <!-- Status Stamp & Micro Instruction -->
+                        <div class="w-full space-y-1">
+                          <span id="ticket-preview-status" class="inline-block px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest bg-emerald-500/20 text-emerald-400 border border-emerald-500/40">
+                            VALID / SIAP PAKAI
+                          </span>
+                          <p class="text-[9px] text-slate-400 leading-tight">
+                            Pindai menggunakan scanner panitia untuk validasi kehadiran.
+                          </p>
+                        </div>
+
+                      </div>
+
+                    </div>
+
+                  </div>
+
+                  <!-- Action Toolbar (Cetak, WhatsApp, Mark Check-In) -->
+                  <div class="p-4 rounded-2xl bg-slate-100 border border-slate-200 flex flex-wrap items-center justify-between gap-3">
+                    <div class="flex items-center gap-2">
+                      <button type="button" onclick="app.printCurrentTicket()" class="px-4 py-2.5 rounded-xl bg-violet-700 hover:bg-violet-800 text-white text-xs font-bold transition flex items-center gap-2 shadow-sm">
+                        <i class="fa-solid fa-print"></i>
+                        <span>Cetak Tiket Sekarang</span>
+                      </button>
+                      <button type="button" onclick="app.shareTicketWhatsApp()" class="px-3.5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition flex items-center gap-1.5 shadow-sm">
+                        <i class="fa-brands fa-whatsapp text-sm"></i>
+                        <span>Kirim ke WhatsApp</span>
+                      </button>
+                    </div>
+                    <button type="button" onclick="app.checkInCurrentTicket()" class="px-3.5 py-2.5 rounded-xl border border-indigo-300 bg-white hover:bg-indigo-50 text-indigo-800 text-xs font-bold transition flex items-center gap-1.5 shadow-2xs">
+                      <i class="fa-solid fa-user-check text-indigo-600"></i>
+                      <span>Absen / Check-In Sekarang</span>
+                    </button>
+                  </div>
+
+                </div>
+              </div>
+
+            </div>
+
+            <!-- Bagian: MEJA SCANNER & ABSEN KEDATANGAN CEPAT -->
+            <div id="ticket-scanner-section" class="p-5 sm:p-6 rounded-2xl bg-gradient-to-r from-violet-900 to-indigo-900 text-white shadow-xl space-y-4">
+              <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                <div>
+                  <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-violet-400/20 text-violet-200 border border-violet-400/30 uppercase tracking-wider mb-1">
+                    <i class="fa-solid fa-camera"></i>
+                    <span>Meja Registrasi &amp; Absensi</span>
+                  </span>
+                  <h4 class="text-base font-extrabold tracking-tight">Validasi Cepat Tiket Masuk &amp; Presensi Tamu</h4>
+                  <p class="text-xs text-violet-200">Ketik atau scan barcode / QR Code tiket untuk memverifikasi tiket dan otomatis mencatat jam kehadiran peserta.</p>
+                </div>
+              </div>
+
+              <!-- Input Scanner -->
+              <form onsubmit="app.handleQuickScannerSubmit(event)" class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                <div class="relative flex-1">
+                  <i class="fa-solid fa-qrcode absolute left-3.5 top-3 text-slate-400 text-base"></i>
+                  <input type="text" id="ticket-scanner-input" placeholder="Pindai QR atau ketik nomor tiket (misal: BL-TKT-2026-9812)..." class="w-full pl-10 pr-4 py-2.5 rounded-xl bg-white text-slate-800 text-xs font-mono font-bold placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-400 shadow-inner">
+                </div>
+                <button type="submit" class="px-6 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs font-extrabold shadow-md transition flex items-center justify-center gap-2 shrink-0">
+                  <i class="fa-solid fa-badge-check text-sm"></i>
+                  <span>Validasi &amp; Catat Kedatangan</span>
+                </button>
+              </form>
+
+              <!-- Box Hasil Validasi -->
+              <div id="ticket-scanner-result" class="hidden p-4 rounded-xl bg-white/10 border border-white/20 text-xs backdrop-blur-sm">
+                <!-- Diisi oleh app.handleQuickScannerSubmit() -->
+              </div>
+            </div>
+
+            <!-- Bagian: TABEL REKAPITULASI TIKET EVENT YANG DITERBITKAN -->
+            <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-4">
+              <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
+                <div>
+                  <h4 class="text-base font-bold text-slate-900">Daftar Tiket &amp; Absensi yang Telah Diterbitkan</h4>
+                  <p class="text-xs text-slate-500">Pantau seluruh tiket yang sudah diterbitkan, status check-in peserta, dan cetak ulang tiket kapan pun dibutuhkan.</p>
+                </div>
+                <div class="flex flex-wrap items-center gap-2">
+                  <select id="ticket-table-filter-event" onchange="app.renderAdminTicketsTable()" class="bg-slate-50 border border-slate-300 rounded-xl px-3 py-1.5 text-xs font-medium text-slate-700">
+                    <option value="all">Semua Agenda Event</option>
+                  </select>
+                  <select id="ticket-table-filter-status" onchange="app.renderAdminTicketsTable()" class="bg-slate-50 border border-slate-300 rounded-xl px-3 py-1.5 text-xs font-medium text-slate-700">
+                    <option value="all">Semua Status</option>
+                    <option value="issued">Belum Hadir</option>
+                    <option value="checked_in">Sudah Hadir</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- Tabel Tiket -->
+              <div id="admin-tickets-table-container" class="overflow-x-auto">
+                <!-- Diisi otomatis oleh app.renderAdminTicketsTable() -->
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+
         <!-- Konten 6: Pengaturan DP & Konfigurasi Biaya Umum -->
         <div id="admin-content-settings" class="p-6 hidden">
-          <div class="max-w-2xl space-y-6">
+          <div class="max-w-3xl space-y-6">
             <div>
               <div class="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-300 mb-2">
                 <i class="fa-solid fa-sliders"></i>
                 <span>Kontrol Transaksi &amp; Rekber</span>
               </div>
               <h3 class="text-base font-bold text-slate-900">Pengaturan Uang Muka (DP) &amp; Biaya Platform</h3>
-              <p class="text-xs text-slate-500">Atur status aktif/nonaktif fitur DP Escrow, persentase DP, serta biaya penanganan sistem transaksi.</p>
+              <p class="text-xs text-slate-500">Atur status aktif/nonaktif fitur DP Escrow, persentase DP, serta editor jenis biaya platform secara dinamis.</p>
             </div>
 
-            <form id="admin-settings-form" onsubmit="app.saveAdminSettings(event)" class="space-y-5 bg-slate-50 p-6 rounded-2xl border border-slate-200">
-              
-              <!-- PENGATURAN STATUS DP (ON / OFF) -->
-              <div class="p-4 bg-white rounded-xl border border-slate-200 shadow-2xs space-y-3">
-                <div class="flex items-center justify-between">
-                  <div>
-                    <label class="block text-xs font-bold uppercase text-slate-800 tracking-wider">Status Fitur Uang Muka (DP Escrow)</label>
-                    <p class="text-[11px] text-slate-500 mt-0.5">Jika Nonaktif (Set OFF), badge &amp; rincian DP disembunyikan dari katalog, kalkulator, dan checkout.</p>
+            <form id="admin-settings-form" onsubmit="app.saveAdminSettings(event)" class="space-y-5">
+
+              <!-- SECTION 1: STATUS DP -->
+              <div class="bg-slate-50 p-5 rounded-2xl border border-slate-200 space-y-4">
+                <div class="flex items-center gap-2 pb-2 border-b border-slate-200">
+                  <i class="fa-solid fa-landmark text-amber-600"></i>
+                  <h4 class="text-xs font-bold uppercase text-slate-700 tracking-wider">Kontrol Uang Muka (DP Escrow)</h4>
+                </div>
+
+                <!-- Toggle ON/OFF -->
+                <div class="p-4 bg-white rounded-xl border border-slate-200 shadow-2xs space-y-3">
+                  <div class="flex items-center justify-between">
+                    <div>
+                      <label class="block text-xs font-bold uppercase text-slate-800 tracking-wider">Status Fitur Uang Muka (DP Escrow)</label>
+                      <p class="text-[11px] text-slate-500 mt-0.5">Jika Nonaktif (Set OFF), badge &amp; rincian DP disembunyikan dari katalog, kalkulator, dan checkout.</p>
+                    </div>
+                    <span id="setting-dp-status-badge" class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-rose-100 text-rose-800 border border-rose-200">
+                      NONAKTIF (SET OFF)
+                    </span>
                   </div>
-                  <span id="setting-dp-status-badge" class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-rose-100 text-rose-800 border border-rose-200">
-                    NONAKTIF (SET OFF)
-                  </span>
-                </div>
-                <div class="flex items-center space-x-3 pt-1">
-                  <label class="relative inline-flex items-center cursor-pointer">
-                    <input type="checkbox" id="setting-dp-enabled" class="sr-only peer" onchange="app.handleDpToggleChange(this.checked)">
-                    <div class="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
-                  </label>
-                  <span id="setting-dp-toggle-label" class="text-xs font-semibold text-slate-700">Fitur DP Saat Ini Dinonaktifkan (Pelunasan Penuh)</span>
-                </div>
-              </div>
-
-              <!-- PERSENTASE DP -->
-              <div id="setting-dp-percent-group" class="p-4 bg-white rounded-xl border border-slate-200 shadow-2xs space-y-2 opacity-60">
-                <label class="block text-xs font-bold uppercase text-slate-800">Besaran Persentase Uang Muka (DP)</label>
-                <p class="text-[11px] text-slate-500">Nilai persentase uang muka yang dibayarkan ke rekening bersama saat fitur DP diaktifkan.</p>
-                <div class="relative max-w-xs">
-                  <input type="number" id="setting-dp" min="5" max="90" step="5" class="w-full bg-slate-50 border border-slate-300 rounded-xl pl-4 pr-9 py-2 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500" value="30">
-                  <span class="absolute right-3 top-2 text-xs font-bold text-slate-400">%</span>
-                </div>
-              </div>
-
-              <!-- BIAYA PENANGANAN SISTEM -->
-              <div class="p-4 bg-white rounded-xl border border-slate-200 shadow-2xs space-y-2">
-                <label class="block text-xs font-bold uppercase text-slate-800">Biaya Penanganan Sistem per Transaksi</label>
-                <div class="relative max-w-xs">
-                  <span class="absolute left-3 top-2 text-xs font-bold text-slate-400">Rp</span>
-                  <input type="number" id="setting-handling" class="w-full bg-slate-50 border border-slate-300 rounded-xl pl-9 pr-4 py-2 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500" value="10000">
-                </div>
-              </div>
-
-              <div class="p-4 bg-white rounded-xl border border-slate-200 shadow-2xs space-y-3">
-                <label class="block text-xs font-bold uppercase text-slate-800">Biaya Penanganan Berdasarkan Tier Pembeli</label>
-                <p class="text-[11px] text-slate-500">Biaya ini menggantikan tarif flat saat checkout. Masukkan 0 jika tier dibebaskan dari biaya penanganan.</p>
-                <div class="grid grid-cols-2 gap-3">
-                  <label class="text-[11px] font-semibold text-slate-600">Starter <input type="number" id="setting-handling-tier-starter" min="0" class="mt-1 w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-sm font-mono"></label>
-                  <label class="text-[11px] font-semibold text-slate-600">Basic <input type="number" id="setting-handling-tier-basic" min="0" class="mt-1 w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-sm font-mono"></label>
-                  <label class="text-[11px] font-semibold text-slate-600">Pro <input type="number" id="setting-handling-tier-pro" min="0" class="mt-1 w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-sm font-mono"></label>
-                  <label class="text-[11px] font-semibold text-slate-600">Enterprise <input type="number" id="setting-handling-tier-enterprise" min="0" class="mt-1 w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-sm font-mono"></label>
-                </div>
-              </div>
-
-              <div class="p-4 bg-white rounded-xl border border-slate-200 shadow-2xs space-y-3">
-                <div class="flex items-center justify-between gap-3"><div><label class="block text-xs font-bold uppercase text-slate-800">API Payment Gateway</label><p class="text-[11px] text-slate-500 mt-0.5">Aktifkan pembayaran DP melalui provider pilihan. Kunci rahasia disimpan pada environment server.</p></div><label class="relative inline-flex items-center cursor-pointer"><input type="checkbox" id="setting-gateway-enabled" class="sr-only peer"><div class="w-11 h-6 bg-slate-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div></label></div>
-                <div class="grid sm:grid-cols-3 gap-3">
-                  <label class="text-[11px] font-semibold text-slate-600">Provider<select id="setting-gateway-provider" class="mt-1 w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-xs"><option value="midtrans">Midtrans</option><option value="xendit">Xendit</option></select></label>
-                  <label class="text-[11px] font-semibold text-slate-600">Lingkungan<select id="setting-gateway-environment" class="mt-1 w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-xs"><option value="sandbox">Sandbox</option><option value="production">Production</option></select></label>
-                  <label class="text-[11px] font-semibold text-slate-600">Client / Public Key<input id="setting-gateway-client-key" type="text" autocomplete="off" placeholder="SB-Mid-client-..." class="mt-1 w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-xs font-mono"></label>
-                </div>
-                <p class="text-[10px] text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-2"><i class="fa-solid fa-shield-halved mr-1"></i> Tambahkan <strong>MIDTRANS_SERVER_KEY</strong> atau <strong>XENDIT_SECRET_KEY</strong> di environment server sebelum memilih Production.</p>
-              </div>
-
-              <div class="p-4 bg-white rounded-xl border border-slate-200 shadow-2xs space-y-3">
-                <div class="flex items-center justify-between gap-3">
-                  <div>
-                    <label class="block text-xs font-bold uppercase text-slate-800">Ticker Harga Pasar</label>
-                    <p class="text-[11px] text-slate-500 mt-0.5">Menampilkan kurs USD/IDR dari Market Price API dan rata-rata harga listing aktif.</p>
+                  <div class="flex items-center space-x-3 pt-1">
+                    <label class="relative inline-flex items-center cursor-pointer">
+                      <input type="checkbox" id="setting-dp-enabled" class="sr-only peer" onchange="app.handleDpToggleChange(this.checked)">
+                      <div class="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
+                    </label>
+                    <span id="setting-dp-toggle-label" class="text-xs font-semibold text-slate-700">Fitur DP Saat Ini Dinonaktifkan (Pelunasan Penuh)</span>
                   </div>
-                  <label class="relative inline-flex items-center cursor-pointer" title="Aktifkan atau nonaktifkan ticker harga pasar">
-                    <input type="checkbox" id="setting-ticker-enabled" class="sr-only peer">
-                    <div class="w-11 h-6 bg-slate-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
-                  </label>
                 </div>
-                <div class="grid sm:grid-cols-2 gap-3">
-                  <label class="text-[11px] font-semibold text-slate-600">Judul Ticker<input id="setting-ticker-title" type="text" maxlength="80" placeholder="Harga Pasar Terkini" class="mt-1 w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-xs"></label>
-                  <label class="text-[11px] font-semibold text-slate-600">Perbarui tiap (menit)<input id="setting-ticker-refresh-minutes" type="number" min="1" max="120" step="1" class="mt-1 w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-xs font-mono"></label>
+
+                <!-- Persentase DP + Preset + Simulasi -->
+                <div id="setting-dp-percent-group" class="p-4 bg-white rounded-xl border border-slate-200 shadow-2xs space-y-3 opacity-60">
+                  <label class="block text-xs font-bold uppercase text-slate-800">Besaran Persentase Uang Muka (DP)</label>
+                  <p class="text-[11px] text-slate-500">Nilai persentase yang dibayarkan ke rekening bersama saat fitur DP diaktifkan.</p>
+                  <!-- Input + % suffix -->
+                  <div class="flex items-center gap-3 flex-wrap">
+                    <div class="relative w-32">
+                      <input type="number" id="setting-dp" min="5" max="90" step="5"
+                        class="w-full bg-slate-50 border border-slate-300 rounded-xl pl-4 pr-9 py-2 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                        value="30" oninput="app.updateDpSimulation()">
+                      <span class="absolute right-3 top-2 text-xs font-bold text-slate-400">%</span>
+                    </div>
+                    <!-- Preset Buttons -->
+                    <div class="flex gap-1.5 flex-wrap">
+                      <button type="button" onclick="app.setDpPreset(10)" class="px-2.5 py-1.5 text-[11px] font-bold bg-slate-100 hover:bg-emerald-100 hover:text-emerald-800 text-slate-600 rounded-lg border border-slate-200 transition">10%</button>
+                      <button type="button" onclick="app.setDpPreset(20)" class="px-2.5 py-1.5 text-[11px] font-bold bg-slate-100 hover:bg-emerald-100 hover:text-emerald-800 text-slate-600 rounded-lg border border-slate-200 transition">20%</button>
+                      <button type="button" onclick="app.setDpPreset(30)" class="px-2.5 py-1.5 text-[11px] font-bold bg-slate-100 hover:bg-emerald-100 hover:text-emerald-800 text-slate-600 rounded-lg border border-slate-200 transition">30%</button>
+                      <button type="button" onclick="app.setDpPreset(50)" class="px-2.5 py-1.5 text-[11px] font-bold bg-slate-100 hover:bg-emerald-100 hover:text-emerald-800 text-slate-600 rounded-lg border border-slate-200 transition">50%</button>
+                    </div>
+                  </div>
+                  <!-- Simulasi DP Preview -->
+                  <div class="mt-2 p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-[11px] text-emerald-900">
+                    <div class="flex items-center gap-1.5 mb-1.5 font-bold"><i class="fa-solid fa-calculator text-emerald-600"></i> Simulasi Transaksi (Contoh: Rp 10.000.000)</div>
+                    <div class="grid grid-cols-2 gap-x-4 gap-y-1">
+                      <span class="text-slate-500">Nilai Transaksi</span><span class="font-semibold" id="dp-sim-total">Rp 10.000.000</span>
+                      <span class="text-slate-500">DP (<span id="dp-sim-pct">30</span>%)</span><span class="font-semibold text-amber-700" id="dp-sim-dp">Rp 3.000.000</span>
+                      <span class="text-slate-500">Sisa Pelunasan</span><span class="font-semibold text-rose-700" id="dp-sim-remaining">Rp 7.000.000</span>
+                    </div>
+                  </div>
                 </div>
-                <p class="text-[10px] text-sky-700 bg-sky-50 border border-sky-200 rounded-lg p-2"><i class="fa-solid fa-chart-line mr-1"></i> Sumber kurs: <strong>ExchangeRate-API</strong>, diakses server melalui endpoint <code>/api/market-prices</code> dan disimpan sementara selama 10 menit.</p>
               </div>
 
-              <div class="p-4 bg-white rounded-xl border border-slate-200 shadow-2xs space-y-3">
-                <div><label class="block text-xs font-bold uppercase text-slate-800">Syarat &amp; Ketentuan Pendaftaran</label><p class="text-[11px] text-slate-500 mt-0.5">Ditampilkan wajib kepada pengguna baru sebelum formulir pembeli atau penjual dibuka.</p></div>
-                <div class="grid sm:grid-cols-3 gap-3"><label class="sm:col-span-2 text-[11px] font-semibold text-slate-600">Judul<input id="setting-terms-title" type="text" maxlength="120" class="mt-1 w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-xs"></label><label class="text-[11px] font-semibold text-slate-600">Versi<input id="setting-terms-version" type="text" maxlength="20" placeholder="1.0" class="mt-1 w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-xs font-mono"></label></div>
-                <label class="block text-[11px] font-semibold text-slate-600">Isi Syarat dan Ketentuan<textarea id="setting-terms-content" rows="7" maxlength="10000" class="mt-1 w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-xs leading-relaxed" placeholder="Masukkan syarat dan ketentuan…"></textarea></label>
+              <!-- SECTION 2: EDITOR JENIS BIAYA PLATFORM (DYNAMIC) -->
+              <div class="bg-slate-50 p-5 rounded-2xl border border-slate-200 space-y-4">
+                <div class="flex items-center justify-between gap-2 pb-2 border-b border-slate-200">
+                  <div class="flex items-center gap-2">
+                    <i class="fa-solid fa-tags text-violet-600"></i>
+                    <h4 class="text-xs font-bold uppercase text-slate-700 tracking-wider">Editor Jenis Biaya Platform</h4>
+                  </div>
+                  <button type="button" onclick="app.showAddFeeModal()"
+                    class="flex items-center gap-1.5 px-3 py-1.5 bg-violet-600 hover:bg-violet-700 text-white text-xs font-bold rounded-xl shadow-xs transition">
+                    <i class="fa-solid fa-plus text-[10px]"></i>
+                    <span>Tambah Jenis Biaya</span>
+                  </button>
+                </div>
+                <p class="text-[11px] text-slate-500">Tentukan jenis biaya apa saja yang ditampilkan dan diterapkan dalam checkout. Setiap biaya dapat diatur nominal/persentase, target beban (Pembeli/Penjual/Keduanya), dan status aktif.</p>
+
+                <!-- Daftar Biaya Dinamis -->
+                <div id="admin-fees-list-container" class="space-y-2">
+                  <!-- Di-render oleh renderAdminFeesList() -->
+                  <div class="text-center py-4 text-xs text-slate-400">Memuat data biaya…</div>
+                </div>
+
+                <!-- Simulasi Total Biaya -->
+                <div class="mt-3 p-4 bg-violet-50 border border-violet-200 rounded-xl">
+                  <div class="flex items-center gap-1.5 mb-2 text-[11px] font-bold text-violet-900">
+                    <i class="fa-solid fa-receipt text-violet-600"></i>
+                    Simulasi Rincian Biaya (Contoh Transaksi Rp 10.000.000)
+                  </div>
+                  <div id="admin-fees-simulation" class="space-y-1 text-[11px]">
+                    <div class="text-slate-400 italic">—</div>
+                  </div>
+                  <div class="border-t border-violet-200 mt-2 pt-2 flex justify-between text-[11px] font-bold text-violet-900">
+                    <span>Total Biaya Platform</span>
+                    <span id="admin-fees-sim-total">Rp 0</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- SECTION 3: BIAYA PENANGANAN BERDASARKAN TIER -->
+              <div class="bg-slate-50 p-5 rounded-2xl border border-slate-200 space-y-4">
+                <div class="flex items-center gap-2 pb-2 border-b border-slate-200">
+                  <i class="fa-solid fa-layer-group text-sky-600"></i>
+                  <h4 class="text-xs font-bold uppercase text-slate-700 tracking-wider">Biaya Penanganan Berdasarkan Tier Pembeli</h4>
+                </div>
+                <div class="p-4 bg-white rounded-xl border border-slate-200 shadow-2xs space-y-3">
+                  <label class="block text-xs font-bold uppercase text-slate-800">Biaya Penanganan Sistem per Transaksi (Default Flat)</label>
+                  <div class="relative max-w-xs">
+                    <span class="absolute left-3 top-2 text-xs font-bold text-slate-400">Rp</span>
+                    <input type="number" id="setting-handling" class="w-full bg-slate-50 border border-slate-300 rounded-xl pl-9 pr-4 py-2 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500" value="10000">
+                  </div>
+                </div>
+                <div class="p-4 bg-white rounded-xl border border-slate-200 shadow-2xs space-y-3">
+                  <label class="block text-xs font-bold uppercase text-slate-800">Tarif per Tier</label>
+                  <p class="text-[11px] text-slate-500">Biaya ini menggantikan tarif flat saat checkout. Masukkan 0 jika tier dibebaskan dari biaya penanganan.</p>
+                  <div class="grid grid-cols-2 gap-3">
+                    <label class="text-[11px] font-semibold text-slate-600">Starter <input type="number" id="setting-handling-tier-starter" min="0" class="mt-1 w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-sm font-mono"></label>
+                    <label class="text-[11px] font-semibold text-slate-600">Basic <input type="number" id="setting-handling-tier-basic" min="0" class="mt-1 w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-sm font-mono"></label>
+                    <label class="text-[11px] font-semibold text-slate-600">Pro <input type="number" id="setting-handling-tier-pro" min="0" class="mt-1 w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-sm font-mono"></label>
+                    <label class="text-[11px] font-semibold text-slate-600">Enterprise <input type="number" id="setting-handling-tier-enterprise" min="0" class="mt-1 w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-sm font-mono"></label>
+                  </div>
+                </div>
+              </div>
+
+              <!-- SECTION 4: PENGATURAN API PAYMENT GATEWAY -->
+              <div class="bg-slate-50 p-5 rounded-2xl border border-slate-200 space-y-4">
+                <div class="flex items-center justify-between gap-2 pb-2 border-b border-slate-200">
+                  <div class="flex items-center gap-2">
+                    <i class="fa-solid fa-credit-card text-emerald-600"></i>
+                    <h4 class="text-xs font-bold uppercase text-slate-700 tracking-wider">Pengaturan API Payment Gateway</h4>
+                  </div>
+                  <span id="gateway-status-pill" class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-200 text-slate-700">Sandbox Siap</span>
+                </div>
+
+                <div class="p-4 bg-white rounded-xl border border-slate-200 shadow-2xs space-y-4">
+                  <div class="flex items-center justify-between gap-3">
+                    <div>
+                      <label class="block text-xs font-bold uppercase text-slate-800">Status Integrasi Payment Gateway</label>
+                      <p class="text-[11px] text-slate-500 mt-0.5">Aktifkan pembayaran otomatis untuk Uang Muka (DP), pelunasan non-tunai, dan tagihan invoice rekber.</p>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                      <input type="checkbox" id="setting-gateway-enabled" class="sr-only peer">
+                      <div class="w-11 h-6 bg-slate-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
+                    </label>
+                  </div>
+
+                  <div class="grid sm:grid-cols-3 gap-3">
+                    <div>
+                      <label class="text-[11px] font-semibold text-slate-600 block mb-1">Provider Gateway</label>
+                      <select id="setting-gateway-provider" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-xs font-medium focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                        <option value="midtrans">Midtrans (Snap &amp; Core API)</option>
+                        <option value="xendit">Xendit (Invoice &amp; XenPlatform)</option>
+                        <option value="tripay">Tripay Payment Gateway</option>
+                        <option value="duitku">Duitku Payment Gateway</option>
+                        <option value="faspay">Faspay B2B</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label class="text-[11px] font-semibold text-slate-600 block mb-1">Lingkungan (Environment)</label>
+                      <select id="setting-gateway-environment" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-xs font-medium focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                        <option value="sandbox">Sandbox (Testing / Simulasi)</option>
+                        <option value="production">Production (Live Transaksi Riil)</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label class="text-[11px] font-semibold text-slate-600 block mb-1">Merchant ID / Kode Toko</label>
+                      <input id="setting-gateway-merchant-id" type="text" placeholder="G[REDACTED]789 atau M-8899" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-xs font-mono">
+                    </div>
+                  </div>
+
+                  <div class="grid sm:grid-cols-2 gap-3">
+                    <div>
+                      <label class="text-[11px] font-semibold text-slate-600 block mb-1">Client Key / Public Key</label>
+                      <input id="setting-gateway-client-key" type="text" autocomplete="off" placeholder="SB-Mid-client-..." class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-xs font-mono">
+                    </div>
+                    <div>
+                      <label class="text-[11px] font-semibold text-slate-600 block mb-1">Server Key / Secret Key</label>
+                      <input id="setting-gateway-server-key" type="password" autocomplete="off" placeholder="SB-Mid-server-..." class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-xs font-mono">
+                    </div>
+                  </div>
+
+                  <div>
+                    <label class="text-[11px] font-semibold text-slate-600 block mb-1">Webhook / Notification Callback URL</label>
+                    <div class="flex gap-2">
+                      <input id="setting-gateway-webhook-url" type="text" readonly value="https://bursalimbah.id/api/payment/webhook" class="w-full bg-slate-100 border border-slate-200 text-slate-600 rounded-lg px-3 py-2 text-xs font-mono">
+                      <button type="button" onclick="navigator.clipboard.writeText([REDACTED]'setting-gateway-webhook-url').value); app.showToast('URL Webhook disalin ke clipboard!', 'success');" class="px-3 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-bold rounded-lg transition shrink-0">
+                        <i class="fa-solid fa-copy mr-1"></i>Salin
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- Channel Pembayaran Aktif -->
+                  <div>
+                    <label class="block text-[11px] font-bold text-slate-700 mb-2">Metode Pembayaran yang Diaktifkan di Gateway:</label>
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                      <label class="p-2.5 rounded-xl border border-slate-200 bg-slate-50 flex items-center gap-2 cursor-pointer hover:bg-emerald-50">
+                        <input type="checkbox" id="gateway-channel-qris" checked class="accent-emerald-600 rounded">
+                        <span class="font-semibold text-slate-800"><i class="fa-solid fa-qrcode text-emerald-600 mr-1"></i>QRIS Dinamis</span>
+                      </label>
+                      <label class="p-2.5 rounded-xl border border-slate-200 bg-slate-50 flex items-center gap-2 cursor-pointer hover:bg-emerald-50">
+                        <input type="checkbox" id="gateway-channel-va" checked class="accent-emerald-600 rounded">
+                        <span class="font-semibold text-slate-800"><i class="fa-solid fa-building-columns text-blue-600 mr-1"></i>Virtual Account</span>
+                      </label>
+                      <label class="p-2.5 rounded-xl border border-slate-200 bg-slate-50 flex items-center gap-2 cursor-pointer hover:bg-emerald-50">
+                        <input type="checkbox" id="gateway-channel-ewallet" checked class="accent-emerald-600 rounded">
+                        <span class="font-semibold text-slate-800"><i class="fa-solid fa-wallet text-amber-600 mr-1"></i>E-Wallet</span>
+                      </label>
+                      <label class="p-2.5 rounded-xl border border-slate-200 bg-slate-50 flex items-center gap-2 cursor-pointer hover:bg-emerald-50">
+                        <input type="checkbox" id="gateway-channel-cc" class="accent-emerald-600 rounded">
+                        <span class="font-semibold text-slate-800"><i class="fa-solid fa-credit-card text-purple-600 mr-1"></i>Kartu Kredit</span>
+                      </label>
+                    </div>
+                  </div>
+
+                  <div class="flex items-center justify-between pt-2 border-t border-slate-100 flex-wrap gap-2">
+                    <p class="text-[10px] text-amber-800 bg-amber-50 border border-amber-200 rounded-lg p-2 flex items-center gap-1.5 flex-1 min-w-[260px]">
+                      <i class="fa-solid fa-shield-halved text-amber-600"></i>
+                      <span>Kunci rahasia server (Server Key) disimpan aman dan tidak dipublikasikan ke sisi browser publik.</span>
+                    </p>
+                    <button type="button" onclick="app.testPaymentGatewayConnection()" class="px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs shadow-xs transition flex items-center gap-1.5 shrink-0">
+                      <i class="fa-solid fa-bolt text-amber-400"></i>
+                      <span>Uji Koneksi Gateway</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- SECTION 5: PENGATURAN API EKSPEDISI & LOGISTIK -->
+              <div class="bg-slate-50 p-5 rounded-2xl border border-slate-200 space-y-4">
+                <div class="flex items-center justify-between gap-2 pb-2 border-b border-slate-200">
+                  <div class="flex items-center gap-2">
+                    <i class="fa-solid fa-truck-fast text-indigo-600"></i>
+                    <h4 class="text-xs font-bold uppercase text-slate-700 tracking-wider">Pengaturan API Ekspedisi &amp; Logistik</h4>
+                  </div>
+                  <span id="expedition-status-pill" class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-200 text-slate-700">Siap Dikonfigurasi</span>
+                </div>
+
+                <div class="p-4 bg-white rounded-xl border border-slate-200 shadow-2xs space-y-4">
+                  <div class="flex items-center justify-between gap-3">
+                    <div>
+                      <label class="block text-xs font-bold uppercase text-slate-800">Status Integrasi API Ekspedisi</label>
+                      <p class="text-[11px] text-slate-500 mt-0.5">Aktifkan penghitungan ongkir otomatis, pickup armada kargo, dan pelacakan live resi pihak ketiga.</p>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                      <input type="checkbox" id="setting-expedition-enabled" class="sr-only peer">
+                      <div class="w-11 h-6 bg-slate-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
+                    </label>
+                  </div>
+
+                  <div class="grid sm:grid-cols-3 gap-3">
+                    <div>
+                      <label class="text-[11px] font-semibold text-slate-600 block mb-1">Provider Ekspedisi</label>
+                      <select id="setting-expedition-provider" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-xs font-medium focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                        <option value="rajaongkir">RajaOngkir (Pro / Kargo API)</option>
+                        <option value="biteship">Biteship Aggregator Logistics</option>
+                        <option value="kargo">Kargo Technologies (Truk &amp; FTL)</option>
+                        <option value="jne">JNE Online API</option>
+                        <option value="sicepat">SiCepat Ekspres API</option>
+                        <option value="custom">Armada Logistik Mandiri / Bursa Limbah</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label class="text-[11px] font-semibold text-slate-600 block mb-1">API Key / Token Rahasia</label>
+                      <input id="setting-expedition-api-key" type="password" placeholder="Masukkan API Key Ekspedisi..." class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-xs font-mono">
+                    </div>
+                    <div>
+                      <label class="text-[11px] font-semibold text-slate-600 block mb-1">Kota / Hub Asal Default</label>
+                      <input id="setting-expedition-origin" type="text" placeholder="Jakarta Pusat (ID: 151)" value="Jakarta Pusat (ID: 151)" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-xs font-medium">
+                    </div>
+                  </div>
+
+                  <div>
+                    <label class="text-[11px] font-semibold text-slate-600 block mb-1">Webhook Resi &amp; Tracking URL</label>
+                    <div class="flex gap-2">
+                      <input id="setting-expedition-webhook-url" type="text" readonly value="https://bursalimbah.id/api/shipping/webhook" class="w-full bg-slate-100 border border-slate-200 text-slate-600 rounded-lg px-3 py-2 text-xs font-mono">
+                      <button type="button" onclick="navigator.clipboard.writeText([REDACTED]'setting-expedition-webhook-url').value); app.showToast('URL Webhook Ekspedisi disalin!', 'success');" class="px-3 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-bold rounded-lg transition shrink-0">
+                        <i class="fa-solid fa-copy mr-1"></i>Salin
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- Kurir yang didukung -->
+                  <div>
+                    <label class="block text-[11px] font-bold text-slate-700 mb-2">Pilihan Kurir &amp; Armada Logistik yang Diaktifkan:</label>
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                      <label class="p-2 rounded-xl border border-slate-200 bg-slate-50 flex items-center gap-2 cursor-pointer hover:bg-indigo-50">
+                        <input type="checkbox" id="expedition-courier-jne" checked class="accent-indigo-600 rounded">
+                        <span class="font-semibold text-slate-800">JNE / JNE Trucking</span>
+                      </label>
+                      <label class="p-2 rounded-xl border border-slate-200 bg-slate-50 flex items-center gap-2 cursor-pointer hover:bg-indigo-50">
+                        <input type="checkbox" id="expedition-courier-jnt" checked class="accent-indigo-600 rounded">
+                        <span class="font-semibold text-slate-800">J&amp;T Cargo / Express</span>
+                      </label>
+                      <label class="p-2 rounded-xl border border-slate-200 bg-slate-50 flex items-center gap-2 cursor-pointer hover:bg-indigo-50">
+                        <input type="checkbox" id="expedition-courier-sicepat" checked class="accent-indigo-600 rounded">
+                        <span class="font-semibold text-slate-800">SiCepat GOKIL</span>
+                      </label>
+                      <label class="p-2 rounded-xl border border-slate-200 bg-slate-50 flex items-center gap-2 cursor-pointer hover:bg-indigo-50">
+                        <input type="checkbox" id="expedition-courier-lalamove" checked class="accent-indigo-600 rounded">
+                        <span class="font-semibold text-slate-800">Lalamove Pick Up / CDD</span>
+                      </label>
+                      <label class="p-2 rounded-xl border border-slate-200 bg-slate-50 flex items-center gap-2 cursor-pointer hover:bg-indigo-50">
+                        <input type="checkbox" id="expedition-courier-anteraja" class="accent-indigo-600 rounded">
+                        <span class="font-semibold text-slate-800">Anteraja Kargo</span>
+                      </label>
+                      <label class="p-2 rounded-xl border border-slate-200 bg-slate-50 flex items-center gap-2 cursor-pointer hover:bg-indigo-50">
+                        <input type="checkbox" id="expedition-courier-wahana" class="accent-indigo-600 rounded">
+                        <span class="font-semibold text-slate-800">Wahana Express</span>
+                      </label>
+                      <label class="p-2 rounded-xl border border-slate-200 bg-slate-50 flex items-center gap-2 cursor-pointer hover:bg-indigo-50">
+                        <input type="checkbox" id="expedition-courier-kargo" checked class="accent-indigo-600 rounded">
+                        <span class="font-semibold text-slate-800">Kargo FTL / Tronton</span>
+                      </label>
+                      <label class="p-2 rounded-xl border border-slate-200 bg-slate-50 flex items-center gap-2 cursor-pointer hover:bg-indigo-50">
+                        <input type="checkbox" id="expedition-courier-mandiri" checked class="accent-indigo-600 rounded">
+                        <span class="font-semibold text-slate-800">Armada Depo Mandiri</span>
+                      </label>
+                    </div>
+                  </div>
+
+                  <div class="flex items-center justify-between pt-2 border-t border-slate-100 flex-wrap gap-2">
+                    <p class="text-[10px] text-indigo-800 bg-indigo-50 border border-indigo-200 rounded-lg p-2 flex items-center gap-1.5 flex-1 min-w-[260px]">
+                      <i class="fa-solid fa-circle-info text-indigo-600"></i>
+                      <span>API ekspedisi memungkinkan penjual memasukkan nomor resi resmi dan pembeli dapat melacak pengiriman secara real-time.</span>
+                    </p>
+                    <button type="button" onclick="app.testExpeditionConnection()" class="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-xs transition flex items-center gap-1.5 shrink-0">
+                      <i class="fa-solid fa-satellite-dish text-indigo-200"></i>
+                      <span>Uji Koneksi API Ekspedisi</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- SECTION 6: TICKER HARGA PASAR -->
+              <div class="bg-slate-50 p-5 rounded-2xl border border-slate-200 space-y-4">
+                <div class="flex items-center gap-2 pb-2 border-b border-slate-200">
+                  <i class="fa-solid fa-chart-line text-emerald-600"></i>
+                  <h4 class="text-xs font-bold uppercase text-slate-700 tracking-wider">Ticker Harga Pasar</h4>
+                </div>
+                <div class="p-4 bg-white rounded-xl border border-slate-200 shadow-2xs space-y-3">
+                  <div class="flex items-center justify-between gap-3">
+                    <div>
+                      <label class="block text-xs font-bold uppercase text-slate-800">Ticker Harga Pasar</label>
+                      <p class="text-[11px] text-slate-500 mt-0.5">Menampilkan kurs USD/IDR dari Market Price API dan rata-rata harga listing aktif.</p>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer" title="Aktifkan atau nonaktifkan ticker harga pasar">
+                      <input type="checkbox" id="setting-ticker-enabled" class="sr-only peer">
+                      <div class="w-11 h-6 bg-slate-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
+                    </label>
+                  </div>
+                  <div class="grid sm:grid-cols-2 gap-3">
+                    <label class="text-[11px] font-semibold text-slate-600">Judul Ticker<input id="setting-ticker-title" type="text" maxlength="80" placeholder="Harga Pasar Terkini" class="mt-1 w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-xs"></label>
+                    <label class="text-[11px] font-semibold text-slate-600">Perbarui tiap (menit)<input id="setting-ticker-refresh-minutes" type="number" min="1" max="120" step="1" class="mt-1 w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-xs font-mono"></label>
+                  </div>
+                  <p class="text-[10px] text-sky-700 bg-sky-50 border border-sky-200 rounded-lg p-2"><i class="fa-solid fa-chart-line mr-1"></i> Sumber kurs: <strong>ExchangeRate-API</strong>, diakses server melalui endpoint <code>/api/market-prices</code> dan disimpan sementara selama 10 menit.</p>
+                </div>
+              </div>
+
+              <!-- SECTION 5: SYARAT & KETENTUAN -->
+              <div class="bg-slate-50 p-5 rounded-2xl border border-slate-200 space-y-4">
+                <div class="flex items-center gap-2 pb-2 border-b border-slate-200">
+                  <i class="fa-solid fa-file-contract text-slate-600"></i>
+                  <h4 class="text-xs font-bold uppercase text-slate-700 tracking-wider">Syarat &amp; Ketentuan Pendaftaran</h4>
+                </div>
+                <div class="p-4 bg-white rounded-xl border border-slate-200 shadow-2xs space-y-3">
+                  <div><label class="block text-xs font-bold uppercase text-slate-800">Syarat &amp; Ketentuan</label><p class="text-[11px] text-slate-500 mt-0.5">Ditampilkan wajib kepada pengguna baru sebelum formulir pembeli atau penjual dibuka.</p></div>
+                  <div class="grid sm:grid-cols-3 gap-3"><label class="sm:col-span-2 text-[11px] font-semibold text-slate-600">Judul<input id="setting-terms-title" type="text" maxlength="120" class="mt-1 w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-xs"></label><label class="text-[11px] font-semibold text-slate-600">Versi<input id="setting-terms-version" type="text" maxlength="20" placeholder="1.0" class="mt-1 w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-xs font-mono"></label></div>
+                  <label class="block text-[11px] font-semibold text-slate-600">Isi Syarat dan Ketentuan<textarea id="setting-terms-content" rows="7" maxlength="10000" class="mt-1 w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-xs leading-relaxed" placeholder="Masukkan syarat dan ketentuan…"></textarea></label>
+                </div>
+              </div>
+
+              <!-- Pintasan Cepat ke Editor Layanan Resmi -->
+              <div class="p-4 bg-emerald-50 rounded-xl border border-emerald-200 flex items-center justify-between gap-3">
+                <div class="flex items-center gap-3">
+                  <div class="w-9 h-9 rounded-xl bg-emerald-600 text-white flex items-center justify-center text-sm shadow-xs shrink-0">
+                    <i class="fa-solid fa-headset"></i>
+                  </div>
+                  <div>
+                    <h4 class="text-xs font-bold text-emerald-950">Pusat Layanan Resmi &amp; Footer</h4>
+                    <p class="text-[11px] text-emerald-800">Edit nomor telepon, WhatsApp, email kemitraan, alamat sentra inovasi, dan tombol panduan.</p>
+                  </div>
+                </div>
+                <button type="button" onclick="app.switchAdminTab('support')" class="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-xs transition shrink-0 flex items-center gap-1.5">
+                  <span>Buka Editor</span>
+                  <i class="fa-solid fa-arrow-right text-[10px]"></i>
+                </button>
               </div>
 
               <div class="pt-2 flex justify-end">
@@ -2123,6 +3163,265 @@
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+
+        <!-- MODAL: Tambah / Edit Jenis Biaya -->
+        <div id="modal-fee-editor" class="fixed inset-0 z-[200] bg-black/50 flex items-center justify-center p-4 hidden" onclick="if(event.target===this)app.closeFeeModal()">
+          <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between px-5 py-4 border-b border-slate-200">
+              <h3 id="fee-modal-title" class="text-sm font-bold text-slate-900">Tambah Jenis Biaya Baru</h3>
+              <button type="button" onclick="app.closeFeeModal()" class="text-slate-400 hover:text-slate-700 text-lg"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <form id="fee-editor-form" onsubmit="app.saveCustomFeeItem(event)" class="p-5 space-y-4">
+              <input type="hidden" id="fee-modal-edit-id" value="">
+
+              <label class="block">
+                <span class="text-xs font-bold text-slate-700">Nama Biaya <span class="text-rose-500">*</span></span>
+                <input type="text" id="fee-modal-name" required maxlength="80" placeholder="cth. Biaya Asuransi Pengiriman"
+                  class="mt-1 w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500">
+              </label>
+
+              <div class="grid grid-cols-2 gap-3">
+                <label class="block">
+                  <span class="text-xs font-bold text-slate-700">Tipe Nilai</span>
+                  <select id="fee-modal-type" onchange="app.onFeeTypeChange()"
+                    class="mt-1 w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500">
+                    <option value="fixed">Nominal Tetap (Rp)</option>
+                    <option value="percentage">Persentase (%)</option>
+                  </select>
+                </label>
+                <label class="block">
+                  <span id="fee-modal-value-label" class="text-xs font-bold text-slate-700">Nilai (Rp)</span>
+                  <div class="relative mt-1">
+                    <span id="fee-modal-value-prefix" class="absolute left-3 top-2.5 text-xs font-bold text-slate-400">Rp</span>
+                    <input type="number" id="fee-modal-value" required min="0" step="any" placeholder="10000"
+                      class="w-full bg-slate-50 border border-slate-300 rounded-xl pl-9 pr-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500">
+                    <span id="fee-modal-value-suffix" class="absolute right-3 top-2.5 text-xs font-bold text-slate-400 hidden">%</span>
+                  </div>
+                </label>
+              </div>
+
+              <label class="block">
+                <span class="text-xs font-bold text-slate-700">Beban Biaya</span>
+                <select id="fee-modal-target"
+                  class="mt-1 w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500">
+                  <option value="buyer">Dibebankan ke Pembeli</option>
+                  <option value="seller">Dibebankan ke Penjual</option>
+                  <option value="both">Keduanya (Pembeli &amp; Penjual)</option>
+                </select>
+              </label>
+
+              <label class="block">
+                <span class="text-xs font-bold text-slate-700">Keterangan / Deskripsi</span>
+                <textarea id="fee-modal-description" rows="2" maxlength="200" placeholder="Penjelasan singkat fungsi biaya ini…"
+                  class="mt-1 w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"></textarea>
+              </label>
+
+              <div class="flex items-center gap-3">
+                <label class="relative inline-flex items-center cursor-pointer">
+                  <input type="checkbox" id="fee-modal-enabled" class="sr-only peer" checked>
+                  <div class="w-10 h-5 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-600"></div>
+                </label>
+                <span class="text-xs font-semibold text-slate-700">Aktifkan biaya ini</span>
+              </div>
+
+              <div class="flex gap-2 pt-2">
+                <button type="button" onclick="app.closeFeeModal()" class="flex-1 py-2.5 border border-slate-300 text-slate-600 text-xs font-bold rounded-xl hover:bg-slate-50 transition">Batal</button>
+                <button type="submit" class="flex-1 py-2.5 bg-violet-600 hover:bg-violet-700 text-white text-xs font-bold rounded-xl shadow-xs transition flex items-center justify-center gap-1.5">
+                  <i class="fa-solid fa-floppy-disk"></i>
+                  <span>Simpan</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+
+
+        <!-- Konten 7: EDITOR PUSAT LAYANAN RESMI (FOOTER & KONTAK) -->
+        <div id="admin-content-support" class="p-6 hidden">
+          <div class="space-y-6">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-slate-200">
+              <div>
+                <div class="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-300 mb-2">
+                  <i class="fa-solid fa-headset text-emerald-600"></i>
+                  <span>Editor Pusat Layanan Resmi &amp; Footer</span>
+                </div>
+                <h3 class="text-base sm:text-lg font-bold text-slate-900">Pengaturan Editor Pusat Layanan Resmi</h3>
+                <p class="text-xs text-slate-500">Sesuaikan informasi kontak, nomor WhatsApp, email kemitraan, alamat operasional, dan tombol panduan yang tampil pada footer platform.</p>
+              </div>
+              <div class="flex items-center gap-2">
+                <button type="button" onclick="[REDACTED]'footer-support-column')?.scrollIntoView({behavior:'smooth'})" class="px-3 py-2 rounded-xl border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 text-xs font-bold transition flex items-center gap-1.5 shadow-2xs">
+                  <i class="fa-solid fa-arrow-down text-slate-500"></i>
+                  <span>Lihat di Footer</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Grid: Formulir Editor & Live Preview -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+              
+              <!-- Kolom Form Editor (7 cols) -->
+              <div class="lg:col-span-7 space-y-5">
+                <form id="admin-support-form" onsubmit="app.saveSupportSettings(event)" class="space-y-5 bg-slate-50 p-5 sm:p-6 rounded-2xl border border-slate-200 shadow-2xs">
+                  
+                  <!-- 1. Identitas & Judul Bagian -->
+                  <div class="p-4 bg-white rounded-xl border border-slate-200 shadow-2xs space-y-3">
+                    <div class="flex items-center gap-2 text-slate-800 font-bold text-xs uppercase tracking-wider">
+                      <i class="fa-solid fa-heading text-emerald-600"></i>
+                      <span>Judul Bagian &amp; Jam Layanan</span>
+                    </div>
+                    <div>
+                      <label class="block text-[11px] font-semibold text-slate-600 mb-1">Judul Kolom Footer</label>
+                      <input type="text" id="support-edit-title" maxlength="60" placeholder="Pusat Layanan Resmi" oninput="app.updateSupportLivePreview()" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                      <p class="text-[10px] text-slate-400 mt-1">Ditampilkan sebagai tajuk utama kolom footer (standar: PUSAT LAYANAN RESMI).</p>
+                    </div>
+                    <div>
+                      <label class="block text-[11px] font-semibold text-slate-600 mb-1">Jam / Jadwal Operasional (Opsional)</label>
+                      <input type="text" id="support-edit-hours" maxlength="100" placeholder="Senin – Jumat: 08.00 – 17.00 WIB" oninput="app.updateSupportLivePreview()" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                    </div>
+                  </div>
+
+                  <!-- 2. Telepon & WhatsApp -->
+                  <div class="p-4 bg-white rounded-xl border border-slate-200 shadow-2xs space-y-3">
+                    <div class="flex items-center gap-2 text-slate-800 font-bold text-xs uppercase tracking-wider">
+                      <i class="fa-solid fa-phone text-emerald-600"></i>
+                      <span>Kontak Telepon &amp; WhatsApp Resmi</span>
+                    </div>
+                    <div class="grid sm:grid-cols-2 gap-3">
+                      <div>
+                        <label class="block text-[11px] font-semibold text-slate-600 mb-1">Teks Nomor Telepon / Tampilan</label>
+                        <input type="text" id="support-edit-phone" maxlength="30" placeholder="+62 812-3456-7890" oninput="app.updateSupportLivePreview()" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-xs font-mono font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                      </div>
+                      <div>
+                        <label class="block text-[11px] font-semibold text-slate-600 mb-1">Nomor WhatsApp (Angka Saja)</label>
+                        <input type="text" id="support-edit-wa" maxlength="20" placeholder="628[REDACTED]7890" oninput="app.updateSupportLivePreview()" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-xs font-mono font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                      </div>
+                    </div>
+                    <div>
+                      <label class="block text-[11px] font-semibold text-slate-600 mb-1">Template Pesan Pembuka WhatsApp</label>
+                      <input type="text" id="support-edit-wa-msg" maxlength="150" placeholder="Halo Admin Bursa Limbah, saya ingin konsultasi transaksi" oninput="app.updateSupportLivePreview()" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                      <p class="text-[10px] text-slate-400 mt-1">Pesan otomatis yang terisi saat pengunjung mengklik nomor WhatsApp.</p>
+                    </div>
+                  </div>
+
+                  <!-- 3. Email Resmi -->
+                  <div class="p-4 bg-white rounded-xl border border-slate-200 shadow-2xs space-y-3">
+                    <div class="flex items-center gap-2 text-slate-800 font-bold text-xs uppercase tracking-wider">
+                      <i class="fa-solid fa-envelope text-emerald-600"></i>
+                      <span>Email Resmi Kemitraan</span>
+                    </div>
+                    <div>
+                      <label class="block text-[11px] font-semibold text-slate-600 mb-1">Alamat Email</label>
+                      <input type="email" id="support-edit-email" maxlength="100" placeholder="kemitraan@bursalimbah.id" oninput="app.updateSupportLivePreview()" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-xs font-mono text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                    </div>
+                  </div>
+
+                  <!-- 4. Alamat Kantor & Peta -->
+                  <div class="p-4 bg-white rounded-xl border border-slate-200 shadow-2xs space-y-3">
+                    <div class="flex items-center gap-2 text-slate-800 font-bold text-xs uppercase tracking-wider">
+                      <i class="fa-solid fa-location-dot text-emerald-600"></i>
+                      <span>Alamat Sentra Inovasi / Kantor Operasional</span>
+                    </div>
+                    <div>
+                      <label class="block text-[11px] font-semibold text-slate-600 mb-1">Alamat Lengkap</label>
+                      <textarea id="support-edit-address" rows="3" maxlength="250" placeholder="Sentra Inovasi Hijau BURSA LIMBAH Lt. 5, Jakarta Timur" oninput="app.updateSupportLivePreview()" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-xs leading-relaxed text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500"></textarea>
+                    </div>
+                    <div>
+                      <label class="block text-[11px] font-semibold text-slate-600 mb-1">Tautan Google Maps (Opsional)</label>
+                      <input type="url" id="support-edit-maps" maxlength="300" placeholder="https://maps.google.com/?q=Sentra+Inovasi+Hijau" oninput="app.updateSupportLivePreview()" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-xs font-mono text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                    </div>
+                  </div>
+
+                  <!-- 5. Tombol Panduan Transaksi Aman (CTA Button) -->
+                  <div class="p-4 bg-white rounded-xl border border-slate-200 shadow-2xs space-y-3">
+                    <div class="flex items-center justify-between">
+                      <div class="flex items-center gap-2 text-slate-800 font-bold text-xs uppercase tracking-wider">
+                        <i class="fa-solid fa-shield-heart text-emerald-600"></i>
+                        <span>Tombol Panduan Keamanan (Call-to-Action)</span>
+                      </div>
+                      <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="support-edit-btn-enabled" class="sr-only peer" checked onchange="app.updateSupportLivePreview()">
+                        <div class="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
+                      </label>
+                    </div>
+                    <div class="grid sm:grid-cols-2 gap-3">
+                      <div>
+                        <label class="block text-[11px] font-semibold text-slate-600 mb-1">Teks Tombol</label>
+                        <input type="text" id="support-edit-btn-text" maxlength="50" placeholder="Panduan Transaksi Aman" oninput="app.updateSupportLivePreview()" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                      </div>
+                      <div>
+                        <label class="block text-[11px] font-semibold text-slate-600 mb-1">Aksi Ketika Diklik</label>
+                        <select id="support-edit-btn-action" onchange="app.handleSupportBtnActionChange()" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                          <option value="modal">Buka Modal Panduan Transaksi Aman</option>
+                          <option value="url">Buka Tautan URL Eksternal</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div id="support-edit-btn-url-container" class="hidden">
+                      <label class="block text-[11px] font-semibold text-slate-600 mb-1">URL Target Tombol Eksternal</label>
+                      <input type="url" id="support-edit-btn-url" maxlength="255" placeholder="https://..." oninput="app.updateSupportLivePreview()" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-xs font-mono text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                    </div>
+                  </div>
+
+                  <!-- Tombol Aksi Simpan & Reset -->
+                  <div class="pt-2 flex flex-col sm:flex-row items-center justify-between gap-3">
+                    <button type="button" onclick="app.resetSupportSettings()" class="w-full sm:w-auto px-4 py-2.5 rounded-xl border border-slate-300 bg-white hover:bg-slate-100 text-slate-700 text-xs font-bold transition flex items-center justify-center space-x-1.5">
+                      <i class="fa-solid fa-rotate-left"></i>
+                      <span>Pulihkan Nilai Bawaan</span>
+                    </button>
+                    <button type="submit" class="w-full sm:w-auto px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-md transition flex items-center justify-center space-x-2">
+                      <i class="fa-solid fa-floppy-disk"></i>
+                      <span>Simpan Pengaturan Layanan</span>
+                    </button>
+                  </div>
+                </form>
+              </div>
+
+              <!-- Kolom Live Preview (5 cols) -->
+              <div class="lg:col-span-5">
+                <div class="sticky top-24 space-y-4">
+                  <div class="flex items-center justify-between">
+                    <span class="inline-flex items-center gap-1.5 text-xs font-bold text-slate-700 uppercase tracking-wider">
+                      <i class="fa-solid fa-eye text-emerald-600"></i>
+                      <span>Pratinjau Langsung (Live Preview)</span>
+                    </span>
+                    <span class="text-[10px] text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full font-bold">Sinkron Real-time</span>
+                  </div>
+
+                  <!-- Dark Card Mirroring the Footer -->
+                  <div class="bg-slate-900 rounded-3xl p-6 border border-slate-800 shadow-2xl text-slate-400 text-xs relative overflow-hidden">
+                    <div class="absolute -top-10 -right-10 w-32 h-32 bg-emerald-500/10 rounded-full blur-2xl pointer-events-none"></div>
+
+                    <!-- Label Simulasi -->
+                    <div class="flex items-center justify-between mb-4 border-b border-slate-800 pb-3">
+                      <div class="text-[10px] uppercase font-bold text-slate-500 tracking-wider flex items-center gap-1.5">
+                        <i class="fa-solid fa-desktop text-emerald-400"></i>
+                        <span>Kolom 4 Footer Website</span>
+                      </div>
+                      <span class="px-2 py-0.5 text-[9px] font-mono rounded bg-slate-800 text-emerald-400 border border-slate-700">Preview 1:1</span>
+                    </div>
+
+                    <!-- Target Container Rendered Live -->
+                    <div id="support-live-preview-box">
+                      <!-- Diisi dinamis oleh app.updateSupportLivePreview() -->
+                    </div>
+                  </div>
+
+                  <!-- Info Box Help -->
+                  <div class="p-4 rounded-2xl bg-amber-50 border border-amber-200 text-[11px] text-amber-900 space-y-1.5">
+                    <div class="font-bold flex items-center gap-1.5">
+                      <i class="fa-solid fa-circle-info text-amber-600"></i>
+                      <span>Informasi Integrasi</span>
+                    </div>
+                    <p class="leading-relaxed text-amber-800">
+                      Pengaturan ini langsung tersinkronisasi ke footer di seluruh halaman, tombol WhatsApp melayang, dan dialog bantuan transaksi aman. Data disimpan secara permanen di database sistem.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+            </div>
           </div>
         </div>
 
@@ -2167,7 +3466,7 @@
           </ul>
         </div>
 
-        <div>
+        <div id="footer-support-column">
           <h4 class="text-white font-bold mb-3 uppercase tracking-wider text-xs">Pusat Layanan Resmi</h4>
           <ul class="space-y-2 text-slate-400">
             <li><i class="fa-solid fa-phone mr-1.5 text-emerald-400"></i> +62 812-3456-7890</li>
@@ -2542,7 +3841,11 @@
         <div class="flex items-center space-x-2 mt-6 pt-4 border-t border-slate-700/60 overflow-x-auto no-scrollbar">
           <button id="prof-tab-btn-info" onclick="app.switchProfileTab('info')" class="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-white text-slate-900 shadow-sm transition shrink-0 flex items-center space-x-1.5">
             <i class="fa-solid fa-gear text-emerald-600"></i>
-            <span>Pengaturan Profil & Usaha</span>
+            <span id="prof-tab-label-info">Pengaturan Profil &amp; Usaha</span>
+          </button>
+          <button id="prof-tab-btn-payment" onclick="app.switchProfileTab('payment')" class="hidden px-3.5 py-1.5 rounded-xl text-xs font-semibold text-slate-300 hover:text-white hover:bg-white/10 transition shrink-0 flex items-center space-x-1.5">
+            <i class="fa-solid fa-wallet text-emerald-400"></i>
+            <span>Jenis Pembayaran Penjual</span>
           </button>
           <button id="prof-tab-btn-verify" onclick="app.switchProfileTab('verify')" class="px-3.5 py-1.5 rounded-xl text-xs font-semibold text-slate-300 hover:text-white hover:bg-white/10 transition shrink-0 flex items-center space-x-1.5">
             <i class="fa-solid fa-shield-halved text-amber-400"></i>
@@ -2567,7 +3870,7 @@
                 <input type="text" id="prof-input-name" required class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs focus:ring-2 focus:ring-brand-500 focus:outline-none font-medium">
               </div>
               <div>
-                <label class="block text-xs font-bold uppercase text-slate-700 mb-1">Nama Perusahaan / Usaha *</label>
+                <label id="prof-label-company" class="block text-xs font-bold uppercase text-slate-700 mb-1">Nama Perusahaan / Usaha *</label>
                 <input type="text" id="prof-input-company" required class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs focus:ring-2 focus:ring-brand-500 focus:outline-none font-medium">
               </div>
             </div>
@@ -2584,19 +3887,153 @@
             </div>
 
             <div>
-              <label class="block text-xs font-bold uppercase text-slate-700 mb-1">Alamat Operasional & Kota *</label>
+              <label id="prof-label-location" class="block text-xs font-bold uppercase text-slate-700 mb-1">Alamat Operasional &amp; Kota *</label>
               <input type="text" id="prof-input-location" required placeholder="Jl. Raya Industri No. 12, Cikarang" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs focus:ring-2 focus:ring-brand-500 focus:outline-none font-medium">
             </div>
 
-            <div>
-              <label class="block text-xs font-bold uppercase text-slate-700 mb-1">Rekening Bank (Untuk Pembayaran / Penarikan)</label>
+            <div id="prof-group-buyer-bank">
+              <label class="block text-xs font-bold uppercase text-slate-700 mb-1">Rekening Bank (Untuk Pembayaran / Pengembalian Jaminan)</label>
               <input type="text" id="prof-input-bank" placeholder="BCA 8271-992-102 a.n Nama Anda" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs focus:ring-2 focus:ring-brand-500 focus:outline-none font-medium">
             </div>
 
             <div class="pt-3 border-t border-slate-100 flex justify-end">
               <button type="submit" class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-md transition flex items-center space-x-1.5 active:scale-95">
                 <i class="fa-solid fa-floppy-disk"></i>
-                <span>Simpan Perubahan Profil</span>
+                <span id="prof-btn-save-label">Simpan Perubahan Profil</span>
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <!-- TAB KHUSUS PENJUAL: JENIS PEMBAYARAN (TUNAI, TRANSFER BANK, QRIS) -->
+        <div id="prof-tab-content-payment" class="hidden space-y-5">
+          <div class="p-4 bg-emerald-50 rounded-2xl border border-emerald-200 text-xs text-emerald-900 flex items-start space-x-3">
+            <i class="fa-solid fa-circle-check text-emerald-600 text-base mt-0.5 shrink-0"></i>
+            <div>
+              <div class="font-bold text-emerald-950">Metode Pembayaran Penerimaan Pasokan</div>
+              <p class="mt-0.5 text-emerald-800 leading-relaxed">
+                Atur jenis pembayaran yang Anda terima dari pembeli untuk pelunasan Uang Muka (DP) maupun pelunasan langsung sisa pembayaran (Non-Tunai &amp; Tunai). Data rekening dan QRIS akan ditampilkan kepada pembeli saat pembayaran pelunasan.
+              </p>
+            </div>
+          </div>
+
+          <form onsubmit="app.handleSaveSellerPaymentSettings(event)" class="space-y-4">
+            <!-- 1. PEMBAYARAN TUNAI -->
+            <div class="p-4 rounded-2xl border border-slate-200 bg-slate-50 space-y-3">
+              <div class="flex items-center justify-between pb-2 border-b border-slate-200">
+                <div class="flex items-center space-x-2">
+                  <div class="w-8 h-8 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center font-bold text-sm">
+                    <i class="fa-solid fa-money-bill-wave"></i>
+                  </div>
+                  <div>
+                    <h4 class="text-xs font-bold text-slate-900 uppercase tracking-wide">1. Pembayaran Tunai (Cash / COD / Di Lokasi)</h4>
+                    <p class="text-[11px] text-slate-500">Menerima uang tunai fisik langsung di depo gudang penjemputan.</p>
+                  </div>
+                </div>
+                <label class="relative inline-flex items-center cursor-pointer">
+                  <input type="checkbox" id="seller-pay-cash-enabled" class="sr-only peer" checked>
+                  <div class="w-11 h-6 bg-slate-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
+                </label>
+              </div>
+              <div>
+                <label class="block text-[11px] font-bold uppercase text-slate-700 mb-1">Catatan / Petunjuk Pembayaran Tunai</label>
+                <input type="text" id="seller-pay-cash-notes" placeholder="Contoh: Pembayaran tunai diterima di loket kasir timbangan gudang saat serah terima muatan." class="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs focus:ring-2 focus:ring-brand-500 focus:outline-none">
+              </div>
+            </div>
+
+            <!-- 2. PEMBAYARAN TRANSFER BANK -->
+            <div class="p-4 rounded-2xl border border-slate-200 bg-slate-50 space-y-3">
+              <div class="flex items-center justify-between pb-2 border-b border-slate-200">
+                <div class="flex items-center space-x-2">
+                  <div class="w-8 h-8 rounded-xl bg-blue-100 text-blue-800 flex items-center justify-center font-bold text-sm">
+                    <i class="fa-solid fa-building-columns"></i>
+                  </div>
+                  <div>
+                    <h4 class="text-xs font-bold text-slate-900 uppercase tracking-wide">2. Transfer Bank (Non-Tunai)</h4>
+                    <p class="text-[11px] text-slate-500">Menerima transfer rekening bank untuk pelunasan tagihan sisa DP.</p>
+                  </div>
+                </div>
+                <label class="relative inline-flex items-center cursor-pointer">
+                  <input type="checkbox" id="seller-pay-bank-enabled" class="sr-only peer" checked>
+                  <div class="w-11 h-6 bg-slate-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
+                </label>
+              </div>
+
+              <div class="grid sm:grid-cols-3 gap-3">
+                <div>
+                  <label class="block text-[11px] font-bold uppercase text-slate-700 mb-1">Nama Bank *</label>
+                  <select id="seller-pay-bank-name" class="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs font-medium focus:ring-2 focus:ring-brand-500 focus:outline-none">
+                    <option value="Bank Central Asia (BCA)">BCA (Bank Central Asia)</option>
+                    <option value="Bank Mandiri">Bank Mandiri</option>
+                    <option value="Bank Rakyat Indonesia (BRI)">BRI (Bank Rakyat Indonesia)</option>
+                    <option value="Bank Negara Indonesia (BNI)">BNI (Bank Negara Indonesia)</option>
+                    <option value="Bank Syariah Indonesia (BSI)">BSI (Bank Syariah Indonesia)</option>
+                    <option value="CIMB Niaga">CIMB Niaga</option>
+                    <option value="Bank Permata">Bank Permata</option>
+                    <option value="Bank Danamon">Bank Danamon</option>
+                    <option value="Bank Lainnya">Bank Lainnya</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-[11px] font-bold uppercase text-slate-700 mb-1">Nomor Rekening Bank *</label>
+                  <input type="text" id="seller-pay-bank-account" placeholder="Contoh: 8271-992-102" class="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2 text-xs font-mono font-bold focus:ring-2 focus:ring-brand-500 focus:outline-none">
+                </div>
+                <div>
+                  <label class="block text-[11px] font-bold uppercase text-slate-700 mb-1">Nama Pemilik Rekening *</label>
+                  <input type="text" id="seller-pay-bank-holder" placeholder="Atas Nama Pemilik Rekening" class="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2 text-xs font-medium focus:ring-2 focus:ring-brand-500 focus:outline-none">
+                </div>
+              </div>
+            </div>
+
+            <!-- 3. PEMBAYARAN QRIS -->
+            <div class="p-4 rounded-2xl border border-slate-200 bg-slate-50 space-y-3">
+              <div class="flex items-center justify-between pb-2 border-b border-slate-200">
+                <div class="flex items-center space-x-2">
+                  <div class="w-8 h-8 rounded-xl bg-purple-100 text-purple-800 flex items-center justify-center font-bold text-sm">
+                    <i class="fa-solid fa-qrcode"></i>
+                  </div>
+                  <div>
+                    <h4 class="text-xs font-bold text-slate-900 uppercase tracking-wide">3. QRIS Penjual (Statik / Dinamis)</h4>
+                    <p class="text-[11px] text-slate-500">Menerima pembayaran QRIS via GoPay, OVO, Dana, ShopeePay, dan m-Banking.</p>
+                  </div>
+                </div>
+                <label class="relative inline-flex items-center cursor-pointer">
+                  <input type="checkbox" id="seller-pay-qris-enabled" class="sr-only peer" checked>
+                  <div class="w-11 h-6 bg-slate-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
+                </label>
+              </div>
+
+              <div>
+                <label class="block text-[11px] font-bold uppercase text-slate-700 mb-1">Nama Merchant QRIS / Label Usaha</label>
+                <input type="text" id="seller-pay-qris-merchant" placeholder="Contoh: Sentra Jelantah Sejahtera QRIS" class="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2 text-xs font-medium focus:ring-2 focus:ring-brand-500 focus:outline-none">
+              </div>
+
+              <div>
+                <label class="block text-[11px] font-bold uppercase text-slate-700 mb-1">Upload Gambar / Barcode QRIS Penjual</label>
+                <div class="flex flex-col sm:flex-row items-center gap-4 p-4 bg-white rounded-xl border border-dashed border-slate-300">
+                  <div id="seller-qris-preview-wrap" class="w-28 h-28 rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-center overflow-hidden shrink-0 shadow-2xs">
+                    <img id="seller-qris-preview-img" src="" alt="QRIS Penjual" class="w-full h-full object-contain hidden">
+                    <div id="seller-qris-placeholder" class="text-center p-2 text-slate-400 text-[10px]">
+                      <i class="fa-solid fa-qrcode text-2xl mb-1 text-slate-300 block"></i>
+                      Belum Ada Gambar
+                    </div>
+                  </div>
+                  <div class="space-y-2 flex-1 w-full text-center sm:text-left">
+                    <input type="file" id="seller-pay-qris-file" accept="image/jpeg,image/png,image/webp" onchange="app.handleSellerQrisFileSelect(this)" class="block w-full text-xs text-slate-600 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100 cursor-pointer">
+                    <input type="hidden" id="seller-pay-qris-image-url" value="">
+                    <p class="text-[10px] text-slate-400">Format yang didukung: JPG, PNG, WebP (Maks. 5 MB). Gambar QRIS ini akan dipindai oleh pembeli untuk pelunasan.</p>
+                    <button type="button" onclick="app.removeSellerQrisImage()" id="btn-remove-seller-qris" class="hidden text-[11px] text-rose-600 hover:text-rose-700 font-bold items-center gap-1">
+                      <i class="fa-solid fa-trash"></i> Hapus Gambar QRIS
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="pt-3 border-t border-slate-100 flex justify-end">
+              <button type="submit" class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-md transition flex items-center space-x-1.5 active:scale-95">
+                <i class="fa-solid fa-floppy-disk"></i>
+                <span>Simpan Pengaturan Jenis Pembayaran</span>
               </button>
             </div>
           </form>
@@ -3193,6 +4630,256 @@
     </div>
   </div>
 
+  <!-- ================= MODAL: PENGIRIMAN & PENYERAHAN BARANG (PENJUAL) ================= -->
+  <div id="modal-seller-dispatch" class="fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-sm hidden items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-white rounded-3xl max-w-lg w-full shadow-2xl border border-slate-200 overflow-hidden">
+      <div class="p-5 border-b border-slate-100 flex items-start justify-between gap-3">
+        <div>
+          <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300 uppercase mb-1">
+            <i class="fa-solid fa-truck-ramp-box"></i> Pemenuhan Pesanan
+          </span>
+          <h3 class="text-base font-extrabold text-slate-900">Proses Pengiriman / Penyerahan Barang</h3>
+          <p class="text-xs text-slate-500 mt-0.5">Pilih metode penyerahan muatan limbah kepada pembeli.</p>
+        </div>
+        <button type="button" onclick="app.closeModals()" class="text-slate-400 hover:text-slate-700 p-1"><i class="fa-solid fa-xmark text-lg"></i></button>
+      </div>
+
+      <form id="form-seller-dispatch" onsubmit="app.submitSellerDispatch(event)" class="p-5 space-y-4">
+        <input type="hidden" id="dispatch-order-id">
+
+        <!-- Info Singkat Pesanan -->
+        <div id="dispatch-order-summary" class="p-3.5 bg-slate-50 rounded-2xl border border-slate-200 text-xs space-y-1 font-medium">
+          <!-- Diisi otomatis -->
+        </div>
+
+        <!-- Pilihan Metode Pengiriman: Pihak ke-3 vs Diserahkan Langsung -->
+        <div>
+          <label class="block text-xs font-bold uppercase text-slate-700 mb-2">Metode Penyerahan Muatan *</label>
+          <div class="grid grid-cols-2 gap-3">
+            <label class="relative flex flex-col p-3 rounded-2xl border-2 cursor-pointer transition border-slate-200 hover:border-emerald-500" id="label-dispatch-direct">
+              <input type="radio" name="dispatch-type" value="direct" checked onchange="app.onDispatchTypeChange('direct')" class="sr-only">
+              <div class="flex items-center gap-2 mb-1">
+                <i class="fa-solid fa-handshake text-emerald-600"></i>
+                <span class="text-xs font-bold text-slate-900">Diserahkan Langsung</span>
+              </div>
+              <span class="text-[10px] text-slate-500">Serah terima di depo/gudang kepada supir atau armada pembeli.</span>
+            </label>
+
+            <label class="relative flex flex-col p-3 rounded-2xl border-2 cursor-pointer transition border-slate-200 hover:border-blue-500" id="label-dispatch-third-party">
+              <input type="radio" name="dispatch-type" value="third_party" onchange="app.onDispatchTypeChange('third_party')" class="sr-only">
+              <div class="flex items-center gap-2 mb-1">
+                <i class="fa-solid fa-truck-fast text-blue-600"></i>
+                <span class="text-xs font-bold text-slate-900">Kirim Pihak ke-3</span>
+              </div>
+              <span class="text-[10px] text-slate-500">Dikirim lewat ekspedisi logistik mitra / kurir kargo.</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Panel Form Pilihan 1: Diserahkan Langsung -->
+        <div id="panel-dispatch-direct" class="space-y-3 p-4 bg-emerald-50/70 border border-emerald-200 rounded-2xl">
+          <div class="text-xs font-bold text-emerald-900 flex items-center gap-1.5">
+            <i class="fa-solid fa-qrcode text-emerald-700"></i>
+            <span>QR Code Penyerahan Langsung (Tunjukkan ke Pembeli)</span>
+          </div>
+          <div class="flex flex-col items-center justify-center p-3 bg-white rounded-xl border border-emerald-200 text-center space-y-2">
+            <div id="dispatch-direct-qr-container" class="w-36 h-36 flex items-center justify-center bg-slate-100 rounded-lg overflow-hidden">
+              <!-- QR Code SVG/Canvas -->
+            </div>
+            <div class="text-[11px] font-mono font-bold text-slate-800" id="dispatch-direct-qr-code-text">QR-HANDOVER-...</div>
+            <p class="text-[10px] text-slate-500">Pembeli dapat melakukan scan QR ini langsung di lokasi penyerahan untuk menyelesaikan transaksi seketika.</p>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Nama Penerima / Supir Pembeli</label>
+            <input type="text" id="dispatch-direct-recipient" placeholder="Contoh: Budi Prasetyo (Sopir Truk B 9120 UIK)" class="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Catatan Serah Terima / Nomor Tiket Timbang Depo</label>
+            <textarea id="dispatch-direct-notes" rows="2" placeholder="Catatan timbangan aktual, kondisi segel, atau catatan serah terima fisik..." class="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none"></textarea>
+          </div>
+        </div>
+
+        <!-- Panel Form Pilihan 2: Dikirim oleh Pihak ke-3 / Ekspedisi -->
+        <div id="panel-dispatch-third-party" class="space-y-3 p-4 bg-blue-50/70 border border-blue-200 rounded-2xl hidden">
+          <div class="text-xs font-bold text-blue-900 flex items-center gap-1.5">
+            <i class="fa-solid fa-truck-moving text-blue-700"></i>
+            <span>Informasi Ekspedisi / Pihak ke-3</span>
+          </div>
+          <div class="grid sm:grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">Nama Ekspedisi / Kurir *</label>
+              <input type="text" id="dispatch-third-courier" placeholder="Contoh: PT Logistik Sirkular / Indah Kargo" class="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">No. Resi / No. Surat Jalan *</label>
+              <input type="text" id="dispatch-third-tracking" placeholder="Contoh: EXP-2026-88912" class="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs font-mono focus:ring-2 focus:ring-blue-500 focus:outline-none">
+            </div>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Catatan Pengiriman / Armada Truk</label>
+            <textarea id="dispatch-third-notes" rows="2" placeholder="Informasi estimasi tiba, nomor kontak supir armada, atau catatan muatan..." class="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none"></textarea>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Foto Bukti Surat Jalan / Muatan di Truk (URL / File)</label>
+            <input type="url" id="dispatch-third-proof" placeholder="https://... atau unggah dokumen surat jalan" class="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none">
+          </div>
+        </div>
+
+        <div class="flex justify-end gap-2 pt-2 border-t border-slate-100">
+          <button type="button" onclick="app.closeModals()" class="px-4 py-2.5 rounded-xl border border-slate-300 text-xs font-bold text-slate-700 hover:bg-slate-50 transition">
+            Batal
+          </button>
+          <button type="submit" class="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-md transition flex items-center gap-1.5">
+            <i class="fa-solid fa-check"></i>
+            <span>Simpan &amp; Perbarui Status Pengiriman</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ================= MODAL: VALIDASI BARANG TELAH DITERIMA (PEMBELI) ================= -->
+  <div id="modal-buyer-receive-confirm" class="fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-sm hidden items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-white rounded-3xl max-w-md w-full shadow-2xl border border-slate-200 overflow-hidden">
+      <div class="p-5 border-b border-slate-100 flex items-start justify-between gap-3">
+        <div>
+          <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300 uppercase mb-1">
+            <i class="fa-solid fa-clipboard-check"></i> Konfirmasi Penerimaan
+          </span>
+          <h3 class="text-base font-extrabold text-slate-900">Validasi Barang Telah Diterima</h3>
+          <p class="text-xs text-slate-500 mt-0.5">Pastikan muatan limbah telah tiba dan lolos verifikasi mutu sebelum rilis escrow.</p>
+        </div>
+        <button type="button" onclick="app.closeModals()" class="text-slate-400 hover:text-slate-700 p-1"><i class="fa-solid fa-xmark text-lg"></i></button>
+      </div>
+
+      <form id="form-buyer-receive-confirm" onsubmit="app.submitBuyerReceiveValidation(event)" class="p-5 space-y-4">
+        <input type="hidden" id="receive-order-id">
+
+        <div id="receive-order-summary" class="p-3.5 bg-slate-50 rounded-2xl border border-slate-200 text-xs space-y-1 font-medium">
+          <!-- Diisi otomatis -->
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Berat / Volume Aktual Diterima *</label>
+          <div class="relative">
+            <input type="number" id="receive-actual-weight" min="0.01" step="0.01" required class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm font-mono font-bold focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+            <span class="absolute right-3.5 top-2.5 text-xs font-bold text-slate-400" id="receive-weight-unit">Kg</span>
+          </div>
+          <p class="text-[10px] text-slate-500 mt-1">Masukkan angka sesuai slip jembatan timbang atau tera penerimaan di gudang.</p>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Catatan Verifikasi Mutu / Penerimaan</label>
+          <textarea id="receive-buyer-notes" rows="2" placeholder="Kondisi material limbah baik, sesuai spesifikasi grade yang disepakati..." class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none"></textarea>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Foto Bukti Timbang / Surat Penerimaan (Opsional)</label>
+          <input type="url" id="receive-buyer-proof" placeholder="https://... atau URL foto bukti timbang" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+        </div>
+
+        <div class="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-900 space-y-1">
+          <div class="font-bold flex items-center gap-1.5"><i class="fa-solid fa-shield-halved text-amber-600"></i> Konsekuensi Rilis Rekening Bersama</div>
+          <p class="text-[11px] leading-relaxed">Dengan menekan tombol konfirmasi, Anda menyatakan barang telah diterima sesuai pesanan dan mengizinkan sistem mencairkan dana ke saldo penjual.</p>
+        </div>
+
+        <div class="flex justify-end gap-2 pt-2 border-t border-slate-100">
+          <button type="button" onclick="app.closeModals()" class="px-4 py-2.5 rounded-xl border border-slate-300 text-xs font-bold text-slate-700 hover:bg-slate-50 transition">
+            Batal
+          </button>
+          <button type="submit" class="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-md transition flex items-center gap-1.5">
+            <i class="fa-solid fa-circle-check"></i>
+            <span>Validasi Diterima &amp; Selesaikan</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ================= MODAL: SCAN QR CODE LANGSUNG DARI PENJUAL ================= -->
+  <div id="modal-buyer-qr-scanner" class="fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-sm hidden items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-white rounded-3xl max-w-md w-full shadow-2xl border border-slate-200 overflow-hidden">
+      <div class="p-5 border-b border-slate-100 flex items-start justify-between gap-3">
+        <div>
+          <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-violet-100 text-violet-800 border border-violet-300 uppercase mb-1">
+            <i class="fa-solid fa-qrcode"></i> Pemindai Serah Terima
+          </span>
+          <h3 class="text-base font-extrabold text-slate-900">Scan QR Code Langsung dari Penjual</h3>
+          <p class="text-xs text-slate-500 mt-0.5">Pindai kode QR yang ditampilkan di ponsel / dokumen penjual saat serah terima muatan.</p>
+        </div>
+        <button type="button" onclick="app.closeModals()" class="text-slate-400 hover:text-slate-700 p-1"><i class="fa-solid fa-xmark text-lg"></i></button>
+      </div>
+
+      <div class="p-5 space-y-4">
+        <input type="hidden" id="scanner-target-order-id">
+
+        <!-- Area Pemindai Visual (Simulasi Kamera & Live Preview) -->
+        <div class="relative w-full aspect-square bg-slate-950 rounded-2xl overflow-hidden flex flex-col items-center justify-center border-2 border-emerald-500/50 shadow-inner">
+          <div class="absolute inset-8 border-2 border-emerald-400 border-dashed rounded-xl pointer-events-none animate-pulse"></div>
+          <div class="w-16 h-16 rounded-2xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-3xl mb-3">
+            <i class="fa-solid fa-qrcode"></i>
+          </div>
+          <span class="text-xs font-bold text-white tracking-wide">Arahkan Kamera ke QR Penjual</span>
+          <span class="text-[11px] text-slate-400 mt-1">atau masukkan kode hasil scan di bawah ini</span>
+        </div>
+
+        <form id="form-scan-qr-input" onsubmit="app.submitScannedHandoverQr(event)" class="space-y-3">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Kode QR / String QR Penyerahan</label>
+            <div class="relative">
+              <i class="fa-solid fa-barcode absolute left-3.5 top-3 text-slate-400"></i>
+              <input type="text" id="manual-handover-qr-input" required placeholder="Contoh: QR-HANDOVER-ORD-2026-0902" class="w-full bg-slate-50 border border-slate-300 rounded-xl pl-10 pr-3 py-2.5 text-xs font-mono font-bold focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+            </div>
+          </div>
+
+          <!-- Tombol Quick Paste untuk demo kemudahan penguji -->
+          <div id="quick-demo-qr-buttons" class="flex flex-wrap gap-1.5 pt-1 text-[11px]">
+            <!-- Diisi otomatis oleh JavaScript -->
+          </div>
+
+          <div class="flex justify-end gap-2 pt-2 border-t border-slate-100">
+            <button type="button" onclick="app.closeModals()" class="px-4 py-2.5 rounded-xl border border-slate-300 text-xs font-bold text-slate-700 hover:bg-slate-50 transition">
+              Batal
+            </button>
+            <button type="submit" class="px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold shadow-md transition flex items-center gap-1.5">
+              <i class="fa-solid fa-shield-check text-emerald-400"></i>
+              <span>Verifikasi QR &amp; Selesaikan</span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= MODAL: DETAIL PENGIRIMAN & PELACAKAN ================= -->
+  <div id="modal-delivery-details" class="fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-sm hidden items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-white rounded-3xl max-w-lg w-full shadow-2xl border border-slate-200 overflow-hidden">
+      <div class="p-5 border-b border-slate-100 flex items-start justify-between gap-3">
+        <div>
+          <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-800 border border-blue-300 uppercase mb-1">
+            <i class="fa-solid fa-route"></i> Logistik Digital
+          </span>
+          <h3 class="text-base font-extrabold text-slate-900">Rincian Pengiriman &amp; Serah Terima</h3>
+          <p class="text-xs text-slate-500 mt-0.5">Informasi surat jalan, ekspedisi pihak ke-3, atau bukti serah terima langsung.</p>
+        </div>
+        <button type="button" onclick="app.closeModals()" class="text-slate-400 hover:text-slate-700 p-1"><i class="fa-solid fa-xmark text-lg"></i></button>
+      </div>
+      <div id="delivery-details-body" class="p-6 space-y-4">
+        <!-- Diisi otomatis oleh JavaScript -->
+      </div>
+      <div class="p-4 bg-slate-50 border-t border-slate-100 flex justify-end">
+        <button type="button" onclick="app.closeModals()" class="px-4 py-2 rounded-xl bg-slate-900 text-white text-xs font-bold">Tutup</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= PRINTABLE REPORT WRAPPER (HIDDEN DI LAYAR, TAMPIL SAAT CETAK) ================= -->
+  <div id="printable-report-wrapper" class="hidden">
+    <div id="printable-report-content">
+      <!-- Diisi oleh app.generatePrintableReportHtml(...) -->
+    </div>
+  </div>
+
   <!-- ================= DOCKED BOTTOM NAVIGATION BAR (MOBILE APP) ================= -->
   <nav id="mobile-app-bottom-nav" class="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-xl border-t border-slate-200/90 shadow-[0_-4px_25px_rgba(0,0,0,0.08)] py-1.5 px-2 lg:hidden">
     <div id="bnav-grid" class="max-w-md mx-auto grid grid-cols-5 items-center text-center">
@@ -3257,8 +4944,8 @@
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 
   <!-- Modul Aplikasi BURSA LIMBAH -->
-  <script src="js/data.js?v=3"></script>
-  <script src="js/store.js?v=3"></script>
-  <script src="js/app.js?v=3"></script>
+  <script src="js/data.js?v=4"></script>
+  <script src="js/store.js?v=4"></script>
+  <script src="js/app.js?v=4"></script>
 </body>
 </html>
