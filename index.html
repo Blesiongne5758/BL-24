@@ -1887,6 +1887,10 @@
           <span>Laporan Penawaran Disetujui</span>
           <span id="seller-offers-badge" class="ml-1 px-1.5 py-0.2 bg-blue-600 text-white rounded-full text-[10px]">0</span>
         </button>
+        <button id="seller-tab-btn-settings" onclick="app.showUserProfileModal()" class="px-4 py-2.5 rounded-xl text-xs font-bold text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition flex items-center gap-1.5 shrink-0">
+          <i class="fa-solid fa-gear text-emerald-600"></i>
+          <span>Pengaturan Profil &amp; Pembayaran</span>
+        </button>
       </div>
 
       <!-- KONTEN 1: KATALOG PASOKAN SAYA -->
@@ -3738,6 +3742,8 @@
         <!-- Diisi otomatis oleh JavaScript -->
       </div>
     </div>
+  </div>
+
   <!-- ================= MODAL 6: LOGIN / OAUTH GOOGLE ================= -->
   <div id="modal-google-auth" class="fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-sm hidden items-center justify-center p-4 overflow-y-auto">
     <div class="bg-white rounded-3xl max-w-md w-full p-6 sm:p-8 shadow-2xl border border-slate-200 space-y-5">
@@ -4945,8 +4951,8 @@
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 
   <!-- Modul Aplikasi BURSA LIMBAH -->
-  <script src="js/data.js?v=5"></script>
-  <script src="js/store.js?v=5"></script>
-  <script src="js/app.js?v=5"></script>
+  <script src="js/data.js?v=6"></script>
+  <script src="js/store.js?v=6"></script>
+  <script src="js/app.js?v=6"></script>
 </body>
 </html>

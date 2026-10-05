@@ -251,6 +251,10 @@ class BursaLimbahApp {
         if (roleDesc) roleDesc.textContent = `Paket: ${tier.name} (${limitText}) • Alamat: ${tier.allowAddress === 'full' ? 'Lengkap' : 'Kota'} • GPS: ${tier.allowGpsMap ? 'Aktif' : 'Terkunci'} • WA: ${tier.allowWhatsapp ? 'Aktif' : 'Chat Saja'}`;
         if (roleActions) {
           roleActions.innerHTML = `
+            <button onclick="app.showUserProfileModal()" class="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-white font-semibold transition flex items-center space-x-1">
+              <i class="fa-solid fa-gear text-emerald-400"></i>
+              <span>Pengaturan Profil</span>
+            </button>
             <button onclick="app.showBuyerRegisterModal()" class="px-2.5 py-1 rounded bg-brand-600 hover:bg-brand-500 text-white font-bold transition flex items-center space-x-1">
               <i class="fa-solid fa-crown text-amber-300"></i>
               <span>Ganti Tier</span>
@@ -271,6 +275,10 @@ class BursaLimbahApp {
         if (roleDesc) roleDesc.textContent = `Status: ${user.verifiedBadge} • Saldo Penjualan: ${this.formatRupiah(user.balance)}`;
         if (roleActions) {
           roleActions.innerHTML = `
+            <button onclick="app.showUserProfileModal()" class="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-white font-semibold transition flex items-center space-x-1">
+              <i class="fa-solid fa-gear text-emerald-400"></i>
+              <span>Pengaturan Profil</span>
+            </button>
             <button onclick="app.showUploadModal()" class="px-2.5 py-1 rounded bg-brand-600 hover:bg-brand-500 text-white font-bold transition">
               + Unggah Pasokan
             </button>
@@ -1079,14 +1087,17 @@ class BursaLimbahApp {
             <i class="fa-solid fa-calendar-star text-white text-sm"></i>
           </span>
           <div class="flex-1 min-w-0">
-            <h3 class="text-sm font-extrabold text-slate-800 truncate">${ev.name}</h3>
+            <h3 class="text-sm font-extrabold text-slate-800 truncate">${ev.title || ev.name}</h3>
             <span class="text-[10px] text-violet-700 font-semibold">${ev.date || ''} ${ev.location ? '• ' + ev.location : ''}</span>
           </div>
         </div>
         ${ev.description ? `<p class="text-xs text-slate-600 leading-relaxed">${ev.description}</p>` : ''}
-        <div class="flex items-center justify-between mt-auto pt-1 border-t border-violet-100">
-          <span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${ev.status === 'Aktif' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'}">${ev.status || 'Mendatang'}</span>
-          ${ev.waLink ? `<a href="${ev.waLink}" target="_blank" class="text-[10px] font-bold text-emerald-700 flex items-center gap-1 hover:underline"><i class="fa-brands fa-whatsapp"></i> Daftar</a>` : ''}
+        <div class="flex items-center justify-between mt-auto pt-2 border-t border-violet-100 gap-2">
+          <span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${ev.status === 'Aktif' || ev.status === 'published' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'}">${ev.status === 'published' ? 'Dibuka' : (ev.status || 'Mendatang')}</span>
+          <div class="flex items-center gap-1.5">
+            ${ev.waLink ? `<a href="${ev.waLink}" target="_blank" class="text-[10px] font-bold text-emerald-700 flex items-center gap-1 hover:underline"><i class="fa-brands fa-whatsapp"></i> WA</a>` : ''}
+            <button onclick="app.openEventRegistration('${ev.id}')" class="px-2.5 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-[11px] font-bold transition shadow-xs flex items-center gap-1">Daftar Event →</button>
+          </div>
         </div>
       </div>
     `).join('');
@@ -7186,6 +7197,7 @@ class BursaLimbahApp {
       'modal-mobile-quick-actions',
       'modal-mobile-dp-calculator',
       'modal-admin-event',
+      'modal-event-registration',
       'modal-help',
       'modal-gps-location'
     ];
