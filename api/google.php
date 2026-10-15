@@ -1,4 +1,5 @@
 <?php
+// SPDX-License-Identifier: MIT
 require_once __DIR__ . '/db.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {

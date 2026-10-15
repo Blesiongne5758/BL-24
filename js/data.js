@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /**
  * BURSA LIMBAH Data Seed & Initial Store (100% Bahasa Indonesia)
  * Versi 3: 3-Tier Berlangganan Pembeli, Gated Access Publik, Kontak WA, Postingan Pembeli & Chat Interaktif
@@ -548,6 +549,36 @@ const INITIAL_SETTINGS = {
   escrowAccountNumber: "8271-9920-1122",
   escrowAccountHolder: "PT BURSA LIMBAH Transaksi Sirkular (Rekening Bersama Escrow)",
   escrowBankBranch: "KCP Sentra Bisnis Pulogadung, Jakarta",
+  // Sakelar Master Semua Fitur Platform (Dapat diaktifkan & dinonaktifkan Admin)
+  features: {
+    marketplace: true,          // Katalog limbah publik & pencarian
+    productUpload: true,        // Unggah pasokan limbah baru oleh penjual
+    escrowDp: false,            // Fitur DP Escrow & Rekber (SET OFF default)
+    offersNegotiation: true,    // Sistem negosiasi penawaran harga
+    chatSystem: true,           // Layanan obrolan interaktif pembeli - penjual
+    buyerSubscription: true,    // Paket berlangganan 3-tier pembeli
+    eventsModule: true,         // Agenda event, webinar, & workshop sirkular
+    supportTickets: true,       // Pusat bantuan & tiket aduan
+    marketTicker: true,         // Ticker harga pasar acuan
+    userRegistration: true,     // Buka / tutup pendaftaran akun baru
+    logisticsService: true,     // Layanan pengiriman & logistik armada
+    cryptoWallet: true          // Dompet Kripto & Pembayaran Blockchain Web3
+  },
+  // Konfigurasi Blockchain & Dompet Kripto Bursa Limbah
+  cryptoConfig: {
+    enabled: true,
+    networkName: "Polygon PoS (Matic Mainnet)",
+    networkRpc: "https://polygon-rpc.com",
+    chainId: 137,
+    currencySymbol: "CLNK",
+    tokenName: [REDACTED]
+    tokenContractAddress: [REDACTED]
+    escrowContractAddress: "0x3A28F50B9402De069F78465C58a18357aF38ESCROW",
+    rewardPer100Kg: 10,         // 10 CLNK reward per 100 Kg limbah terverifikasi
+    tokenRateIdr: [REDACTED]
+    gasSponsorEnabled: true,    // Bebas gas fee (disponsori relayer platform)
+    airdropPoolBalance: 2500000 // 2.500.000 CLNK Pool Reward Daur Ulang
+  },
   // Struktur Biaya & Jasa Logistik
   dpEnabled: false, // Status DP saat ini: SET OFF (Nonaktif) sesuai instruksi
   downPaymentPercent: 30, // Persentase DP jika diaktifkan

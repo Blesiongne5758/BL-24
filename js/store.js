@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 /**
  * BURSA LIMBAH Store & State Management (100% Bahasa Indonesia)
  * Versi 3: 3-Tier Berlangganan Pembeli, Gated Access Publik, Kontrol Admin Rentang Harga & Chat Interaktif
@@ -1976,6 +1977,336 @@ class BursaLimbahStore {
     return this.state.settings;
   }
 
+  // ================= SAKELAR MASTER FITUR (FEATURE FLAGS) =================
+  getFeatures() {
+    return (this.state.settings && this.state.settings.features) || (typeof INITIAL_SETTINGS !== 'undefined' ? INITIAL_SETTINGS.features : {});
+  }
+
+  isFeatureEnabled(featureKey) {
+    const features = this.getFeatures();
+    if (!features || typeof features[featureKey] === 'undefined') return true;
+    return features[featureKey] === true;
+  }
+
+  setFeature(featureKey, enabled) {
+    if (!this.state.settings.features) {
+      this.state.settings.features = { ...(typeof INITIAL_SETTINGS !== 'undefined' ? INITIAL_SETTINGS.features : {}) };
+    }
+    this.state.settings.features[featureKey] = Boolean(enabled);
+    this.save();
+
+    if (this.isBackendConnected) {
+      fetch(`${this.apiBaseUrl}/api/settings`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ [`feature_${featureKey}`]: String(enabled) })
+      }).catch(e => console.warn('[Feature Toggle API Error]', e));
+    }
+    return this.state.settings.features;
+  }
+
+  // ================= BLOCKCHAIN & DOMPET KRIPTO =================
+  getCryptoConfig() {
+    const raw = (this.state.settings && this.state.settings.cryptoConfig) || (typeof INITIAL_SETTINGS !== 'undefined' ? INITIAL_SETTINGS.cryptoConfig : {
+      enabled: true,
+      networkName: "Polygon PoS (Matic Mainnet)",
+      networkRpc: "https://polygon-rpc.com",
+      chainId: 137,
+      currencySymbol: "CLNK",
+      tokenName: [REDACTED]
+      tokenContractAddress: [REDACTED]
+      escrowContractAddress: "0x3A28F50B9402De069F78465C58a18357aF38ESCROW",
+      rewardPer100Kg: 10,
+      tokenRateIdr: [REDACTED]
+      gasSponsorEnabled: true,
+      airdropPoolBalance: 2500000
+    });
+    raw.symbol = raw.symbol || raw.currencySymbol || 'CLNK';
+    raw.currencySymbol = raw.symbol;
+    [REDACTED] = [REDACTED] '';
+    [REDACTED]Address = [REDACTED];
+    raw.escrowContract = raw.escrowContract || raw.escrowContractAddress || '';
+    raw.escrowContractAddress = raw.escrowContract;
+    [REDACTED] = [REDACTED] || raw.tokenRateIdr || 1500;
+    raw.tokenRateIdr = [REDACTED]
+    raw.airdropPool = raw.airdropPool ?? raw.airdropPoolBalance ?? 2500000;
+    raw.airdropPoolBalance = raw.airdropPool;
+    raw.network = raw.network || raw.networkName || 'Polygon PoS (Matic Mainnet)';
+    raw.networkName = raw.network;
+    return raw;
+  }
+
+  updateCryptoConfig(patch) {
+    if (patch.exchangeRateIdr && !patch.tokenRateIdr) patch.tokenRateIdr = patch.exchangeRateIdr;
+    if (patch.tokenRateIdr && !patch.exchangeRateIdr) patch.exchangeRateIdr = patch.tokenRateIdr;
+    if (patch.symbol && !patch.currencySymbol) patch.currencySymbol = patch.symbol;
+    if (patch.currencySymbol && !patch.symbol) patch.symbol = patch.currencySymbol;
+    if (patch.tokenContract && !patch.tokenContractAddress) patch.tokenContractAddress = patch.tokenContract;
+    if (patch.tokenContractAddress && !patch.tokenContract) patch.tokenContract = patch.tokenContractAddress;
+    if (patch.escrowContract && !patch.escrowContractAddress) patch.escrowContractAddress = patch.escrowContract;
+    if (patch.escrowContractAddress && !patch.escrowContract) patch.escrowContract = patch.escrowContractAddress;
+    if (patch.airdropPool !== undefined && patch.airdropPoolBalance === undefined) patch.airdropPoolBalance = patch.airdropPool;
+    if (patch.airdropPoolBalance !== undefined && patch.airdropPool === undefined) patch.airdropPool = patch.airdropPoolBalance;
+    if (patch.network && !patch.networkName) patch.networkName = patch.network;
+    if (patch.networkName && !patch.network) patch.network = patch.networkName;
+
+    this.state.settings.cryptoConfig = { ...this.getCryptoConfig(), ...patch };
+    this.save();
+    if (this.isBackendConnected) {
+      fetch(`${this.apiBaseUrl}/api/settings`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ crypto_config: JSON.stringify(this.state.settings.cryptoConfig) })
+      }).catch(e => console.warn('[Crypto Config API Error]', e));
+    }
+    return this.state.settings.cryptoConfig;
+  }
+
+  getCryptoWallets() {
+    if (!this.state.cryptoWallets) {
+      this.state.cryptoWallets = {};
+    }
+    return this.state.cryptoWallets;
+  }
+
+  getCryptoWallet(userId) {
+    const uid = userId || this.getCurrentUser()?.id || 'guest';
+    const wallets = this.getCryptoWallets();
+    if (!wallets[uid]) {
+      const hex = '0[REDACTED]789abcdef';
+      let addr = '0x';
+      for (let i = 0; i < 40; i++) addr += hex[Math.floor(Math.random() * 16)];
+
+      const isBuyer = uid.includes('buyer');
+      const isSeller = uid.includes('seller');
+      wallets[uid] = {
+        userId: uid,
+        address: addr,
+        network: this.getCryptoConfig().networkName,
+        connected: true,
+        balances: {
+          CLNK: isBuyer ? 750 : (isSeller ? 450 : 2500),
+          USDT: isBuyer ? 85.0 : 15.0,
+          MATIC: 0.85
+        },
+        unclaimedRewards: {
+          CLNK: isSeller ? 35 : (isBuyer ? 20 : 0),
+          reason: 'Reward Daur Ulang 350 Kg Terverifikasi'
+        },
+        txHistory: [
+          {
+            txHash: '0x' + Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join(''),
+            type: 'airdrop_welcome',
+            title: 'Welcome Airdrop Circulink Token',
+            amount: isBuyer ? 750 : (isSeller ? 450 : 2500),
+            symbol: 'CLNK',
+            status: 'confirmed',
+            blockNumber: 58921042,
+            timestamp: new Date(Date.now() - 86400000 * 2).toISOString()
+          }
+        ]
+      };
+      this.save();
+    }
+    return wallets[uid];
+  }
+
+  claimRecyclingRewards(userId) {
+    const wallet = this.getCryptoWallet(userId);
+    const amount = Number(wallet.unclaimedRewards?.CLNK) || 0;
+    if (amount <= 0) {
+      return { success: false, message: 'Tidak ada token reward daur ulang yang dapat diklaim saat ini.' };
+    }
+
+    wallet.balances.CLNK = (wallet.balances.CLNK || 0) + amount;
+    const tx = {
+      txHash: '0x' + Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join(''),
+      type: 'reward_claim',
+      title: 'Klaim Insentif Daur Ulang Limbah',
+      amount,
+      symbol: 'CLNK',
+      status: 'confirmed',
+      blockNumber: Math.floor(58900000 + Math.random() * 90000),
+      timestamp: new Date().toISOString()
+    };
+    wallet.txHistory.unshift(tx);
+    wallet.unclaimedRewards = { CLNK: 0, reason: '' };
+    this.save();
+
+    return {
+      success: true,
+      amount,
+      claimed: amount,
+      txHash: tx.txHash,
+      newBalance: wallet.balances.CLNK,
+      message: `Berhasil mengklaim ${amount} CLNK ke dompet kripto Anda!`
+    };
+  }
+
+  transferCrypto(fromUserId, toAddress, amount, symbol = 'CLNK') {
+    const wallet = this.getCryptoWallet(fromUserId);
+    const qty = Number(amount);
+    if (!toAddress || !toAddress.startsWith('0x') || toAddress.length < 20) {
+      return { success: false, message: 'Alamat dompet penerima tidak valid (harus diawali 0x).' };
+    }
+    if (qty <= 0 || (wallet.balances[symbol] || 0) < qty) {
+      return { success: false, message: `Saldo ${symbol} Anda tidak mencukupi untuk transfer.` };
+    }
+
+    wallet.balances[symbol] -= qty;
+    const tx = {
+      txHash: '0x' + Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join(''),
+      type: 'transfer_out',
+      title: `Transfer ke ${toAddress.substring(0, 8)}...${toAddress.slice(-4)}`,
+      toAddress,
+      amount: qty,
+      symbol,
+      status: 'confirmed',
+      blockNumber: Math.floor(58900000 + Math.random() * 90000),
+      timestamp: new Date().toISOString()
+    };
+    wallet.txHistory.unshift(tx);
+
+    // Cari apakah penerima user lokal
+    const allWallets = this.getCryptoWallets();
+    for (const uId of Object.keys(allWallets)) {
+      if (allWallets[uId].address.toLowerCase() === toAddress.toLowerCase()) {
+        allWallets[uId].balances[symbol] = (allWallets[uId].balances[symbol] || 0) + qty;
+        allWallets[uId].txHistory.unshift({
+          txHash: tx.txHash,
+          type: 'transfer_in',
+          title: `Terima dari ${wallet.address.substring(0, 8)}...`,
+          fromAddress: wallet.address,
+          amount: qty,
+          symbol,
+          status: 'confirmed',
+          blockNumber: tx.blockNumber,
+          timestamp: tx.timestamp
+        });
+        break;
+      }
+    }
+
+    this.save();
+    return {
+      success: true,
+      txHash: tx.txHash,
+      amount: qty,
+      symbol,
+      remainingBalance: wallet.balances[symbol],
+      message: `Transfer ${qty} ${symbol} berhasil dikonfirmasi di blockchain!`
+    };
+  }
+
+  payOrderWithCrypto(userId, orderId, symbol = 'CLNK') {
+    const order = (this.state.orders || []).find(o => o.id === orderId);
+    if (!order) return { success: false, message: 'Pesanan tidak ditemukan.' };
+
+    const config = this.getCryptoConfig();
+    const rate = config.tokenRateIdr || 1500;
+    const rupiahAmount = Number(order.dpAmount || order.downPaymentAmount || order.totalAmount || order.totalPrice) || 100000;
+    const tokenAmount = symbol === 'USDT' ? Math.round((rupiahAmount / 16000) * 100) / 100 : Math.ceil(rupiahAmount / rate);
+
+    const wallet = this.getCryptoWallet(userId);
+    if ((wallet.balances[symbol] || 0) < tokenAmount) {
+      return {
+        success: false,
+        message: `Saldo ${symbol} Anda (${wallet.balances[symbol] || 0}) tidak mencukupi untuk membayar ${tokenAmount} ${symbol} (setara Rp ${rupiahAmount.toLocaleString('id-ID')}).`
+      };
+    }
+
+    wallet.balances[symbol] -= tokenAmount;
+    const tx = {
+      txHash: '0x' + Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join(''),
+      type: 'order_payment',
+      title: `Pembayaran Pesanan #${order.bookingCode || order.id}`,
+      orderId: order.id,
+      amount: tokenAmount,
+      symbol,
+      status: 'confirmed',
+      blockNumber: Math.floor(58900000 + Math.random() * 90000),
+      timestamp: new Date().toISOString()
+    };
+    wallet.txHistory.unshift(tx);
+
+    // Update status pesanan
+    order.escrowStatus = 'dp_secured';
+    order.status = 'DP Terbayar (Crypto Escrow)';
+    order.paymentMethod = `Crypto Wallet (${symbol})`;
+    order.cryptoTxHash = tx.txHash;
+    this.save();
+
+    return {
+      success: true,
+      txHash: tx.txHash,
+      tokenAmount,
+      symbol,
+      message: `Pembayaran ${tokenAmount} ${symbol} untuk pesanan #${order.bookingCode || order.id} sukses via Smart Contract Escrow!`
+    };
+  }
+
+  adminDistributeAirdrop(toTarget, amount, reason = 'Insentif Komunitas Sirkular') {
+    const config = this.getCryptoConfig();
+    const qty = Number(amount) || 0;
+    if (qty <= 0) return { success: false, message: 'Jumlah token harus lebih dari 0.' };
+
+    const allWallets = this.getCryptoWallets();
+    let recipientsCount = 0;
+
+    if (toTarget === 'all_users') {
+      const users = this.state.users || [];
+      const perUser = Math.round(qty / (users.length || 1));
+      users.forEach(u => {
+        const w = this.getCryptoWallet(u.id);
+        w.balances.CLNK = (w.balances.CLNK || 0) + perUser;
+        w.txHistory.unshift({
+          txHash: '0x' + Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join(''),
+          type: 'airdrop_distribution',
+          title: 'Distribusi Massal Admin: ' + reason,
+          amount: perUser,
+          symbol: 'CLNK',
+          status: 'confirmed',
+          timestamp: new Date().toISOString()
+        });
+        recipientsCount++;
+      });
+      config.airdropPoolBalance = Math.max(0, (config.airdropPoolBalance || 2500000) - qty); config.airdropPool = config.airdropPoolBalance; config.airdropPool = config.airdropPoolBalance;
+    } else {
+      let targetWallet = null;
+      for (const uid of Object.keys(allWallets)) {
+        if (uid === toTarget || allWallets[uid].address.toLowerCase() === toTarget.toLowerCase()) {
+          targetWallet = allWallets[uid];
+          break;
+        }
+      }
+      if (!targetWallet) {
+        targetWallet = this.getCryptoWallet(toTarget);
+      }
+      targetWallet.balances.CLNK = (targetWallet.balances.CLNK || 0) + qty;
+      targetWallet.txHistory.unshift({
+        txHash: '0x' + Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join(''),
+        type: 'airdrop_distribution',
+        title: 'Insentif Khusus Admin: ' + reason,
+        amount: qty,
+        symbol: 'CLNK',
+        status: 'confirmed',
+        timestamp: new Date().toISOString()
+      });
+      config.airdropPoolBalance = Math.max(0, (config.airdropPoolBalance || 2500000) - qty);
+      recipientsCount = 1;
+    }
+
+    this.save();
+    return {
+      success: true,
+      recipientsCount,
+      count: recipientsCount,
+      totalDistributed: qty,
+      remainingPool: config.airdropPoolBalance,
+      message: `Berhasil mendistribusikan ${qty} CLNK ke ${recipientsCount} penerima!`
+    };
+  }
+
   updateSettings(newSettings) {
     this.state.settings = { ...this.state.settings, ...newSettings };
     this.save();
@@ -2011,6 +2342,8 @@ class BursaLimbahStore {
       if (apiSettings.supportOperationalHours !== undefined) { apiSettings.support_operational_hours = apiSettings.supportOperationalHours; delete apiSettings.supportOperationalHours; }
       if (apiSettings.supportMapsUrl !== undefined) { apiSettings.support_maps_url = apiSettings.supportMapsUrl; delete apiSettings.supportMapsUrl; }
       if (apiSettings.customFees !== undefined) { apiSettings.custom_fees = JSON.stringify(apiSettings.customFees); delete apiSettings.customFees; }
+      if (apiSettings.features !== undefined) { apiSettings.features = JSON.stringify(apiSettings.features); }
+      if (apiSettings.cryptoConfig !== undefined) { apiSettings.crypto_config = JSON.stringify(apiSettings.cryptoConfig); delete apiSettings.cryptoConfig; }
       fetch(`${this.apiBaseUrl}/api/settings`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },

@@ -1,4 +1,5 @@
 <?php
+// SPDX-License-Identifier: MIT
 // =======================================================
 // KONEKSI DATABASE MYSQL VIA PHP PDO (XAMPP / LARAGON)
 // =======================================================

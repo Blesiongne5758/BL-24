@@ -5,3 +5,17 @@ test_logic.js
 *.log
 .DS_Store
 Thumbs.db
+.env
+.env.*
+!.env.example
+server/.env
+server/.env.*
+!server/.env.example
+server/backups/*.sql
+server/backups/*.gz
+server/uploads/identity-documents/*
+!server/uploads/identity-documents/.gitkeep
+scratch/
+test_backend_services.js
+test_crypto_and_features.js
+

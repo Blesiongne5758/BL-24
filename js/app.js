@@ -1,11 +1,37 @@
+// SPDX-License-Identifier: MIT
 /**
  * BURSA LIMBAH Application Logic (100% Bahasa Indonesia)
  * Versi 3: 3-Tier Berlangganan Pembeli, Gated Access Publik, Kontrol Admin Rentang Harga & Fitur Layar Chat Interaktif
  */
 
+// =================================================================
+// UTILITY: HTML Escaping untuk mencegah XSS (Cross-Site Scripting)
+// Wajib digunakan pada setiap data dari pengguna/database yang
+// dirender ke dalam innerHTML menggunakan template literal.
+// =================================================================
+/**
+ * Mengkoversi karakter HTML berbahaya menjadi HTML entities yang aman.
+ * @param {any} str - Nilai yang akan di-escape
+ * @returns {string} String yang sudah aman untuk dimasukkan ke innerHTML
+ */
+function escapeHtml(str) {
+  if (str === null || str === undefined) return '';
+  return String(str).replace(/[&<>"'`]/g, ch => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;',
+    '`': '&#96;'
+  })[ch]);
+}
+// Alias pendek untuk kemudahan penggunaan di template literal
+const esc = escapeHtml;
+
 class BursaLimbahApp {
   constructor() {
     this.store = window.bursaLimbahStore || window.circulinkStore;
+    this.esc = esc;
     this.activeModalMap = null;
     this.currentBuyerTab = 'market';
     this.currentAdminTab = 'verification';
@@ -52,6 +78,8 @@ class BursaLimbahApp {
     this.updateAdminTicketsBadge();
     this.updateChatUnreadBadge();
     this.updateNavUI();
+    this.applyFeatureFlags();
+    this.updateCryptoNavBadge();
   }
 
   // ================= FUNGSI BANTU & FORMATTER =================
@@ -247,8 +275,8 @@ class BursaLimbahApp {
           : `Maksimal Nilai: ${this.formatRupiah(tier.maxPriceLimit)}`;
 
         if (roleIcon) roleIcon.innerHTML = '<i class="fa-solid fa-crown text-amber-300"></i>';
-        if (roleTitle) roleTitle.textContent = `Akun Pembeli: ${user.name}`;
-        if (roleDesc) roleDesc.textContent = `Paket: ${tier.name} (${limitText}) • Alamat: ${tier.allowAddress === 'full' ? 'Lengkap' : 'Kota'} • GPS: ${tier.allowGpsMap ? 'Aktif' : 'Terkunci'} • WA: ${tier.allowWhatsapp ? 'Aktif' : 'Chat Saja'}`;
+        if (roleTitle) roleTitle.textContent = `Akun Pembeli: ${esc(user.name)}`;
+        if (roleDesc) roleDesc.textContent = `Paket: ${esc(tier.name)} (${limitText}) • Alamat: ${tier.allowAddress === 'full' ? 'Lengkap' : 'Kota'} • GPS: ${tier.allowGpsMap ? 'Aktif' : 'Terkunci'} • WA: ${tier.allowWhatsapp ? 'Aktif' : 'Chat Saja'}`;
         if (roleActions) {
           roleActions.innerHTML = `
             <button onclick="app.showUserProfileModal()" class="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-white font-semibold transition flex items-center space-x-1">
@@ -268,11 +296,11 @@ class BursaLimbahApp {
 
         // Update heading pada halaman view-buyer
         const buyerHeading = [REDACTED]'buyer-company-name-heading');
-        if (buyerHeading) buyerHeading.textContent = `Portal Akun Pembeli: ${user.company || user.name}`;
+        if (buyerHeading) buyerHeading.textContent = `Portal Akun Pembeli: ${esc(user.company || user.name)}`;
       } else if (role === 'seller' && user) {
         if (roleIcon) roleIcon.innerHTML = '<i class="fa-solid fa-store text-emerald-300"></i>';
-        if (roleTitle) roleTitle.textContent = `Akun Penjual: ${user.name}`;
-        if (roleDesc) roleDesc.textContent = `Status: ${user.verifiedBadge} • Saldo Penjualan: ${this.formatRupiah(user.balance)}`;
+        if (roleTitle) roleTitle.textContent = `Akun Penjual: ${esc(user.name)}`;
+        if (roleDesc) roleDesc.textContent = `Status: ${esc(user.verifiedBadge)} • Saldo Penjualan: ${this.formatRupiah(user.balance)}`;
         if (roleActions) {
           roleActions.innerHTML = `
             <button onclick="app.showUserProfileModal()" class="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-white font-semibold transition flex items-center space-x-1">
@@ -294,7 +322,7 @@ class BursaLimbahApp {
         const sellerMeta = [REDACTED]'seller-profile-meta');
         const sellerBadge = [REDACTED]'seller-badge-pill');
         if (sellerName) sellerName.textContent = user.name;
-        if (sellerMeta) sellerMeta.textContent = `Email: ${user.email || '-'} • Lokasi: ${user.location || '-'} • Rekening: ${user.bankAccount || '-'}`;
+        if (sellerMeta) sellerMeta.textContent = `Email: ${esc(user.email || '-')} • Lokasi: ${esc(user.location || '-')} • Rekening: ${esc(user.bankAccount || '-')}`;
         if (sellerBadge) sellerBadge.textContent = user.verifiedBadge || 'Pemasok Terverifikasi';
       } else if (role === 'admin') {
         if (roleIcon) roleIcon.innerHTML = '<i class="fa-solid fa-user-shield text-amber-300"></i>';
@@ -353,6 +381,7 @@ class BursaLimbahApp {
 
   // ================= NAVIGASI & HEADER DOKUMEN =================
   updateNavUI() {
+    this.updateCryptoNavBadge();
     const navContainer = [REDACTED]'nav-action-container');
     if (!navContainer) return;
 
@@ -364,7 +393,7 @@ class BursaLimbahApp {
         <div class="flex items-center space-x-2">
           <div class="hidden lg:flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold">
             <i class="fa-solid fa-crown text-amber-500"></i>
-            <span class="truncate max-w-[140px]">${user.company || user.name}</span>
+            <span class="truncate max-w-[140px]">${esc(user.company || user.name)}</span>
           </div>
           <button onclick="app.setRole('buyer')" class="px-3 py-2 text-xs font-bold rounded-xl bg-brand-600 hover:bg-brand-700 text-white shadow-sm transition flex items-center space-x-1">
             <i class="fa-solid fa-store"></i>
@@ -384,7 +413,7 @@ class BursaLimbahApp {
         <div class="flex items-center space-x-2">
           <div class="hidden lg:flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-slate-100 border border-slate-200 text-slate-800 text-xs font-bold">
             <i class="fa-solid fa-store text-emerald-600"></i>
-            <span class="truncate max-w-[140px]">${user.name}</span>
+            <span class="truncate max-w-[140px]">${esc(user.name)}</span>
           </div>
           <button onclick="app.setRole('seller')" class="px-3 py-2 text-xs font-bold rounded-xl bg-slate-900 hover:bg-slate-800 text-white shadow-sm transition flex items-center space-x-1">
             <i class="fa-solid fa-boxes-stacked"></i>
@@ -1087,11 +1116,11 @@ class BursaLimbahApp {
             <i class="fa-solid fa-calendar-star text-white text-sm"></i>
           </span>
           <div class="flex-1 min-w-0">
-            <h3 class="text-sm font-extrabold text-slate-800 truncate">${ev.title || ev.name}</h3>
-            <span class="text-[10px] text-violet-700 font-semibold">${ev.date || ''} ${ev.location ? '• ' + ev.location : ''}</span>
+            <h3 class="text-sm font-extrabold text-slate-800 truncate">${esc(ev.title || ev.name)}</h3>
+            <span class="text-[10px] text-violet-700 font-semibold">${esc(ev.date || '')} ${ev.location ? '• ' + esc(ev.location) : ''}</span>
           </div>
         </div>
-        ${ev.description ? `<p class="text-xs text-slate-600 leading-relaxed">${ev.description}</p>` : ''}
+        ${ev.description ? `<p class="text-xs text-slate-600 leading-relaxed">${esc(ev.description)}</p>` : ''}
         <div class="flex items-center justify-between mt-auto pt-2 border-t border-violet-100 gap-2">
           <span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${ev.status === 'Aktif' || ev.status === 'published' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'}">${ev.status === 'published' ? 'Dibuka' : (ev.status || 'Mendatang')}</span>
           <div class="flex items-center gap-1.5">
@@ -1117,9 +1146,9 @@ class BursaLimbahApp {
           <div class="w-16 h-16 rounded-full bg-white/20 flex items-center justify-center mx-auto mb-2">
             <i class="fa-solid fa-crown text-amber-300 text-2xl"></i>
           </div>
-          <h3 class="font-extrabold text-lg">${user.company || user.name}</h3>
-          <p class="text-emerald-200 text-xs">${user.email || ''}</p>
-          <span class="inline-block mt-2 px-3 py-0.5 rounded-full bg-amber-400/20 border border-amber-300/40 text-amber-200 text-[10px] font-bold">${tier.name}</span>
+          <h3 class="font-extrabold text-lg">${esc(user.company || user.name)}</h3>
+          <p class="text-emerald-200 text-xs">${esc(user.email || '')}</p>
+          <span class="inline-block mt-2 px-3 py-0.5 rounded-full bg-amber-400/20 border border-amber-300/40 text-amber-200 text-[10px] font-bold">${esc(tier.name)}</span>
         </div>
         <div class="space-y-2">
           <button onclick="app.setRole('buyer')" class="w-full flex items-center gap-3 p-3 rounded-2xl bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 transition active:scale-98 text-left">
@@ -1151,9 +1180,9 @@ class BursaLimbahApp {
           <div class="w-16 h-16 rounded-full bg-white/20 flex items-center justify-center mx-auto mb-2">
             <i class="fa-solid fa-store text-emerald-300 text-2xl"></i>
           </div>
-          <h3 class="font-extrabold text-lg">${user.name}</h3>
-          <p class="text-slate-300 text-xs">${user.email || ''}</p>
-          <span class="inline-block mt-2 px-3 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-400/40 text-emerald-200 text-[10px] font-bold">${user.verifiedBadge || 'Pemasok Terverifikasi'}</span>
+          <h3 class="font-extrabold text-lg">${esc(user.name)}</h3>
+          <p class="text-slate-300 text-xs">${esc(user.email || '')}</p>
+          <span class="inline-block mt-2 px-3 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-400/40 text-emerald-200 text-[10px] font-bold">${esc(user.verifiedBadge || 'Pemasok Terverifikasi')}</span>
         </div>
         <div class="space-y-2">
           <button onclick="app.setRole('seller')" class="w-full flex items-center gap-3 p-3 rounded-2xl bg-slate-50 border border-slate-200 hover:bg-slate-100 transition active:scale-98 text-left">
@@ -1271,8 +1300,8 @@ class BursaLimbahApp {
           ${p.imageUrl ? `<img src="${p.imageUrl}" class="w-full h-full object-cover rounded-xl" onerror="this.style.display='none'" />` : '<i class="fa-solid fa-recycle text-xl"></i>'}
         </div>
         <div class="flex-1 min-w-0">
-          <h4 class="text-sm font-bold text-slate-800 truncate">${p.title}</h4>
-          <p class="text-[10px] text-slate-500">${p.category || '-'} • ${p.location || '-'}</p>
+          <h4 class="text-sm font-bold text-slate-800 truncate">${esc(p.title)}</h4>
+          <p class="text-[10px] text-slate-500">${p.category || '-'} • ${esc(p.location || '-')}</p>
           <p class="text-xs font-bold text-emerald-700 mt-0.5">${this.formatRupiah(p.pricePerUnit || 0)}<span class="text-[10px] font-normal text-slate-500">/${p.unit || 'kg'}</span></p>
         </div>
         <span class="px-2 py-0.5 rounded-full text-[9px] font-bold ${p.verified ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'} flex-shrink-0 mt-1">
@@ -1544,7 +1573,7 @@ class BursaLimbahApp {
       return `
         <article class="event-card bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 group" data-category="${evt.category}">
           <div class="relative">
-            <img src="${evt.image}" alt="${evt.title}" class="w-full h-44 object-cover group-hover:scale-105 transition-transform duration-300" onerror="this.src='https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&w=800&q=80'">
+            <img src="${evt.image}" alt="${esc(evt.title)}" class="w-full h-44 object-cover group-hover:scale-105 transition-transform duration-300" onerror="this.src='https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&w=800&q=80'">
             <div class="absolute top-3 left-3">
               <span class="px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider ${badgeClass} shadow">${evt.categoryLabel || evt.category}</span>
             </div>
@@ -1556,11 +1585,11 @@ class BursaLimbahApp {
           <div class="p-5 flex flex-col flex-1">
             <div class="flex items-center gap-2 text-[10px] text-slate-500 font-semibold mb-2">
               <i class="fa-solid fa-location-dot text-indigo-400"></i>
-              <span class="truncate">${evt.location}</span>
+              <span class="truncate">${esc(evt.location)}</span>
               ${evt.time ? `<span class="text-slate-300">|</span><i class="fa-solid fa-clock text-indigo-400"></i><span>${evt.time}</span>` : ''}
             </div>
-            <h3 class="text-sm font-extrabold text-slate-900 mb-1.5 leading-snug">${evt.title}</h3>
-            <p class="text-xs text-slate-500 flex-1 leading-relaxed line-clamp-3">${evt.description}</p>
+            <h3 class="text-sm font-extrabold text-slate-900 mb-1.5 leading-snug">${esc(evt.title)}</h3>
+            <p class="text-xs text-slate-500 flex-1 leading-relaxed line-clamp-3">${esc(evt.description)}</p>
             <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
               <div class="flex items-center gap-1.5 text-[11px] font-semibold ${evt.isFree ? 'text-emerald-700' : 'text-amber-700'}">
                 <i class="fa-solid fa-ticket ${evt.isFree ? 'text-emerald-500' : 'text-amber-500'}"></i>
@@ -1773,7 +1802,7 @@ class BursaLimbahApp {
       html += `
         <div class="inline-flex items-center space-x-2 bg-slate-900/90 px-3 py-1 rounded-lg border border-slate-800 hover:border-slate-700 transition">
           <span class="w-1.5 h-1.5 rounded-full ${isUp ? 'bg-emerald-400' : isDown ? 'bg-rose-400' : 'bg-slate-400'} animate-pulse"></span>
-          <span class="text-slate-300 font-semibold">${cat.name}:</span>
+          <span class="text-slate-300 font-semibold">${esc(cat.name)}:</span>
           <span class="text-white font-bold font-mono">${this.formatRupiah(currentPrice)}<span class="text-[10px] text-slate-400 font-normal">/${cat.unit}</span></span>
           <span class="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded border ${trendColor} flex items-center">
             <i class="fa-solid ${trendIcon} mr-1 text-[9px]"></i>${cat.changePercent || '0.0%'}
@@ -1818,9 +1847,9 @@ class BursaLimbahApp {
         <div class="rounded-2xl border ${isB3 ? 'border-rose-200 bg-rose-50/30' : 'border-slate-200 bg-white'} overflow-hidden hover:border-brand-500 hover:shadow-lg transition group cursor-pointer flex flex-col justify-between" onclick="app.filterByPill('${cat.id}')">
           <div>
             <div class="relative h-32 overflow-hidden bg-slate-100">
-              <img src="${cat.image}" alt="${cat.name}" class="w-full h-full object-cover group-hover:scale-105 transition duration-500">
+              <img src="${cat.image}" alt="${esc(cat.name)}" class="w-full h-full object-cover group-hover:scale-105 transition duration-500">
               <span class="absolute top-2 left-2 px-2 py-0.5 rounded-md text-[10px] font-bold bg-slate-900/80 backdrop-blur-sm text-white">
-                ${cat.name}
+                ${esc(cat.name)}
               </span>
               <span class="absolute bottom-2 right-2 px-2 py-0.5 rounded text-[9px] font-semibold ${isB3 ? 'bg-rose-600 text-white' : 'bg-brand-600/90 text-white'}">
                 ${cat.badge || (isB3 ? 'Izin Khusus KLHK' : 'Standar Daur Ulang')}
@@ -1832,7 +1861,7 @@ class BursaLimbahApp {
                 ${cat.priceRange}
               </div>
               <p class="text-[11px] text-slate-500 mt-2 leading-relaxed line-clamp-2">
-                ${cat.description}
+                ${esc(cat.description)}
               </p>
             </div>
           </div>
@@ -1910,11 +1939,11 @@ class BursaLimbahApp {
           <div>
             <!-- Banner Gambar & Label Tipe Postingan -->
             <div class="relative h-44 bg-slate-100 overflow-hidden">
-              <img src="${mainPhoto}" alt="${item.title}" class="w-full h-full object-cover">
+              <img src="${mainPhoto}" alt="${esc(item.title)}" class="w-full h-full object-cover">
               
               <div class="absolute top-2 left-2 flex flex-col gap-1">
                 <span class="px-2.5 py-0.5 rounded-md text-[10px] font-bold bg-slate-900/80 backdrop-blur-sm text-white">
-                  ${item.code}
+                  ${esc(item.code)}
                 </span>
                 <span class="px-2 py-0.5 rounded-md text-[10px] font-semibold ${isSupply ? 'bg-emerald-600/90 text-white' : 'bg-blue-600/90 text-white'} backdrop-blur-sm">
                   ${isSupply ? 'Pasokan Penjual' : 'Permintaan Pembeli'}
@@ -1936,7 +1965,7 @@ class BursaLimbahApp {
             <!-- Konten Postingan Publik -->
             <div class="p-4 space-y-3">
               <div>
-                <h4 class="font-bold text-slate-900 text-sm leading-snug line-clamp-2">${item.title}</h4>
+                <h4 class="font-bold text-slate-900 text-sm leading-snug line-clamp-2">${esc(item.title)}</h4>
                 <div class="flex items-center space-x-2 text-xs text-slate-500 mt-1">
                   <span><i class="fa-solid fa-scale-balanced mr-1 text-slate-400"></i>Volume:</span>
                   <span class="font-bold text-slate-800">${qtyText}</span>
@@ -1951,10 +1980,10 @@ class BursaLimbahApp {
                     </span>
                   ` : ''}
                   <span class="px-2 py-0.5 rounded text-[10px] font-medium bg-slate-100 text-slate-700">
-                    <i class="fa-solid fa-box-open mr-1 text-slate-400"></i>Kondisi: ${item.condition || 'Bersih'}
+                    <i class="fa-solid fa-box-open mr-1 text-slate-400"></i>Kondisi: ${esc(item.condition || 'Bersih')}
                   </span>
                   <span class="px-2 py-0.5 rounded text-[10px] font-medium bg-slate-100 text-slate-700">
-                    <i class="fa-solid fa-certificate mr-1 text-slate-400"></i>${item.grade || 'Standar'}
+                    <i class="fa-solid fa-certificate mr-1 text-slate-400"></i>${esc(item.grade || 'Standar')}
                   </span>
                   ${item.minimumOrder ? `
                     <span class="px-2 py-0.5 rounded text-[10px] font-medium bg-slate-100 text-slate-700">
@@ -1962,7 +1991,7 @@ class BursaLimbahApp {
                     </span>
                   ` : ''}
                   <span class="px-2 py-0.5 rounded text-[10px] font-bold ${item.listingStatus === 'Tersedia' ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-700'}">
-                    ${item.listingStatus || 'Tersedia'}
+                    ${esc(item.listingStatus || 'Tersedia')}
                   </span>
                 </div>
               </div>
@@ -2079,8 +2108,8 @@ class BursaLimbahApp {
               ${isEnterprise ? `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500 text-slate-950">Akses Tanpa Batas</span>` : ''}
             </div>
 
-            <h4 class="text-2xl font-extrabold mt-1 ${isPopular ? 'text-white' : 'text-slate-900'}">${tier.name}</h4>
-            <p class="text-xs mt-2 leading-relaxed ${isPopular ? 'text-slate-300' : 'text-slate-500'}">${tier.description}</p>
+            <h4 class="text-2xl font-extrabold mt-1 ${isPopular ? 'text-white' : 'text-slate-900'}">${esc(tier.name)}</h4>
+            <p class="text-xs mt-2 leading-relaxed ${isPopular ? 'text-slate-300' : 'text-slate-500'}">${esc(tier.description)}</p>
             
             <div class="mt-6 mb-6">
               <div class="flex items-baseline">
@@ -2127,7 +2156,7 @@ class BursaLimbahApp {
                 ? 'bg-brand-500 hover:bg-brand-400 text-slate-950 font-extrabold shadow-lg shadow-brand-500/30' 
                 : 'border-2 border-brand-600 text-brand-700 hover:bg-brand-50'
             }">
-              Pilih & Daftar ${tier.name}
+              Pilih & Daftar ${esc(tier.name)}
             </button>
           </div>
         </div>
@@ -2175,7 +2204,7 @@ class BursaLimbahApp {
               <span class="text-[10px] font-bold uppercase ${isSelected ? 'text-brand-800' : 'text-slate-500'}">${t.badge}</span>
               <input type="radio" name="reg-tier-choice" ${isSelected ? 'checked' : ''} class="accent-brand-600">
             </div>
-            <div class="font-extrabold text-xs text-slate-900">${t.name}</div>
+            <div class="font-extrabold text-xs text-slate-900">${esc(t.name)}</div>
             <div class="text-sm font-bold font-mono text-brand-700 mt-1">${this.formatRupiah(t.monthlyFee)}<span class="text-[10px] text-slate-400 font-normal">/bln</span></div>
           </div>
 
@@ -2278,7 +2307,7 @@ class BursaLimbahApp {
       this.store.setBuyerTier(user.id, tierId);
       const tier = this.store.getSubscriptionTierById(tierId);
       this.renderBuyerMarketplace();
-      this.showToast(`Simulasi: Beralih ke ${tier.name}`, 'success');
+      this.showToast(`Simulasi: Beralih ke ${esc(tier.name)}`, 'success');
     }
   }
 
@@ -2313,14 +2342,14 @@ class BursaLimbahApp {
           <div>
             <!-- Banner Foto & Kode -->
             <div class="relative h-44 bg-slate-100 overflow-hidden">
-              <img src="${mainPhoto}" alt="${p.title}" class="w-full h-full object-cover">
+              <img src="${mainPhoto}" alt="${esc(p.title)}" class="w-full h-full object-cover">
               
               <div class="absolute top-2 left-2 flex flex-col gap-1">
                 <span class="px-2.5 py-0.5 rounded-md text-[10px] font-bold bg-slate-900/80 backdrop-blur-sm text-white">
-                  ${p.code}
+                  ${esc(p.code)}
                 </span>
                 <span class="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-brand-600/90 backdrop-blur-sm text-white">
-                  ${p.categoryName}
+                  ${esc(p.categoryName)}
                 </span>
                 ${p.sourceType ? `
                   <span class="px-2 py-0.5 rounded-md text-[10px] font-bold backdrop-blur-sm ${
@@ -2349,9 +2378,9 @@ class BursaLimbahApp {
             <!-- Konten Pasokan -->
             <div class="p-4 space-y-3">
               <div>
-                <h4 class="font-bold text-slate-900 text-sm leading-snug line-clamp-2">${p.title}</h4>
+                <h4 class="font-bold text-slate-900 text-sm leading-snug line-clamp-2">${esc(p.title)}</h4>
                 <div class="flex items-center space-x-2 text-xs text-slate-500 mt-1">
-                  <span><i class="fa-solid fa-truck-ramp-box mr-1"></i>${p.containerType}</span>
+                  <span><i class="fa-solid fa-truck-ramp-box mr-1"></i>${esc(p.containerType)}</span>
                   <span>•</span>
                   <span class="font-semibold text-slate-700">${qtyDisplay}</span>
                   <span>•</span>
@@ -2391,7 +2420,7 @@ class BursaLimbahApp {
                     </div>
                     <div class="p-2 bg-amber-50 rounded-lg border border-amber-200 text-[11px] text-amber-900">
                       <i class="fa-solid fa-lock text-amber-600 mr-1"></i>
-                      <strong>Di luar Kuota ${tier.name}:</strong> Nilai limbah melebihi batas kuota Anda (${this.formatRupiah(tier.maxPriceLimit)}).
+                      <strong>Di luar Kuota ${esc(tier.name)}:</strong> Nilai limbah melebihi batas kuota Anda (${this.formatRupiah(tier.maxPriceLimit)}).
                       <button onclick="app.showBuyerRegisterModal()" class="text-brand-700 underline font-bold ml-1">Upgrade Tier</button>
                     </div>
                   </div>
@@ -2400,8 +2429,8 @@ class BursaLimbahApp {
 
               <!-- Info Penjual & Kontak -->
               <div class="flex items-center justify-between text-xs text-slate-500 pt-1">
-                <span class="truncate"><i class="fa-solid fa-store mr-1 text-slate-400"></i>${p.sellerName} (${this.getCity(p)})</span>
-                <span class="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 shrink-0 font-medium">${p.sellerType}</span>
+                <span class="truncate"><i class="fa-solid fa-store mr-1 text-slate-400"></i>${esc(p.sellerName)} (${this.getCity(p)})</span>
+                <span class="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 shrink-0 font-medium">${esc(p.sellerType)}</span>
               </div>
             </div>
           </div>
@@ -2461,8 +2490,8 @@ class BursaLimbahApp {
     container.innerHTML = `
       <div class="p-6 border-b border-slate-100 flex items-center justify-between">
           <div class="flex items-center space-x-2 flex-wrap gap-y-1">
-            <span class="text-xs font-bold font-mono px-2 py-0.5 rounded bg-brand-100 text-brand-800">${p.code}</span>
-            <span class="text-xs font-semibold px-2 py-0.5 rounded bg-slate-100 text-slate-700">${p.categoryName}</span>
+            <span class="text-xs font-bold font-mono px-2 py-0.5 rounded bg-brand-100 text-brand-800">${esc(p.code)}</span>
+            <span class="text-xs font-semibold px-2 py-0.5 rounded bg-slate-100 text-slate-700">${esc(p.categoryName)}</span>
             ${p.sourceType ? `
               <span class="text-xs font-bold px-2.5 py-0.5 rounded-full ${
                 p.sourceType === 'source_household' ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' :
@@ -2473,7 +2502,7 @@ class BursaLimbahApp {
               </span>
             ` : ''}
           </div>
-          <h3 class="text-lg font-bold text-slate-900 mt-1">${p.title}</h3>
+          <h3 class="text-lg font-bold text-slate-900 mt-1">${esc(p.title)}</h3>
         </div>
         <button onclick="app.closeModals()" class="text-slate-400 hover:text-slate-600 p-2 rounded-xl hover:bg-slate-100">
           <i class="fa-solid fa-xmark text-lg"></i>
@@ -2497,7 +2526,7 @@ class BursaLimbahApp {
                     ${e.type}
                   </span>
                 </div>
-                <p class="text-[10px] text-slate-500 leading-tight">${e.notes || ''}</p>
+                <p class="text-[10px] text-slate-500 leading-tight">${esc(e.notes || '')}</p>
               </div>
             `).join('')}
           </div>
@@ -2536,7 +2565,7 @@ class BursaLimbahApp {
             <div>
               <span class="font-bold text-slate-800">Kota & Lokasi:</span>
               ${access.canViewFullAddress 
-                ? `<span class="text-slate-900 font-semibold">${p.address || this.getCity(p)}</span>` 
+                ? `<span class="text-slate-900 font-semibold">${esc(p.address || this.getCity(p))}</span>` 
                 : `<span class="text-slate-900 font-bold bg-white px-2 py-0.5 rounded border border-slate-200 inline-flex items-center"><i class="fa-solid fa-city mr-1 text-emerald-600 text-[10px]"></i>${this.getCity(p)}</span> <span class="text-slate-400 text-[11px] ml-1">(Alamat detail jalan terkunci)</span>`
               }
             </div>
@@ -2557,7 +2586,7 @@ class BursaLimbahApp {
                 <span>10 Atribut Wajib Listing</span>
               </h5>
               <span class="px-2 py-0.5 rounded text-[10px] font-bold ${p.listingStatus === 'Tersedia' ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-200 text-slate-700'}">
-                ${p.listingStatus || 'Tersedia'}
+                ${esc(p.listingStatus || 'Tersedia')}
               </span>
             </div>
 
@@ -2582,24 +2611,24 @@ class BursaLimbahApp {
               ${p.tpsPermit ? `
               <div class="py-1.5 flex justify-between items-center">
                 <span class="text-slate-500">No. Izin TPS / KLHK:</span>
-                <span class="font-mono font-bold text-amber-800 bg-amber-50 px-2 py-0.5 rounded border border-amber-200 text-[11px]">${p.tpsPermit}</span>
+                <span class="font-mono font-bold text-amber-800 bg-amber-50 px-2 py-0.5 rounded border border-amber-200 text-[11px]">${esc(p.tpsPermit)}</span>
               </div>
               ` : ''}
               <div class="py-1.5 flex justify-between">
                 <span class="text-slate-500">1. Komoditas / Jenis:</span>
-                <span class="font-semibold text-slate-900">${p.categoryName}</span>
+                <span class="font-semibold text-slate-900">${esc(p.categoryName)}</span>
               </div>
               <div class="py-1.5 flex justify-between">
                 <span class="text-slate-500">2. Berat / Volume:</span>
-                <span class="font-bold text-slate-900">${qtyDisplay} (${p.containerType})</span>
+                <span class="font-bold text-slate-900">${qtyDisplay} (${esc(p.containerType)})</span>
               </div>
               <div class="py-1.5 flex justify-between">
                 <span class="text-slate-500">3. Kondisi Material:</span>
-                <span class="font-semibold text-slate-900 bg-white px-2 py-0.5 rounded border border-slate-200">${p.condition || 'Bersih'}</span>
+                <span class="font-semibold text-slate-900 bg-white px-2 py-0.5 rounded border border-slate-200">${esc(p.condition || 'Bersih')}</span>
               </div>
               <div class="py-1.5 flex justify-between">
                 <span class="text-slate-500">4. Kadar / Grade Mutu:</span>
-                <span class="font-semibold text-emerald-800">${p.grade || 'Grade Standar Industri'}</span>
+                <span class="font-semibold text-emerald-800">${esc(p.grade || 'Grade Standar Industri')}</span>
               </div>
               <div class="py-1.5 flex justify-between">
                 <span class="text-slate-500">5. Foto Eviden:</span>
@@ -2619,13 +2648,13 @@ class BursaLimbahApp {
               </div>
               <div class="py-1.5 flex justify-between">
                 <span class="text-slate-500">9. Asal Usul Limbah:</span>
-                <span class="font-semibold text-slate-800 truncate max-w-[180px]">${p.origin || 'Sentra Industri'}</span>
+                <span class="font-semibold text-slate-800 truncate max-w-[180px]">${esc(p.origin || 'Sentra Industri')}</span>
               </div>
               <div class="py-1.5 flex justify-between items-center">
                 <span class="text-slate-500">10. Regulasi KLHK:</span>
                 ${p.isB3 ? `
                   <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-100 text-rose-800 border border-rose-300">
-                    ⚠️ Limbah B3 (${p.b3PermitNumber || 'Izin KLHK Valid'})
+                    ⚠️ Limbah B3 (${esc(p.b3PermitNumber || 'Izin KLHK Valid')})
                   </span>
                 ` : `
                   <span class="px-2 py-0.5 rounded text-[10px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
@@ -2850,13 +2879,13 @@ class BursaLimbahApp {
       const isBuyer = msg.senderRole === 'buyer';
       return `
         <div class="flex flex-col ${isBuyer ? 'items-end' : 'items-start'} space-y-1">
-          <div class="text-[10px] text-slate-400 px-1 font-medium">${msg.senderName} • ${msg.timestamp}</div>
+          <div class="text-[10px] text-slate-400 px-1 font-medium">${esc(msg.senderName)} • ${msg.timestamp}</div>
           <div class="max-w-[82%] p-3 rounded-2xl text-xs leading-relaxed ${
             isBuyer 
               ? 'bg-brand-600 text-white rounded-br-none shadow-sm' 
               : 'bg-white text-slate-800 border border-slate-200 rounded-bl-none shadow-sm'
           }">
-            ${msg.text}
+            ${esc(msg.text)}
           </div>
         </div>
       `;
@@ -2910,7 +2939,7 @@ class BursaLimbahApp {
       });
 
       this.renderChatMessages();
-      this.showToast(`Pesan baru dari ${p.sellerName}`, 'success');
+      this.showToast(`Pesan baru dari ${esc(p.sellerName)}`, 'success');
     }, 1500);
   }
 
@@ -3027,7 +3056,7 @@ class BursaLimbahApp {
             <tr class="hover:bg-slate-50/70 transition">
               <td class="p-3">
                 <div class="font-bold text-slate-900">${r.userName}</div>
-                <div class="text-[11px] text-slate-500">${r.company} • ${r.phone || r.email}</div>
+                <div class="text-[11px] text-slate-500">${esc(r.company)} • ${esc(r.phone || r.email)}</div>
               </td>
               <td class="p-3">
                 <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-300">
@@ -3133,10 +3162,10 @@ class BursaLimbahApp {
             <tr class="hover:bg-slate-50/70 transition">
               <td class="p-3">
                 <div class="flex items-center space-x-3">
-                  <img src="${e.image}" alt="${e.title}" class="w-10 h-10 rounded-xl object-cover border border-slate-200 shrink-0" onerror="this.src='https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&w=800&q=80'">
+                  <img src="${e.image}" alt="${esc(e.title)}" class="w-10 h-10 rounded-xl object-cover border border-slate-200 shrink-0" onerror="this.src='https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&w=800&q=80'">
                   <div>
-                    <div class="font-bold text-slate-900 leading-tight">${e.title}</div>
-                    <div class="text-[11px] text-slate-400 line-clamp-1">${e.description}</div>
+                    <div class="font-bold text-slate-900 leading-tight">${esc(e.title)}</div>
+                    <div class="text-[11px] text-slate-400 line-clamp-1">${esc(e.description)}</div>
                   </div>
                 </div>
               </td>
@@ -3149,7 +3178,7 @@ class BursaLimbahApp {
                 <div class="font-bold text-slate-800">${e.day} ${e.monthYear}</div>
                 <div class="text-slate-400">${e.time || '-'}</div>
               </td>
-              <td class="p-3 text-slate-600 text-[11px] max-w-[150px] truncate">${e.location}</td>
+              <td class="p-3 text-slate-600 text-[11px] max-w-[150px] truncate">${esc(e.location)}</td>
               <td class="p-3 font-semibold ${e.isFree ? 'text-emerald-700' : 'text-slate-800'}">${e.priceLabel}</td>
               <td class="p-3">
                 <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold ${e.status === 'published' ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : 'bg-slate-200 text-slate-700'}">
@@ -3310,7 +3339,7 @@ class BursaLimbahApp {
         <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
           <div class="flex items-center justify-between border-b border-slate-200 pb-2.5">
             <div>
-              <span class="font-extrabold text-sm text-slate-900">${t.name}</span>
+              <span class="font-extrabold text-sm text-slate-900">${esc(t.name)}</span>
               <div class="text-[10px] text-slate-400">ID: ${t.id}</div>
             </div>
             <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-brand-100 text-brand-800 uppercase">${t.badge}</span>
@@ -3508,10 +3537,10 @@ class BursaLimbahApp {
         <tbody class="divide-y divide-slate-100">
           ${pending.map(p => `
             <tr class="hover:bg-slate-50/70 transition">
-              <td class="p-3 font-mono font-bold text-slate-700">${p.code}</td>
+              <td class="p-3 font-mono font-bold text-slate-700">${esc(p.code)}</td>
               <td class="p-3">
-                <div class="font-bold text-slate-900">${p.title}</div>
-                <div class="text-[11px] text-slate-500">${p.categoryName} • ${p.origin}</div>
+                <div class="font-bold text-slate-900">${esc(p.title)}</div>
+                <div class="text-[11px] text-slate-500">${esc(p.categoryName)} • ${esc(p.origin)}</div>
                 ${p.sourceType ? `
                   <span class="inline-block mt-0.5 text-[9px] font-bold px-1.5 py-0.2 rounded ${
                     p.sourceType === 'source_household' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
@@ -3522,7 +3551,7 @@ class BursaLimbahApp {
                   </span>
                 ` : ''}
               </td>
-              <td class="p-3 text-slate-800">${p.sellerName}</td>
+              <td class="p-3 text-slate-800">${esc(p.sellerName)}</td>
               <td class="p-3 font-mono font-bold text-emerald-700">${this.formatRupiah(p.totalPrice)}</td>
               <td class="p-3 text-[11px] text-slate-600">
                 <span class="inline-flex items-center text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded font-bold">
@@ -3576,13 +3605,13 @@ class BursaLimbahApp {
           ${orders.map(o => `
             <tr class="hover:bg-slate-50/70 transition">
               <td class="p-3 font-mono font-bold text-brand-700">
-                <div>${o.bookingCode}</div>
+                <div>${esc(o.bookingCode)}</div>
                 <div class="text-[10px] text-slate-400 font-normal">${(o.createdAt || '').substring(0,10)}</div>
               </td>
               <td class="p-3">
-                <div class="font-bold text-slate-900">${o.productTitle}</div>
-                <div class="text-[11px] text-slate-500">Pembeli: ${o.buyerName}</div>
-                <div class="text-[10px] text-slate-400">Penjual: ${o.sellerName || '-'}</div>
+                <div class="font-bold text-slate-900">${esc(o.productTitle)}</div>
+                <div class="text-[11px] text-slate-500">Pembeli: ${esc(o.buyerName)}</div>
+                <div class="text-[10px] text-slate-400">Penjual: ${esc(o.sellerName || '-')}</div>
               </td>
               <td class="p-3 font-mono font-bold">${this.formatRupiah(o.totalPrice)}</td>
               <td class="p-3 font-mono font-bold text-emerald-600">${this.formatRupiah(o.downPaymentAmount)}</td>
@@ -3771,8 +3800,303 @@ class BursaLimbahApp {
       this.renderPublicMarketplace();
     }
 
+    this.applyFeatureFlags();
     const statusText = dpEnabled ? `diaktifkan (DP ${dp}%)` : 'dinonaktifkan (SET OFF)';
     this.showToast(`Pengaturan berhasil disimpan! Fitur DP ${statusText}; ticker harga pasar ${tickerSettings.tickerEnabled ? 'aktif' : 'nonaktif'}.`, "success");
+  }
+
+
+  // ================= 7C. PUSAT KONTROL FITUR SISTEM (FEATURE FLAGS) =================
+  onFeatureToggleChange(key, checked) {
+    if (this.store.setFeature) {
+      this.store.setFeature(key, checked);
+    }
+    if (key === 'escrowDp') {
+      const dpChk = [REDACTED]'setting-dp-enabled');
+      if (dpChk) dpChk.checked = checked;
+    }
+    if (key === 'marketTicker') {
+      const tickerChk = [REDACTED]'setting-ticker-enabled');
+      if (tickerChk) tickerChk.checked = checked;
+    }
+    if (key === 'cryptoWallet') {
+      const cryptoChk = [REDACTED]'setting-crypto-enabled');
+      if (cryptoChk) cryptoChk.checked = checked;
+    }
+    this.applyFeatureFlags();
+    this.showToast(`Fitur '${key}' berhasil ${checked ? 'diaktifkan' : 'dinonaktifkan'}.`, 'info');
+  }
+
+  setAllFeatures(enableAll) {
+    const featureKeys = [
+      'marketplace', 'productUpload', 'escrowDp', 'offersNegotiation',
+      'chatSystem', 'buyerSubscription', 'eventsModule', 'supportTickets',
+      'marketTicker', 'userRegistration', 'logisticsService', 'cryptoWallet'
+    ];
+    featureKeys.forEach(k => {
+      if (this.store.setFeature) this.store.setFeature(k, !!enableAll);
+    });
+    this.populateAdminSettings();
+    this.applyFeatureFlags();
+    this.showToast(`Semua master fitur sistem telah ${enableAll ? 'diaktifkan' : 'dinonaktifkan'}.`, enableAll ? 'success' : 'warning');
+  }
+
+  applyFeatureFlags() {
+    const isCrypto = this.store.isFeatureEnabled ? this.store.isFeatureEnabled('cryptoWallet') : true;
+    const isTicker = this.store.isFeatureEnabled ? this.store.isFeatureEnabled('marketTicker') : true;
+
+    // Tombol dompet kripto di header navbar
+    const btnCrypto = [REDACTED]'btn-header-crypto-wallet');
+    if (btnCrypto) {
+      btnCrypto.classList.toggle('hidden', !isCrypto);
+    }
+    this.updateCryptoNavBadge();
+
+    // Bar ticker harga pasar terkini
+    const tickerBar = [REDACTED]'price-ticker-bar');
+    if (tickerBar) {
+      tickerBar.classList.toggle('hidden', !isTicker);
+    }
+  }
+
+  // ================= 7D. DOMPET KRIPTO WEB3 & DISTRIBUSI TOKEN =================
+  showCryptoWalletModal() {
+    const modal = [REDACTED]'modal-crypto-wallet');
+    if (!modal) return;
+    const user = this.store.getCurrentUser();
+    if (!user) {
+      this.showLoginModal();
+      this.showToast('Silakan masuk akun terlebih dahulu untuk mengakses dompet kripto.', 'warning');
+      return;
+    }
+
+    const wallet = this.store.getCryptoWallet ? this.store.getCryptoWallet(user.id) : null;
+    const config = this.store.getCryptoConfig ? this.store.getCryptoConfig() : {};
+    const rate = config.tokenRateIdr || config.exchangeRateIdr || 1500;
+
+    if (wallet) {
+      const addrEl = [REDACTED]'crypto-wallet-address');
+      const clnkEl = [REDACTED]'crypto-balance-clnk');
+      const clnkIdrEl = [REDACTED]'crypto-balance-clnk-idr');
+      const usdtEl = [REDACTED]'crypto-balance-usdt');
+      const maticEl = [REDACTED]'crypto-balance-matic');
+      const pendingEl = [REDACTED]'crypto-reward-pending-clnk');
+      const reasonEl = [REDACTED]'crypto-reward-reason');
+      const netBadge = [REDACTED]'crypto-network-badge');
+
+      const clnkBal = wallet.balances?.CLNK ?? wallet.balanceClnk ?? 0;
+      const usdtBal = wallet.balances?.USDT ?? wallet.balanceUsdt ?? 0;
+      const maticBal = wallet.balances?.MATIC ?? wallet.balanceMatic ?? 0.25;
+      const unclaimed = wallet.unclaimedRewards?.CLNK ?? wallet.pendingRewards ?? 0;
+      const unclaimedReason = wallet.unclaimedRewards?.reason ?? wallet.pendingRewardsReason ?? 'Reward pasokan limbah terverifikasi';
+
+      if (addrEl) addrEl.textContent = wallet.address || '0x...';
+      if (clnkEl) clnkEl.textContent = Number(clnkBal).toLocaleString('id-ID');
+      if (clnkIdrEl) clnkIdrEl.textContent = `(≈ ${this.formatRupiah(clnkBal * rate)})`;
+      if (usdtEl) usdtEl.textContent = `${Number(usdtBal).toFixed(2)} USDT`;
+      if (maticEl) maticEl.textContent = `${Number(maticBal).toFixed(2)} MATIC`;
+      if (pendingEl) pendingEl.textContent = `+${unclaimed}`;
+      if (reasonEl) reasonEl.textContent = unclaimedReason;
+      if (netBadge) netBadge.textContent = config.networkName || config.network || 'Polygon PoS';
+
+      this.renderCryptoTxHistory(wallet.txHistory || wallet.history || []);
+    }
+
+    this.switchCryptoWalletTab('balance');
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+  }
+
+  closeCryptoWalletModal() {
+    const modal = [REDACTED]'modal-crypto-wallet');
+    if (modal) {
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+  }
+
+  switchCryptoWalletTab(tab) {
+    const tabs = ['balance', 'send', 'history'];
+    tabs.forEach(t => {
+      const btn = [REDACTED]`crypto-tab-btn-${t}`);
+      const content = [REDACTED]`crypto-tab-content-${t}`);
+      if (btn) {
+        if (t === tab) {
+          btn.className = 'pb-2.5 px-3 text-xs font-bold border-b-2 border-amber-500 text-amber-900 transition flex items-center gap-1.5';
+        } else {
+          btn.className = 'pb-2.5 px-3 text-xs font-bold border-b-2 border-transparent text-slate-500 hover:text-slate-800 transition flex items-center gap-1.5';
+        }
+      }
+      if (content) {
+        content.classList.toggle('hidden', t !== tab);
+      }
+    });
+  }
+
+  copyCryptoAddress() {
+    const addr = [REDACTED]'crypto-wallet-address')?.textContent?.trim();
+    if (!addr) return;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(addr).then(() => {
+        this.showToast('Alamat dompet Web3 berhasil disalin ke clipboard!', 'success');
+      }).catch(() => {
+        this.showToast(`Alamat dompet: ${addr}`, 'info');
+      });
+    } else {
+      this.showToast(`Alamat dompet: ${addr}`, 'info');
+    }
+  }
+
+  claimCryptoReward() {
+    const user = this.store.getCurrentUser();
+    if (!user) return;
+    const res = this.store.claimRecyclingRewards(user.id);
+    if (!res || !res.success) {
+      this.showToast(res?.message || 'Tidak ada reward yang dapat diklaim saat ini.', 'warning');
+      return;
+    }
+    this.triggerConfetti();
+    this.showToast(`Selamat! Berhasil mengklaim +${res.claimed} CLNK reward daur ulang ke dompet!`, 'success');
+    this.showCryptoWalletModal();
+    this.updateCryptoNavBadge();
+  }
+
+  setMaxSendAmount() {
+    const symbol = [REDACTED]'crypto-send-token-symbol')?.value || 'CLNK';
+    const user = this.store.getCurrentUser();
+    const wallet = user && this.store.getCryptoWallet ? this.store.getCryptoWallet(user.id) : null;
+    const amountInput = [REDACTED]'crypto-send-amount');
+    if (!wallet || !amountInput) return;
+    const bal = wallet.balances ? wallet.balances[symbol] : (symbol === 'CLNK' ? wallet.balanceClnk : wallet.balanceUsdt);
+    amountInput.value = bal || 0;
+  }
+
+  handleSendCryptoToken(event) {
+    event.preventDefault();
+    const user = this.store.getCurrentUser();
+    if (!user) return;
+    const symbol = [REDACTED]'crypto-send-token-symbol')?.value || 'CLNK';
+    const toAddress = [REDACTED]'crypto-send-to-address')?.value?.trim();
+    const amount = Number([REDACTED]'crypto-send-amount')?.value);
+
+    if (!toAddress || !toAddress.startsWith('0x') || toAddress.length < 10) {
+      this.showToast('Format alamat tujuan tidak valid (harus diawali 0x).', 'error');
+      return;
+    }
+    if (isNaN(amount) || amount <= 0) {
+      this.showToast('Jumlah token yang dikirim harus lebih dari 0.', 'error');
+      return;
+    }
+
+    const res = this.store.transferCrypto(user.id, toAddress, amount, symbol);
+    if (!res || !res.success) {
+      this.showToast(res?.message || 'Transfer token gagal.', 'error');
+      return;
+    }
+
+    this.showToast(`Pengiriman ${amount} ${symbol} berhasil! TxHash: ${res.txHash.slice(0, 10)}...`, 'success');
+    [REDACTED]'crypto-send-form')?.reset();
+    this.showCryptoWalletModal();
+    this.switchCryptoWalletTab('history');
+    this.updateCryptoNavBadge();
+  }
+
+  renderCryptoTxHistory(history) {
+    const container = [REDACTED]'crypto-tx-history-list');
+    if (!container) return;
+    if (!history || history.length === 0) {
+      container.innerHTML = `
+        <div class="py-8 text-center text-slate-400 text-xs">
+          <i class="fa-solid fa-clock-rotate-left text-2xl mb-1 text-slate-300"></i>
+          <p>Belum ada riwayat transaksi on-chain tercatat.</p>
+        </div>
+      `;
+      return;
+    }
+
+    container.innerHTML = history.slice().reverse().map(tx => {
+      const isPositive = ['reward_claim', 'airdrop_welcome', 'airdrop_distribution', 'receive', 'REWARD_CLAIM', 'AIRDROP', 'RECEIVE'].includes(tx.type);
+      const title = tx.title || tx.type || 'Transaksi On-Chain';
+      return `
+        <div class="p-3 bg-slate-50 hover:bg-slate-100 rounded-xl border border-slate-200 transition text-xs space-y-1">
+          <div class="flex items-center justify-between">
+            <span class="font-bold text-slate-800 flex items-center gap-1.5">
+              <i class="fa-solid ${isPositive ? 'fa-arrow-down text-emerald-600' : 'fa-arrow-up text-amber-600'}"></i>
+              ${esc(title)}
+            </span>
+            <span class="font-mono font-bold ${isPositive ? 'text-emerald-700' : 'text-slate-900'}">
+              ${isPositive ? '+' : '-'}${Number(tx.amount).toLocaleString('id-ID')} ${esc(tx.symbol || 'CLNK')}
+            </span>
+          </div>
+          <div class="flex items-center justify-between text-[10px] text-slate-400 font-mono pt-0.5">
+            <span class="truncate max-w-[200px]" title="${esc(tx.txHash)}">Tx: ${esc(tx.txHash ? tx.txHash.slice(0, 10) + '...' + tx.txHash.slice(-6) : '-')}</span>
+            <span>${new Date(tx.timestamp || Date.now()).toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'short' })}</span>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  showAdminAirdropModal() {
+    const modal = [REDACTED]'modal-admin-airdrop');
+    if (modal) {
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+  }
+
+  closeAdminAirdropModal() {
+    const modal = [REDACTED]'modal-admin-airdrop');
+    if (modal) {
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+  }
+
+  onAirdropTargetChange(val) {
+    const customGroup = [REDACTED]'airdrop-custom-address-group');
+    if (customGroup) {
+      customGroup.classList.toggle('hidden', val !== 'custom');
+    }
+  }
+
+  handleExecuteAdminAirdrop(event) {
+    event.preventDefault();
+    const target = [REDACTED]'airdrop-target')?.value || 'all_users';
+    const customAddr = [REDACTED]'airdrop-custom-address')?.value?.trim();
+    const amount = Number([REDACTED]'airdrop-amount')?.value);
+    const reason = [REDACTED]'airdrop-reason')?.value?.trim() || 'Distribusi Airdrop Ekosistem';
+
+    const actualTarget = target === 'custom' ? customAddr : target;
+    if (target === 'custom' && (!customAddr || !customAddr.startsWith('0x'))) {
+      this.showToast('Masukkan alamat dompet kustom yang valid (diawali 0x).', 'error');
+      return;
+    }
+
+    const res = this.store.adminDistributeAirdrop(actualTarget, amount, reason);
+    if (!res || !res.success) {
+      this.showToast(res?.message || 'Distribusi airdrop gagal.', 'error');
+      return;
+    }
+
+    this.closeAdminAirdropModal();
+    this.populateAdminSettings();
+    this.triggerConfetti();
+    this.showToast(`Sukses mendistribusikan airdrop ${amount} CLNK kepada ${res.count || 1} penerima! Sisa pool: ${Number(res.remainingPool || 0).toLocaleString('id-ID')} CLNK.`, 'success');
+    this.updateCryptoNavBadge();
+  }
+
+  updateCryptoNavBadge() {
+    const isCrypto = this.store.isFeatureEnabled ? this.store.isFeatureEnabled('cryptoWallet') : true;
+    const btn = [REDACTED]'btn-header-crypto-wallet');
+    const badge = [REDACTED]'nav-crypto-balance-badge');
+    if (btn) btn.classList.toggle('hidden', !isCrypto);
+    if (badge && isCrypto) {
+      const user = this.store.getCurrentUser();
+      const wallet = user && this.store.getCryptoWallet ? this.store.getCryptoWallet(user.id) : null;
+      const bal = wallet ? (wallet.balances?.CLNK ?? wallet.balanceClnk ?? 0) : 0;
+      badge.textContent = `${Number(bal).toLocaleString('id-ID')} CLNK`;
+    }
   }
 
   testPaymentGatewayConnection() {
@@ -3950,10 +4274,10 @@ class BursaLimbahApp {
     if (data.value < 0) { this.showToast('Nilai biaya tidak boleh negatif.', 'error'); return; }
     if (editId) {
       this.store.updateCustomFee(editId, data);
-      this.showToast(`Jenis biaya "${data.name}" berhasil diperbarui.`, 'success');
+      this.showToast(`Jenis biaya "${esc(data.name)}" berhasil diperbarui.`, 'success');
     } else {
       this.store.addCustomFee(data);
-      this.showToast(`Jenis biaya "${data.name}" berhasil ditambahkan.`, 'success');
+      this.showToast(`Jenis biaya "${esc(data.name)}" berhasil ditambahkan.`, 'success');
     }
     this.closeFeeModal();
     this.renderAdminFeesList();
@@ -3962,16 +4286,16 @@ class BursaLimbahApp {
   deleteCustomFeeItem(id) {
     const fee = this.store.getCustomFees().find(f => f.id === id);
     if (!fee) return;
-    if (!confirm(`Hapus jenis biaya "${fee.name}"? Tindakan ini tidak dapat dibatalkan.`)) return;
+    if (!confirm(`Hapus jenis biaya "${esc(fee.name)}"? Tindakan ini tidak dapat dibatalkan.`)) return;
     this.store.deleteCustomFee(id);
-    this.showToast(`Jenis biaya "${fee.name}" berhasil dihapus.`, 'success');
+    this.showToast(`Jenis biaya "${esc(fee.name)}" berhasil dihapus.`, 'success');
     this.renderAdminFeesList();
   }
 
   toggleCustomFeeStatus(id) {
     const fee = this.store.toggleCustomFee(id);
     if (fee) {
-      this.showToast(`Biaya "${fee.name}" ${fee.enabled ? 'diaktifkan' : 'dinonaktifkan'}.`, 'success');
+      this.showToast(`Biaya "${esc(fee.name)}" ${fee.enabled ? 'diaktifkan' : 'dinonaktifkan'}.`, 'success');
       this.renderAdminFeesList();
     }
   }
@@ -4334,7 +4658,7 @@ class BursaLimbahApp {
     } else {
       select.innerHTML = events.map(e => `
         <option value="${e.id}" ${selectedEventId === e.id ? 'selected' : ''}>
-          ${e.title} (${e.date || e.monthYear || '2026'})
+          ${esc(e.title)} (${e.date || e.monthYear || '2026'})
         </option>
       `).join('');
     }
@@ -4344,7 +4668,7 @@ class BursaLimbahApp {
       const curFilter = filterSelect.value || 'all';
       filterSelect.innerHTML = `
         <option value="all">Semua Agenda Event</option>
-        ${events.map(e => `<option value="${e.id}" ${curFilter === e.id ? 'selected' : ''}>${e.title}</option>`).join('')}
+        ${events.map(e => `<option value="${e.id}" ${curFilter === e.id ? 'selected' : ''}>${esc(e.title)}</option>`).join('')}
       `;
     }
   }
@@ -4811,8 +5135,8 @@ class BursaLimbahApp {
                   <div class="text-[10px] text-slate-400">${t.eventDate || ''} ${t.eventTime ? '(' + t.eventTime + ')' : ''}</div>
                 </td>
                 <td class="p-3 text-slate-600">
-                  <div>${t.phone || '-'}</div>
-                  <div class="text-[10px] text-slate-400">${t.email || '-'}</div>
+                  <div>${esc(t.phone || '-')}</div>
+                  <div class="text-[10px] text-slate-400">${esc(t.email || '-')}</div>
                 </td>
                 <td class="p-3 font-medium text-slate-700">
                   <span class="px-2 py-0.5 rounded bg-slate-100 text-[11px]">${t.gateOrSeat || 'Gate Utama'}</span>
@@ -4861,7 +5185,7 @@ class BursaLimbahApp {
     if (!product) return;
     const modal = [REDACTED]'modal-checkout');
     const container = [REDACTED]'modal-checkout-content');
-    container.innerHTML = `<div class="p-6 border-b border-slate-100 flex items-center justify-between"><div><h3 class="text-lg font-bold text-slate-900">Tawar Harga ke Penjual</h3><p class="text-xs text-slate-500">Penjual akan menerima notifikasi dan dapat menerima atau menolak tawaran Anda.</p></div><button onclick="app.closeModals()" class="text-slate-400 p-2"><i class="fa-solid fa-xmark text-lg"></i></button></div><form onsubmit="app.submitOffer(event, '${product.id}')" class="p-6 space-y-4"><div class="bg-slate-50 rounded-xl border border-slate-200 p-4"><div class="font-bold text-slate-900">${product.title}</div><div class="mt-1 text-xs text-slate-500">Harga penjual: <strong class="font-mono text-emerald-700">${this.formatRupiah(product.offerPrice)} / ${product.unit}</strong></div></div><label class="block text-xs font-bold text-slate-700">Harga penawaran per ${product.unit}<input id="offer-price" type="number" min="1" required value="${product.offerPrice}" class="mt-1.5 w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm font-mono font-bold focus:ring-2 focus:ring-amber-500 focus:outline-none"></label><label class="block text-xs font-bold text-slate-700">Kuantitas (${product.unit})<input id="offer-quantity" type="number" min="${product.minimumOrder || 1}" required value="${product.minimumOrder || 1}" class="mt-1.5 w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm font-mono font-bold focus:ring-2 focus:ring-amber-500 focus:outline-none"></label><label class="block text-xs font-bold text-slate-700">Catatan untuk penjual (opsional)<textarea id="offer-note" rows="3" class="mt-1.5 w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 text-xs focus:ring-2 focus:ring-amber-500 focus:outline-none" placeholder="Contoh: Armada kami siap mengambil pada minggu depan."></textarea></label><div class="flex justify-end gap-2 pt-2"><button type="button" onclick="app.closeModals()" class="px-4 py-2.5 rounded-xl border border-slate-300 text-xs font-bold">Batal</button><button type="submit" class="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 text-xs font-bold"><i class="fa-solid fa-paper-plane mr-1"></i>Kirim Penawaran</button></div></form>`;
+    container.innerHTML = `<div class="p-6 border-b border-slate-100 flex items-center justify-between"><div><h3 class="text-lg font-bold text-slate-900">Tawar Harga ke Penjual</h3><p class="text-xs text-slate-500">Penjual akan menerima notifikasi dan dapat menerima atau menolak tawaran Anda.</p></div><button onclick="app.closeModals()" class="text-slate-400 p-2"><i class="fa-solid fa-xmark text-lg"></i></button></div><form onsubmit="app.submitOffer(event, '${product.id}')" class="p-6 space-y-4"><div class="bg-slate-50 rounded-xl border border-slate-200 p-4"><div class="font-bold text-slate-900">${esc(product.title)}</div><div class="mt-1 text-xs text-slate-500">Harga penjual: <strong class="font-mono text-emerald-700">${this.formatRupiah(product.offerPrice)} / ${product.unit}</strong></div></div><label class="block text-xs font-bold text-slate-700">Harga penawaran per ${product.unit}<input id="offer-price" type="number" min="1" required value="${product.offerPrice}" class="mt-1.5 w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm font-mono font-bold focus:ring-2 focus:ring-amber-500 focus:outline-none"></label><label class="block text-xs font-bold text-slate-700">Kuantitas (${product.unit})<input id="offer-quantity" type="number" min="${product.minimumOrder || 1}" required value="${product.minimumOrder || 1}" class="mt-1.5 w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm font-mono font-bold focus:ring-2 focus:ring-amber-500 focus:outline-none"></label><label class="block text-xs font-bold text-slate-700">Catatan untuk penjual (opsional)<textarea id="offer-note" rows="3" class="mt-1.5 w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 text-xs focus:ring-2 focus:ring-amber-500 focus:outline-none" placeholder="Contoh: Armada kami siap mengambil pada minggu depan."></textarea></label><div class="flex justify-end gap-2 pt-2"><button type="button" onclick="app.closeModals()" class="px-4 py-2.5 rounded-xl border border-slate-300 text-xs font-bold">Batal</button><button type="submit" class="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 text-xs font-bold"><i class="fa-solid fa-paper-plane mr-1"></i>Kirim Penawaran</button></div></form>`;
     modal.classList.remove('hidden');
     modal.classList.add('flex');
   }
@@ -4915,9 +5239,9 @@ class BursaLimbahApp {
       <div class="p-6 space-y-5">
         <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200 flex items-center justify-between">
           <div>
-            <span class="text-[10px] font-bold text-brand-700 uppercase font-mono">${p.code}</span>
-            <h4 class="font-bold text-slate-900 text-sm">${p.title}</h4>
-            <p class="text-xs text-slate-500">${p.sellerName} • ${p.containerType}</p>
+            <span class="text-[10px] font-bold text-brand-700 uppercase font-mono">${esc(p.code)}</span>
+            <h4 class="font-bold text-slate-900 text-sm">${esc(p.title)}</h4>
+            <p class="text-xs text-slate-500">${esc(p.sellerName)} • ${esc(p.containerType)}</p>
           </div>
           <div class="text-right">
             <div class="text-xs text-slate-500">Total Nilai Limbah:</div>
@@ -4998,7 +5322,7 @@ class BursaLimbahApp {
 
       this.closeModals();
       this.triggerConfetti();
-      this.showToast(`Booking ${order.bookingCode} berhasil! Pasokan terkunci.`, 'success');
+      this.showToast(`Booking ${esc(order.bookingCode)} berhasil! Pasokan terkunci.`, 'success');
       this.renderBuyerMarketplace();
       this.renderBuyerOrders();
       this.updateOrderCountBadge();
@@ -5078,12 +5402,12 @@ class BursaLimbahApp {
             return `
               <tr class="hover:bg-slate-50/70 transition">
                 <td class="p-3 font-mono font-bold text-brand-700">
-                  <div>${o.bookingCode}</div>
+                  <div>${esc(o.bookingCode)}</div>
                   <div class="text-[10px] text-slate-400 font-normal">${(o.createdAt || '').substring(0, 10)}</div>
                 </td>
                 <td class="p-3">
-                  <div class="font-bold text-slate-900">${o.productTitle}</div>
-                  <div class="text-[11px] text-slate-500">Penjual: <strong>${o.sellerName}</strong></div>
+                  <div class="font-bold text-slate-900">${esc(o.productTitle)}</div>
+                  <div class="text-[11px] text-slate-500">Penjual: <strong>${esc(o.sellerName)}</strong></div>
                 </td>
                 <td class="p-3 font-semibold text-slate-800">
                   <div>${Number(o.quantity).toLocaleString('id-ID')} ${o.unit}</div>
@@ -5151,21 +5475,21 @@ class BursaLimbahApp {
       <div class="text-center pb-4 border-b border-slate-200">
         <span class="text-2xl font-extrabold text-slate-900 font-mono tracking-wider">BURSA LIMBAH</span>
         <div class="text-xs text-slate-500">SURAT JALAN & RESI REKENING BERSAMA DIGITAL</div>
-        <div class="text-xs font-mono font-bold text-brand-700 mt-1">${o.bookingCode}</div>
+        <div class="text-xs font-mono font-bold text-brand-700 mt-1">${esc(o.bookingCode)}</div>
       </div>
 
       <div class="grid grid-cols-2 gap-4 text-xs">
         <div>
           <span class="text-slate-400">Pembeli:</span>
-          <div class="font-bold text-slate-900">${o.buyerName}</div>
+          <div class="font-bold text-slate-900">${esc(o.buyerName)}</div>
         </div>
         <div>
           <span class="text-slate-400">Penjual:</span>
-          <div class="font-bold text-slate-900">${o.sellerName}</div>
+          <div class="font-bold text-slate-900">${esc(o.sellerName)}</div>
         </div>
         <div>
           <span class="text-slate-400">Komoditas:</span>
-          <div class="font-bold text-slate-900">${o.productTitle}</div>
+          <div class="font-bold text-slate-900">${esc(o.productTitle)}</div>
         </div>
         <div>
           <span class="text-slate-400">Tonase / Volume:</span>
@@ -5370,9 +5694,9 @@ class BursaLimbahApp {
     const summaryEl = [REDACTED]'receive-order-summary');
     if (summaryEl) {
       summaryEl.innerHTML = `
-        <div class="flex justify-between"><span class="text-slate-500">No. Booking:</span><span class="font-mono font-bold text-slate-900">${order.bookingCode}</span></div>
-        <div class="flex justify-between"><span class="text-slate-500">Komoditas:</span><span class="font-bold text-slate-900">${order.productTitle}</span></div>
-        <div class="flex justify-between"><span class="text-slate-500">Penjual:</span><span>${order.sellerName}</span></div>
+        <div class="flex justify-between"><span class="text-slate-500">No. Booking:</span><span class="font-mono font-bold text-slate-900">${esc(order.bookingCode)}</span></div>
+        <div class="flex justify-between"><span class="text-slate-500">Komoditas:</span><span class="font-bold text-slate-900">${esc(order.productTitle)}</span></div>
+        <div class="flex justify-between"><span class="text-slate-500">Penjual:</span><span>${esc(order.sellerName)}</span></div>
         <div class="flex justify-between"><span class="text-slate-500">Volume Pesanan:</span><span class="font-mono font-bold text-emerald-700">${Number(order.quantity).toLocaleString('id-ID')} ${order.unit}</span></div>
         <div class="flex justify-between"><span class="text-slate-500">Metode Pengiriman:</span><span>${order.shippingStatus === 'shipped_third_party' ? 'Ekspedisi: ' + (order.deliveryDetails?.courierName || 'Pihak ke-3') : 'Serah Terima di Depo'}</span></div>
       `;
@@ -5453,7 +5777,7 @@ class BursaLimbahApp {
           <span class="text-slate-400 w-full mb-1">Pilih Cepat Kode QR Pesanan:</span>
           ${pendingOrders.map(o => {
             const qr = o.sellerHandoverQr || `QR-HANDOVER-${o.id}`;
-            return `<button type="button" onclick="[REDACTED]'manual-handover-qr-input').value='${qr}'; [REDACTED]'scanner-target-order-id').value='${o.id}'" class="px-2 py-0.5 rounded bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 font-mono text-[10px] font-bold">${o.bookingCode} (${qr})</button>`;
+            return `<button type="button" onclick="[REDACTED]'manual-handover-qr-input').value='${qr}'; [REDACTED]'scanner-target-order-id').value='${o.id}'" class="px-2 py-0.5 rounded bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 font-mono text-[10px] font-bold">${esc(o.bookingCode)} (${qr})</button>`;
           }).join('')}
         `;
       } else {
@@ -5589,7 +5913,7 @@ class BursaLimbahApp {
             return `
               <tr class="hover:bg-slate-50/70 transition">
                 <td class="p-3 font-mono font-bold text-brand-700">
-                  <div>${o.bookingCode}</div>
+                  <div>${esc(o.bookingCode)}</div>
                   <div class="text-[10px] text-slate-400 font-normal">${(o.createdAt || '').substring(0, 10)}</div>
                 </td>
                 <td class="p-3">
@@ -5657,7 +5981,7 @@ class BursaLimbahApp {
 
     this.generateAndTriggerPrint(
       'LAPORAN PENGADAAN & PEMBELIAN PASOKAN LIMBAH',
-      `Nama Pembeli: ${user.name} (${user.company || 'Perusahaan Mitra'})`,
+      `Nama Pembeli: ${esc(user.name)} (${esc(user.company || 'Perusahaan Mitra')})`,
       `Periode: s/d ${new Date().toLocaleDateString('id-ID')}`,
       kpis,
       headers,
@@ -5832,7 +6156,7 @@ class BursaLimbahApp {
             return `
               <tr class="hover:bg-slate-50/70 transition">
                 <td class="p-3 font-mono font-bold text-brand-700">
-                  <div>${o.bookingCode}</div>
+                  <div>${esc(o.bookingCode)}</div>
                   <div class="text-[10px] text-slate-400 font-normal">${(o.createdAt || '').substring(0, 10)}</div>
                 </td>
                 <td class="p-3">
@@ -5909,7 +6233,7 @@ class BursaLimbahApp {
     const summaryEl = [REDACTED]'dispatch-order-summary');
     if (summaryEl) {
       summaryEl.innerHTML = `
-        <div class="flex justify-between"><span class="text-slate-500">No. Booking:</span><span class="font-mono font-bold text-slate-900">${order.bookingCode}</span></div>
+        <div class="flex justify-between"><span class="text-slate-500">No. Booking:</span><span class="font-mono font-bold text-slate-900">${esc(order.bookingCode)}</span></div>
         <div class="flex justify-between"><span class="text-slate-500">Pembeli:</span><span class="font-bold text-slate-900">${this._escHtml(order.buyerName)}</span></div>
         <div class="flex justify-between"><span class="text-slate-500">Komoditas:</span><span>${this._escHtml(order.productTitle)}</span></div>
         <div class="flex justify-between"><span class="text-slate-500">Volume:</span><span class="font-mono font-bold text-emerald-700">${Number(order.quantity).toLocaleString('id-ID')} ${order.unit}</span></div>
@@ -6037,7 +6361,7 @@ class BursaLimbahApp {
 
     this.generateAndTriggerPrint(
       'LAPORAN PENJUALAN & LOGISTIK PASOKAN LIMBAH',
-      `Penjual: ${seller.name} (${seller.company || 'Sentra Limbah Sirkular'})`,
+      `Penjual: ${esc(seller.name)} (${esc(seller.company || 'Sentra Limbah Sirkular')})`,
       `Periode: s/d ${new Date().toLocaleDateString('id-ID')}`,
       kpis,
       headers,
@@ -6164,7 +6488,7 @@ class BursaLimbahApp {
 
     this.generateAndTriggerPrint(
       'LAPORAN KESEPAKATAN PENAWARAN HARGA DISETUJUI',
-      `Penjual: ${seller.name}`,
+      `Penjual: ${esc(seller.name)}`,
       `Dicetak pada: ${new Date().toLocaleDateString('id-ID')}`,
       kpis,
       headers,
@@ -6257,7 +6581,7 @@ class BursaLimbahApp {
             return `
               <tr class="hover:bg-slate-50/70 transition">
                 <td class="p-3 font-mono font-bold text-brand-700">
-                  <div>${o.bookingCode}</div>
+                  <div>${esc(o.bookingCode)}</div>
                   <div class="text-[10px] text-slate-400 font-normal">${(o.createdAt || '').substring(0, 10)}</div>
                 </td>
                 <td class="p-3">
@@ -6437,7 +6761,7 @@ class BursaLimbahApp {
             return `
               <tr class="hover:bg-slate-50/70 transition">
                 <td class="p-3 font-mono font-bold text-brand-700">
-                  <div>${o.bookingCode}</div>
+                  <div>${esc(o.bookingCode)}</div>
                   <div class="text-[10px] text-slate-400 font-normal">${(o.createdAt || '').substring(0, 10)}</div>
                 </td>
                 <td class="p-3 font-semibold text-slate-900">${this._escHtml(o.sellerName)}</td>
@@ -6516,7 +6840,7 @@ class BursaLimbahApp {
       <div class="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-2 text-xs">
         <div class="flex justify-between font-bold text-slate-900 border-b border-slate-200 pb-2">
           <span>${this._escHtml(order.productTitle)}</span>
-          <span class="font-mono text-brand-700">${order.bookingCode}</span>
+          <span class="font-mono text-brand-700">${esc(order.bookingCode)}</span>
         </div>
         <div class="grid grid-cols-2 gap-2 pt-1 text-[11px]">
           <div><span class="text-slate-400">Pembeli:</span> <div class="font-semibold">${this._escHtml(order.buyerName)}</div></div>
@@ -6561,7 +6885,7 @@ class BursaLimbahApp {
       ${order.sellerHandoverQr ? `
         <div class="p-3 bg-white border border-slate-200 rounded-xl text-center space-y-1.5">
           <div class="text-[11px] font-bold text-slate-700"><i class="fa-solid fa-qrcode mr-1 text-emerald-600"></i>Kode QR Serah Terima Penjual</div>
-          <div class="font-mono text-xs font-bold text-slate-900 bg-slate-50 py-1 px-3 rounded-lg inline-block border border-slate-200">${order.sellerHandoverQr}</div>
+          <div class="font-mono text-xs font-bold text-slate-900 bg-slate-50 py-1 px-3 rounded-lg inline-block border border-slate-200">${esc(order.sellerHandoverQr)}</div>
         </div>
       ` : ''}
 
@@ -6678,10 +7002,10 @@ class BursaLimbahApp {
         <tbody class="divide-y divide-slate-100">
           ${products.map(p => `
             <tr class="hover:bg-slate-50/70 transition">
-              <td class="p-3 font-mono font-bold">${p.code}</td>
+              <td class="p-3 font-mono font-bold">${esc(p.code)}</td>
               <td class="p-3">
-                <div class="font-bold text-slate-900">${p.title}</div>
-                <div class="text-[11px] text-slate-500">${p.categoryName}</div>
+                <div class="font-bold text-slate-900">${esc(p.title)}</div>
+                <div class="text-[11px] text-slate-500">${esc(p.categoryName)}</div>
                 ${p.sourceType ? `
                   <span class="inline-block mt-0.5 text-[9px] font-bold px-1.5 py-0.2 rounded ${
                     p.sourceType === 'source_household' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
@@ -6745,13 +7069,13 @@ class BursaLimbahApp {
       hint.classList.remove('hidden');
       if (tierId === 'source_household') {
         hint.className = 'mt-2 text-center text-[11px] text-emerald-700 font-semibold bg-emerald-50 py-1.5 px-3 rounded-xl border border-emerald-200';
-        hintText.innerHTML = `Mode <strong>${tier.name}</strong> aktif: Pengisian disederhanakan untuk perorangan/bank sampah (wadah kecil, MOQ 5 Kg, tanpa izin industri).`;
+        hintText.innerHTML = `Mode <strong>${esc(tier.name)}</strong> aktif: Pengisian disederhanakan untuk perorangan/bank sampah (wadah kecil, MOQ 5 Kg, tanpa izin industri).`;
       } else if (tierId === 'source_medium_industry') {
         hint.className = 'mt-2 text-center text-[11px] text-blue-700 font-semibold bg-blue-50 py-1.5 px-3 rounded-xl border border-blue-200';
-        hintText.innerHTML = `Mode <strong>${tier.name}</strong> aktif: Opsi wadah drum/jerigen, field NIB UMKM, dan MOQ standar 50 Kg.`;
+        hintText.innerHTML = `Mode <strong>${esc(tier.name)}</strong> aktif: Opsi wadah drum/jerigen, field NIB UMKM, dan MOQ standar 50 Kg.`;
       } else {
         hint.className = 'mt-2 text-center text-[11px] text-amber-800 font-semibold bg-amber-50 py-1.5 px-3 rounded-xl border border-amber-200';
-        hintText.innerHTML = `Mode <strong>${tier.name}</strong> aktif: Skala pabrik/korporat dengan wadah kontainer/IBC, verifikasi NIB & No. Izin TPS/KLHK, dan tonnase MOQ 500 Kg.`;
+        hintText.innerHTML = `Mode <strong>${esc(tier.name)}</strong> aktif: Skala pabrik/korporat dengan wadah kontainer/IBC, verifikasi NIB & No. Izin TPS/KLHK, dan tonnase MOQ 500 Kg.`;
       }
     }
 
@@ -7301,7 +7625,7 @@ class BursaLimbahApp {
     // Inisial atau Foto
     if (avatarWrap) {
       if (user.avatar) {
-        avatarWrap.innerHTML = `<img src="${user.avatar}" alt="${user.name}" class="w-full h-full object-cover">`;
+        avatarWrap.innerHTML = `<img src="${user.avatar}" alt="${esc(user.name)}" class="w-full h-full object-cover">`;
       } else {
         const initial = (user.name || 'U').charAt(0).toUpperCase();
         avatarWrap.innerHTML = `<span id="prof-avatar-initial">${initial}</span>`;
@@ -7333,7 +7657,7 @@ class BursaLimbahApp {
     if (verifyStatusPill && verifyStatusText) {
       if (isVerified) {
         verifyStatusPill.className = 'mt-2 inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30';
-        verifyStatusText.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-400"></i> ${user.verifiedBadge || 'Mitra Terverifikasi Resmi'}`;
+        verifyStatusText.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-400"></i> ${esc(user.verifiedBadge || 'Mitra Terverifikasi Resmi')}`;
       } else {
         verifyStatusPill.className = 'mt-2 inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30';
         verifyStatusText.innerHTML = `<i class="fa-solid fa-shield"></i> Belum Diverifikasi (Opsional)`;
@@ -7633,7 +7957,7 @@ class BursaLimbahApp {
 
     const categories = this.store.getCategories();
     catSelect.innerHTML = categories.map(c => `
-      <option value="${c.id}" data-price="${c.avgPrice}" data-unit="${c.unit}">${c.name} (${this.formatRupiah(c.avgPrice)}/${c.unit})</option>
+      <option value="${c.id}" data-price="${c.avgPrice}" data-unit="${c.unit}">${esc(c.name)} (${this.formatRupiah(c.avgPrice)}/${c.unit})</option>
     `).join('');
 
     const updateCalc = () => {
@@ -7734,7 +8058,7 @@ class BursaLimbahApp {
       publicHotBar.innerHTML = hotCats.map(h => `
         <button onclick="app.filterByHotKeyword('${h.keyword}')" class="px-3 py-1.5 rounded-xl text-xs font-semibold bg-orange-50 hover:bg-orange-100 text-orange-900 border border-orange-200 transition flex items-center space-x-1.5 shadow-2xs cursor-pointer active:scale-95">
           <span>${h.icon}</span>
-          <span>${h.name}</span>
+          <span>${esc(h.name)}</span>
         </button>
       `).join('');
     }
@@ -7781,13 +8105,13 @@ class BursaLimbahApp {
 
     const optgroupHtml = `
       <optgroup label="📦 Kategori Utama (12)">
-        ${utama.map(c => `<option value="${c.id}">${c.name}</option>`).join('')}
+        ${utama.map(c => `<option value="${c.id}">${esc(c.name)}</option>`).join('')}
       </optgroup>
       <optgroup label="🏭 Khusus Industri B2B (3)">
-        ${industri.map(c => `<option value="${c.id}">${c.name}</option>`).join('')}
+        ${industri.map(c => `<option value="${c.id}">${esc(c.name)}</option>`).join('')}
       </optgroup>
       <optgroup label="⚠️ Limbah B3 (Izin Khusus KLHK) (1)">
-        ${b3.map(c => `<option value="${c.id}">${c.name} [Wajib Izin KLHK]</option>`).join('')}
+        ${b3.map(c => `<option value="${c.id}">${esc(c.name)} [Wajib Izin KLHK]</option>`).join('')}
       </optgroup>
     `;
 
@@ -7822,7 +8146,7 @@ class BursaLimbahApp {
       publicHotBar.innerHTML = hotCats.map(h => `
         <button onclick="app.filterByHotKeyword('${h.keyword}')" class="px-3 py-1.5 rounded-xl text-xs font-semibold bg-orange-50 hover:bg-orange-100 text-orange-900 border border-orange-200 transition flex items-center space-x-1.5 shadow-2xs cursor-pointer active:scale-95">
           <span>${h.icon}</span>
-          <span>${h.name}</span>
+          <span>${esc(h.name)}</span>
         </button>
       `).join('');
     }
@@ -7830,7 +8154,7 @@ class BursaLimbahApp {
     if (pills) {
       pills.innerHTML = `<button onclick="app.filterByPill('all')" class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-brand-600 text-white">Semua (16)</button>` + categories.map(c => `
         <button onclick="app.filterByPill('${c.id}')" class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 ${c.isB3 ? 'border border-rose-300 text-rose-700' : ''}">
-          ${c.isB3 ? '⚠️ ' : ''}${c.name}
+          ${c.isB3 ? '⚠️ ' : ''}${esc(c.name)}
         </button>
       `).join('');
     }
@@ -7881,10 +8205,10 @@ class BursaLimbahApp {
         <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-md transition flex flex-col justify-between ${isBooked ? 'opacity-75' : ''}">
           <div>
             <div class="relative h-44 bg-slate-100 overflow-hidden">
-              <img src="${mainPhoto}" alt="${p.title}" class="w-full h-full object-cover">
+              <img src="${mainPhoto}" alt="${esc(p.title)}" class="w-full h-full object-cover">
               <div class="absolute top-2 left-2 flex flex-col gap-1">
-                <span class="px-2.5 py-0.5 rounded-md text-[10px] font-bold bg-slate-900/80 backdrop-blur-sm text-white">${p.code}</span>
-                <span class="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-brand-600/90 backdrop-blur-sm text-white">${p.categoryName}</span>
+                <span class="px-2.5 py-0.5 rounded-md text-[10px] font-bold bg-slate-900/80 backdrop-blur-sm text-white">${esc(p.code)}</span>
+                <span class="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-brand-600/90 backdrop-blur-sm text-white">${esc(p.categoryName)}</span>
               </div>
               <div class="absolute bottom-2 left-2 right-2 bg-slate-900/85 backdrop-blur-md px-2.5 py-1.5 rounded-xl text-[11px] text-white flex items-center justify-between">
                 <span class="truncate"><i class="fa-solid fa-location-dot text-emerald-400 mr-1"></i>Kota: ${this.getCity(p)}</span>
@@ -7894,9 +8218,9 @@ class BursaLimbahApp {
 
             <div class="p-4 space-y-3">
               <div>
-                <h4 class="font-bold text-slate-900 text-sm leading-snug line-clamp-2">${p.title}</h4>
+                <h4 class="font-bold text-slate-900 text-sm leading-snug line-clamp-2">${esc(p.title)}</h4>
                 <div class="flex items-center space-x-2 text-xs text-slate-500 mt-1">
-                  <span><i class="fa-solid fa-truck-ramp-box mr-1"></i>${p.containerType}</span>
+                  <span><i class="fa-solid fa-truck-ramp-box mr-1"></i>${esc(p.containerType)}</span>
                   <span>•</span>
                   <span class="font-semibold text-slate-700">${qtyDisplay}</span>
                   <span>•</span>
@@ -7911,10 +8235,10 @@ class BursaLimbahApp {
                     </span>
                   ` : ''}
                   <span class="px-2 py-0.5 rounded text-[10px] font-medium bg-slate-100 text-slate-700">
-                    Kondisi: ${p.condition || 'Bersih'}
+                    Kondisi: ${esc(p.condition || 'Bersih')}
                   </span>
                   <span class="px-2 py-0.5 rounded text-[10px] font-medium bg-slate-100 text-slate-700">
-                    Grade: ${p.grade || 'Standar'}
+                    Grade: ${esc(p.grade || 'Standar')}
                   </span>
                   ${p.minimumOrder ? `
                     <span class="px-2 py-0.5 rounded text-[10px] font-medium bg-slate-100 text-slate-700">
@@ -7922,7 +8246,7 @@ class BursaLimbahApp {
                     </span>
                   ` : ''}
                   <span class="px-2 py-0.5 rounded text-[10px] font-bold ${p.listingStatus === 'Tersedia' ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-700'}">
-                    ${p.listingStatus || 'Tersedia'}
+                    ${esc(p.listingStatus || 'Tersedia')}
                   </span>
                 </div>
               </div>
@@ -7947,8 +8271,8 @@ class BursaLimbahApp {
               </div>
 
               <div class="flex items-center justify-between text-xs text-slate-500 pt-1">
-                <span class="truncate"><i class="fa-solid fa-store mr-1 text-slate-400"></i>${p.sellerName} (${this.getCity(p)})</span>
-                <span class="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 shrink-0 font-medium">${p.sellerType}</span>
+                <span class="truncate"><i class="fa-solid fa-store mr-1 text-slate-400"></i>${esc(p.sellerName)} (${this.getCity(p)})</span>
+                <span class="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 shrink-0 font-medium">${esc(p.sellerType)}</span>
               </div>
             </div>
           </div>
@@ -8178,7 +8502,7 @@ class BursaLimbahApp {
             </span>
             <div>
               <h3 class="font-bold text-sm">Pemeriksaan Bukti Pelunasan Sisa</h3>
-              <p class="text-[11px] text-slate-400">Kode Booking: <span class="font-mono text-emerald-400">${o.bookingCode}</span></p>
+              <p class="text-[11px] text-slate-400">Kode Booking: <span class="font-mono text-emerald-400">${esc(o.bookingCode)}</span></p>
             </div>
           </div>
           <button onclick="app.closeViewRemainingProofModal()" class="text-slate-400 hover:text-white text-lg">
@@ -8214,7 +8538,7 @@ class BursaLimbahApp {
               </div>
               <div class="col-span-2">
                 <span class="text-slate-400 block text-[10px]">Catatan Pembeli:</span>
-                <span class="text-slate-700 italic">${proof.notes || 'Tidak ada catatan tambahan.'}</span>
+                <span class="text-slate-700 italic">${esc(proof.notes || 'Tidak ada catatan tambahan.')}</span>
               </div>
             </div>
 
