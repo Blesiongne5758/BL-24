@@ -20,6 +20,8 @@ const { validateTierBookingRules, DEFAULT_TIERS } = require('./services/tierRule
 const { calculateCO2Reduction } = require('./services/esg.service');
 const { runBackup, BACKUP_DIR } = require('./scripts/backup');
 const { runMigrations } = require('./database/migrate');
+const storageService = require('./services/storage.service');
+const mediaOptimizer = require('./services/mediaOptimization.service');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -178,6 +180,116 @@ async function verifyUploadedFileContent(req, res, next) {
     return next(error);
   }
 }
+
+
+// =================================================================
+// DECOUPLED CLOUD OBJECT STORAGE & MEDIA OPTIMIZATION (S3 / SPACES / MINIO)
+// =================================================================
+
+// 1. Request Pre-Signed PUT URL for direct client-to-bucket upload
+app.post('/api/storage/presigned-upload', optionalAuth, async (req, res) => {
+  try {
+    const { filename, contentType, fileSize, category, headerSampleBase64 } = req.body;
+
+    // Server-side MIME & Size Validation
+    const validation = storageService.validateUploadRequest({
+      filename,
+      contentType,
+      fileSize,
+      category: category || 'public_listing'
+    });
+
+    if (!validation.valid) {
+      return res.status(400).json({ success: false, error: validation.message });
+    }
+
+    // Server-side Magic Bytes validation from sample buffer if provided
+    if (headerSampleBase64) {
+      const buffer = Buffer.from(headerSampleBase64, 'base64');
+      const isMagicValid = storageService.validateMagicBytes(buffer, contentType);
+      if (!isMagicValid) {
+        return res.status(400).json({
+          success: false,
+          error: 'Validasi Magic Bytes gagal: Isi berkas tidak cocok dengan tipe yang dideklarasikan atau terdeteksi script berbahaya.'
+        });
+      }
+    }
+
+    const userId = req.user ? req.user.id : (req.body.userId || 'anon');
+    const presigned = storageService.generatePresignedUploadUrl({
+      filename,
+      contentType,
+      fileSize,
+      category: category || 'public_listing',
+      userId
+    });
+
+    await logAudit(userId, 'GENERATE_PRESIGNED_UPLOAD', category, presigned.fileKey, { contentType, fileSize }, req);
+
+    res.json(presigned);
+  } catch (err) {
+    console.error('[Storage Error] Presigned Upload failed:', err);
+    res.status(500).json({ success: false, error: 'Gagal membuat URL upload penyimpanan cloud.' });
+  }
+});
+
+// 2. Access private KYC documents & transaction attachments via short-lived Pre-Signed GET URL
+app.get('/api/storage/private-url', authenticate, async (req, res) => {
+  try {
+    const key = req.query.key;
+    if (!key || typeof key !== 'string') {
+      return res.status(400).json({ success: false, error: 'Parameter fileKey wajib disertakan.' });
+    }
+
+    const user = req.user;
+    const isAdmin = user.role === 'admin';
+    const isOwner = key.includes(`/${user.id}-`) || key.includes(`_${user.id}_`);
+
+    // Strict Access Control: Admin, Owner, or verified transaction participant
+    if (!isAdmin && !isOwner) {
+      // Check if user is buyer/seller of an order with this document
+      const [orderRows] = await pool.query(
+        'SELECT id, buyer_id, seller_id, status FROM orders WHERE (buyer_id = ? OR seller_id = ?) AND (remaining_payment_proof LIKE ? OR id LIKE ?)',
+        [user.id, user.id, `%${key}%`, `%${key}%`]
+      ).catch(() => [[]]);
+
+      if (!orderRows || orderRows.length === 0) {
+        await logAudit(user.id, 'UNAUTHORIZED_PRIVATE_STORAGE_ACCESS', 'storage_vault', key, { reason: 'No ownership or order affiliation' }, req);
+        return res.status(403).json({ success: false, error: 'Akses ditolak: Dokumen privat terproteksi.' });
+      }
+    }
+
+    // Generate short-lived Pre-Signed GET URL (15 minutes TTL)
+    const signedUrl = storageService.generatePresignedGetUrl(key, 900);
+
+    await logAudit(user.id, 'ACCESS_PRIVATE_FILE', 'storage_vault', key, { isAdmin, isOwner }, req);
+
+    res.json({
+      success: true,
+      fileKey: key,
+      signedUrl,
+      expiresInSeconds: 900
+    });
+  } catch (err) {
+    console.error('[Storage Error] Private URL generation failed:', err);
+    res.status(500).json({ success: false, error: 'Gagal menerbitkan token akses dokumen privat.' });
+  }
+});
+
+// 3. Storage configuration & media optimization endpoint
+app.get('/api/storage/config', (_req, res) => {
+  res.json({
+    success: true,
+    provider: storageService.provider,
+    region: storageService.region,
+    publicBucket: storageService.publicBucket,
+    privateBucket: storageService.privateBucket,
+    publicCdnDomain: storageService.publicCdnDomain,
+    mediaOptimizer: mediaOptimizer.provider,
+    imagekitEndpoint: mediaOptimizer.imagekitEndpoint,
+    cloudinaryCloudName: mediaOptimizer.cloudinaryCloudName
+  });
+});
 
 // =================================================================
 // HELPER: Map Data User dari Database
