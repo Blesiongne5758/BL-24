@@ -1,20 +1,27 @@
+// SPDX-License-Identifier: MIT
+/**
+ * BURSA LIMBAH / CIRCULINK — Database Connection Pool & Query Manager
+ * Production-ready MySQL connection management with connection pooling,
+ * reconnect resilience, transaction manager, and healthcheck probing.
+ */
+
 const mysql = require('mysql2/promise');
 const path  = require('path');
 require('dotenv').config({ path: path.join(__dirname, '.env') });
 
 const dbConfig = {
-  host:             process.env.DB_HOST     || '108.136.70.118',
+  host:             process.env.DB_HOST     || 'localhost',
   port:             parseInt(process.env.DB_PORT, 10) || 3306,
-  user:             process.env.DB_USER     || 'admin',
-  password:         process.env.DB_PASSWORD || 'AdminPassword2026!',
+  user:             process.env.DB_USER     || 'root',
+  password:         process.env.DB_PASSWORD || '',
   database:         process.env.DB_NAME     || 'bursalimbahdb',
   waitForConnections: true,
-  connectionLimit:  10,
+  connectionLimit:  parseInt(process.env.DB_CONNECTION_LIMIT, 10) || 15,
   queueLimit:       0,
   connectTimeout:   10000,
-  // Reconnect otomatis jika koneksi terputus
   enableKeepAlive:  true,
-  keepAliveInitialDelay: 30000
+  keepAliveInitialDelay: 30000,
+  dateStrings:      true
 };
 
 // Buat pool koneksi MySQL
@@ -33,7 +40,7 @@ async function testConnection() {
     console.log(`║  Host     : ${dbConfig.host}:${dbConfig.port}`.padEnd(54) + '║');
     console.log(`║  Database : ${dbConfig.database}`.padEnd(54) + '║');
     console.log(`║  MySQL    : ${rows[0].version}`.padEnd(54) + '║');
-    console.log(`║  Waktu DB : ${new Date(rows[0].server_time).toLocaleString('id-ID')}`.padEnd(54) + '║');
+    console.log(`║  Waktu DB : ${rows[0].server_time}`.padEnd(54) + '║');
     console.log('╚══════════════════════════════════════════════════════╝');
     connection.release();
     return true;
@@ -45,12 +52,24 @@ async function testConnection() {
     console.error('║  Pastikan:                                           ║');
     console.error('║  1. Server MySQL aktif di host yang dikonfigurasi    ║');
     console.error('║  2. Database "bursalimbahdb" sudah dibuat            ║');
-    console.error('║  3. Jalankan: database/setup_complete.sql            ║');
-    console.error('║  4. Periksa file server/.env                         ║');
+    console.error('║  3. Periksa file server/.env                         ║');
     console.error('╚══════════════════════════════════════════════════════╝');
-    console.warn('[DB WARN] Server tetap berjalan tanpa koneksi database.');
-    console.warn('[DB WARN] API /api/auth/* akan mengembalikan error 503.');
     return false;
+  }
+}
+
+/**
+ * Healthcheck ping untuk monitoring & load balancer probe.
+ */
+async function ping() {
+  const start = Date.now();
+  try {
+    const connection = await pool.getConnection();
+    await connection.query('SELECT 1');
+    connection.release();
+    return { healthy: true, latencyMs: Date.now() - start };
+  } catch (error) {
+    return { healthy: false, error: error.message, latencyMs: Date.now() - start };
   }
 }
 
@@ -62,7 +81,7 @@ async function testConnection() {
  */
 async function query(sql, params = []) {
   try {
-    const [rows] = await pool.execute(sql, params);
+    const [rows] = await pool.query(sql, params);
     return rows;
   } catch (error) {
     console.error('[DB Query Error]', error.message);
@@ -70,9 +89,31 @@ async function query(sql, params = []) {
   }
 }
 
+/**
+ * Eksekutor Transaksi Terkelola (ACID compliant).
+ * Menjalankan sejumlah operasi query dalam 1 transaction; otomatis commit atau rollback saat error.
+ * @param {Function} callback function(connection)
+ */
+async function withTransaction(callback) {
+  const connection = await pool.getConnection();
+  try {
+    await connection.beginTransaction();
+    const result = await callback(connection);
+    await connection.commit();
+    return result;
+  } catch (error) {
+    await connection.rollback();
+    throw error;
+  } finally {
+    connection.release();
+  }
+}
+
 module.exports = {
   pool,
   dbConfig,
   testConnection,
-  query
+  ping,
+  query,
+  withTransaction
 };

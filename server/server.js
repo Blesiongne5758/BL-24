@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 const express = require('express');
 const cors = require('cors');
 const bcrypt = require('bcryptjs');
@@ -5,7 +6,20 @@ const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
 const multer = require('multer');
-const { pool, testConnection } = require('./db');
+const helmet = require('helmet');
+const compression = require('compression');
+
+// Database & Services
+const { pool, testConnection, ping } = require('./db');
+const { generateAccessToken, generateRefreshToken } = require('./services/jwt.service');
+const { authenticate, optionalAuth, requireRole } = require('./middleware/auth');
+const { authRateLimiter, apiRateLimiter } = require('./middleware/rateLimiter');
+const { sanitizeInput } = require('./middleware/sanitizer');
+const { calculateEscrowBreakdown } = require('./services/escrow.service');
+const { validateTierBookingRules, DEFAULT_TIERS } = require('./services/tierRules.service');
+const { calculateCO2Reduction } = require('./services/esg.service');
+const { runBackup, BACKUP_DIR } = require('./scripts/backup');
+const { runMigrations } = require('./database/migrate');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -13,10 +27,57 @@ const MARKET_RATE_URL = 'https://open.er-api.com/v6/latest/USD';
 const MARKET_RATE_CACHE_MS = 10 * 60 * 1000;
 let marketRateCache = null;
 
-// Middleware
-app.use(cors());
+// =================================================================
+// 1. KEAMANAN & OPTIMASI KINERJA (MIDDLEWARE)
+// =================================================================
+// Pengaturan Security Headers (Helmet)
+app.use(helmet({
+  contentSecurityPolicy: false,       // Mengizinkan CDN eksternal (Tailwind, Leaflet, FontAwesome)
+  crossOriginEmbedderPolicy: false
+}));
+
+// Optimasi Kinerja: Kompresi Gzip/Deflate
+app.use(compression());
+
+// Pengukuran Waktu Respons Kinerja API
+app.use((req, res, next) => {
+  const start = Date.now();
+  res.on('finish', () => {
+    const duration = Date.now() - start;
+    res.setHeader('X-Response-Time', `${duration}ms`);
+  });
+  next();
+});
+
+// Konfigurasi CORS
+const allowedOrigins = process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',') : '*';
+app.use(cors({
+  origin: allowedOrigins === '*' ? '*' : allowedOrigins,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+}));
+
+// Body Parser & Anti-XSS Sanitizer
 app.use(express.json({ limit: '20mb' }));
 app.use(express.urlencoded({ extended: true, limit: '20mb' }));
+app.use(sanitizeInput);
+
+// Rate Limiting untuk proteksi API
+app.use('/api/', apiRateLimiter);
+
+// Helper pencatatan Audit Log Keamanan
+async function logAudit(userId, action, targetType = null, targetId = null, details = null, req = null) {
+  try {
+    const ip = req ? (req.headers['x-forwarded-for']?.split(',')[0].trim() || req.socket.remoteAddress) : null;
+    const ua = req ? req.headers['user-agent'] : null;
+    await pool.query(
+      'INSERT INTO audit_logs (user_id, action, target_type, target_id, ip_address, user_agent, details) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      [userId || null, action, targetType, targetId ? String(targetId) : null, ip, ua ? ua.substring(0, 255) : null, details ? JSON.stringify(details) : null]
+    );
+  } catch (err) {
+    console.error('[Audit Log Error]', err.message);
+  }
+}
 
 const UPLOAD_ROOT = path.join(__dirname, 'uploads');
 // Jangan izinkan file internal server, termasuk dokumen identitas, tersaji dari root frontend.
@@ -207,25 +268,24 @@ function mapProductFromDb(row, images = []) {
 }
 
 // =================================================================
-// 1. HEALTH CHECK & STATUS KONEKSI
+// 1. HEALTH CHECK & STATUS KONEKSI DATABASE (PROBE METRIKS)
 // =================================================================
 app.get('/api/health', async (req, res) => {
-  try {
-    const [rows] = await pool.query('SELECT 1 AS connected, VERSION() AS version');
-    return res.json({
-      status: 'ok',
-      database: 'connected',
-      version: rows[0].version,
-      timestamp: new Date().toISOString()
-    });
-  } catch (err) {
-    return res.status(503).json({
-      status: 'degraded',
-      database: 'disconnected',
-      error: err.message,
-      timestamp: new Date().toISOString()
-    });
-  }
+  const dbStatus = await ping();
+  const memory = process.memoryUsage();
+  return res.json({
+    status: dbStatus.healthy ? 'ok' : 'degraded',
+    service: 'bursalimbah-api',
+    database: dbStatus.healthy ? 'connected' : 'disconnected',
+    dbLatencyMs: dbStatus.latencyMs,
+    uptimeSeconds: Math.floor(process.uptime()),
+    memory: {
+      rssMb: Math.round(memory.rss / (1024 * 1024)),
+      heapUsedMb: Math.round(memory.heapUsed / (1024 * 1024))
+    },
+    environment: process.env.NODE_ENV || 'development',
+    timestamp: new Date().toISOString()
+  });
 });
 
 // =================================================================
@@ -319,11 +379,17 @@ app.post('/api/auth/register', async (req, res) => {
 
     const [rows] = await pool.query('SELECT * FROM users WHERE id = ?', [newId]);
     const newUser = mapUserFromDb(rows[0]);
+    const token = generateAccessToken(newUser);
+    const refreshToken = generateRefreshToken(newUser);
+
+    await logAudit(newUser.id, 'user_register', 'user', newUser.id, { role, email: cleanEmail }, req);
 
     return res.status(201).json({
       success: true,
       user: newUser,
       role: newUser.role,
+      token,
+      refreshToken,
       isNewAccount: true,
       message: 'Pendaftaran akun berhasil.'
     });
@@ -398,11 +464,17 @@ app.post('/api/auth/login', async (req, res) => {
 
         const [createdRows] = await pool.query('SELECT * FROM users WHERE id = ?', [newId]);
         const newUser = mapUserFromDb(createdRows[0]);
+        const token = generateAccessToken(newUser);
+        const refreshToken = generateRefreshToken(newUser);
+
+        await logAudit(newUser.id, 'user_auto_register_login', 'user', newUser.id, { role: roleToAssign }, req);
 
         return res.json({
           success: true,
           user: newUser,
           role: newUser.role,
+          token,
+          refreshToken,
           isNewAccount: true,
           message: 'Akun baru berhasil dibuat secara otomatis.'
         });
@@ -427,28 +499,37 @@ app.post('/api/auth/login', async (req, res) => {
 
     // Password verification
     let passwordMatch = false;
+    const isDemoMode = process.env.DEMO_MODE !== 'false';
+
     if (userRecord.password_hash) {
       if (userRecord.password_hash.startsWith('$2')) {
-        passwordMatch = await bcrypt.compare(password || '123456', userRecord.password_hash);
-      } else {
+        passwordMatch = await bcrypt.compare(password || (isDemoMode ? '123456' : ''), userRecord.password_hash);
+      } else if (isDemoMode) {
         passwordMatch = (userRecord.password_hash === password) || (password === '123456');
       }
-    } else {
+    } else if (isDemoMode) {
       passwordMatch = true;
     }
 
     if (!passwordMatch) {
       return res.status(401).json({
         success: false,
-        message: 'Kata sandi salah. Kata sandi default akun demo: 123456.'
+        message: isDemoMode ? 'Kata sandi salah. Kata sandi default akun demo: 123456.' : 'Kredensial login tidak cocok.'
       });
     }
 
     const authenticatedUser = mapUserFromDb(userRecord);
+    const token = generateAccessToken(authenticatedUser);
+    const refreshToken = generateRefreshToken(authenticatedUser);
+
+    await logAudit(authenticatedUser.id, 'user_login', 'user', authenticatedUser.id, { role: authenticatedUser.role }, req);
+
     return res.json({
       success: true,
       user: authenticatedUser,
       role: authenticatedUser.role,
+      token,
+      refreshToken,
       message: `Selamat datang kembali, ${authenticatedUser.name}!`
     });
 
@@ -473,7 +554,10 @@ app.post('/api/auth/google', async (req, res) => {
 
     if (existing.length > 0) {
       const user = mapUserFromDb(existing[0]);
-      return res.json({ success: true, user, role: user.role, isNewAccount: false });
+      const token = generateAccessToken(user);
+      const refreshToken = generateRefreshToken(user);
+      await logAudit(user.id, 'google_login', 'user', user.id, {}, req);
+      return res.json({ success: true, user, role: user.role, token, refreshToken, isNewAccount: false });
     }
 
     const newId = `user_${role}_${Date.now()}`;
@@ -502,12 +586,50 @@ app.post('/api/auth/google', async (req, res) => {
 
     const [newRows] = await pool.query('SELECT * FROM users WHERE id = ?', [newId]);
     const newUser = mapUserFromDb(newRows[0]);
+    const token = generateAccessToken(newUser);
+    const refreshToken = generateRefreshToken(newUser);
 
-    return res.status(201).json({ success: true, user: newUser, role: newUser.role, isNewAccount: true });
+    await logAudit(newUser.id, 'google_register', 'user', newUser.id, { role }, req);
+
+    return res.status(201).json({ success: true, user: newUser, role: newUser.role, token, refreshToken, isNewAccount: true });
   } catch (error) {
     console.error('[Google Auth Error]', error);
     return res.status(500).json({ success: false, message: error.message });
   }
+});
+
+// =================================================================
+// 4B. PROFILE SESI (GET /api/auth/me) & REFRESH TOKEN
+// =================================================================
+app.get('/api/auth/me', authenticate, async (req, res) => {
+  return res.json({
+    success: true,
+    user: req.user
+  });
+});
+
+app.post('/api/auth/refresh', async (req, res) => {
+  const { refreshToken } = req.body;
+  if (!refreshToken) {
+    return res.status(400).json({ success: false, message: 'Refresh token wajib disertakan.' });
+  }
+  const payload = verifyToken(refreshToken);
+  if (!payload) {
+    return res.status(401).json({ success: false, message: 'Refresh token kedaluwarsa atau tidak valid.' });
+  }
+
+  const [rows] = await pool.query('SELECT * FROM users WHERE id = ?', [payload.id]);
+  if (rows.length === 0) {
+    return res.status(401).json({ success: false, message: 'Pengguna tidak ditemukan.' });
+  }
+
+  const user = mapUserFromDb(rows[0]);
+  const newAccessToken = generateAccessToken(user);
+  return res.json({
+    success: true,
+    token: newAccessToken,
+    user
+  });
 });
 
 // =================================================================
@@ -894,6 +1016,40 @@ app.post('/api/orders', async (req, res) => {
     const data = req.body;
     const orderId = data.id || `ORD-2026-${Math.floor(1000 + Math.random() * 9000)}`;
     const orderCode = data.bookingCode || `CIR-BK-${Math.floor(1000 + Math.random() * 9000)}`;
+    const totalAmount = Number(data.totalPrice || data.totalAmount) || 0;
+    const quantity = Number(data.weight || data.volume || data.quantity) || 1;
+
+    // 1. Validasi Aturan Tier Berlangganan Pembeli jika buyerId terdaftar
+    if (data.buyerId) {
+      const [bRows] = await pool.query('SELECT subscription_tier, identity_verified FROM users WHERE id = ?', [data.buyerId]);
+      if (bRows.length > 0) {
+        const userTierKey = bRows[0].subscription_tier || 'tier_starter';
+        const tierConfig = DEFAULT_TIERS[userTierKey] || DEFAULT_TIERS.tier_starter;
+        const tierCheck = validateTierBookingRules(tierConfig, totalAmount, quantity);
+        if (!tierCheck.valid) {
+          return res.status(403).json({
+            success: false,
+            message: tierCheck.message
+          });
+        }
+      }
+    }
+
+    // 2. Kalkulasi Rincian Escrow Finansial (DP 30% + Handling Fee)
+    const escrowCalc = calculateEscrowBreakdown(totalAmount, {
+      dpPercent: Number(data.downPaymentRate || data.dpPercentage) || 30,
+      handlingFee: Number(data.handlingFee) || 10000
+    });
+
+    // 3. Estimasi Reduksi Emisi Karbon ESG (kg CO2e)
+    let categoryKey = 'default';
+    if (data.productId) {
+      const [pRows] = await pool.query('SELECT category_id FROM products WHERE id = ?', [data.productId]);
+      if (pRows.length > 0 && pRows[0].category_id) {
+        categoryKey = pRows[0].category_id;
+      }
+    }
+    const esg = calculateCO2Reduction(categoryKey, quantity);
 
     // Pastikan buyer dan seller terdaftar di tabel users
     if (data.buyerId) {
@@ -919,8 +1075,9 @@ app.post('/api/orders', async (req, res) => {
       INSERT INTO orders (
         id, order_code, product_id, buyer_id, buyer_company, seller_id,
         total_amount, dp_percentage, dp_amount, remaining_amount,
-        handling_fee, escrow_status, pickup_date, notes, shipping_method
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        handling_fee, escrow_status, pickup_date, notes, shipping_method,
+        co2_reduction_kg
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
 
     await pool.query(insertSql, [
@@ -930,27 +1087,36 @@ app.post('/api/orders', async (req, res) => {
       data.buyerId,
       data.buyerCompany || data.buyerName || 'Perusahaan Pembeli',
       data.sellerId,
-      Number(data.totalPrice || data.totalAmount) || 0,
-      Number(data.downPaymentRate || data.dpPercentage) || 0,
-      Number(data.downPaymentAmount || data.dpAmount) || 0,
-      Number(data.remainingPayment || data.remainingAmount) || 0,
-      Number(data.handlingFee) || 10000,
-      data.escrowStatus || (data.downPaymentAmount > 0 ? 'dp_secured' : 'pending_dp'),
+      escrowCalc.totalValue,
+      escrowCalc.dpPercent,
+      data.downPaymentAmount !== undefined ? Number(data.downPaymentAmount) : escrowCalc.dpAmount,
+      data.remainingPayment !== undefined ? Number(data.remainingPayment) : escrowCalc.remainingAmount,
+      escrowCalc.handlingFee,
+      data.escrowStatus || (escrowCalc.dpAmount > 0 ? 'dp_secured' : 'pending_dp'),
       data.pickupDate || null,
       data.notes || '',
-      data.shippingMethod || 'Armada Mandiri Pembeli'
+      data.shippingMethod || 'Armada Mandiri Pembeli',
+      esg.kgCO2e
     ]);
 
     // Update status produk menjadi 'booked'
     if (data.productId) {
-      await pool.query('UPDATE products SET status = \'booked\' WHERE id = ?', [data.productId]);
+      await pool.query("UPDATE products SET status = 'booked' WHERE id = ?", [data.productId]);
     }
+
+    await logAudit(data.buyerId, 'create_order', 'order', orderId, {
+      totalAmount: escrowCalc.totalValue,
+      dpAmount: escrowCalc.dpAmount,
+      co2ReductionKg: esg.kgCO2e
+    }, req);
 
     return res.status(201).json({
       success: true,
       orderId,
       orderCode,
-      message: 'Booking berhasil disimpan ke database.'
+      escrowBreakdown: escrowCalc,
+      esgMetrics: esg,
+      message: 'Booking berhasil diproses dan disimpan ke database.'
     });
   } catch (error) {
     console.error('[Create Order Error]', error);
@@ -1461,6 +1627,63 @@ app.put('/api/settings', async (req, res) => {
 });
 
 // =================================================================
+// 12. PENCADANGAN DATABASE & AUDIT LOGS (ADMIN ONLY)
+// =================================================================
+app.get('/api/admin/backups', async (req, res) => {
+  try {
+    if (!fs.existsSync(BACKUP_DIR)) {
+      return res.json({ success: true, backups: [] });
+    }
+    const files = fs.readdirSync(BACKUP_DIR)
+      .filter(f => f.endsWith('.sql') || f.endsWith('.sql.gz'))
+      .map(filename => {
+        const filePath = path.join(BACKUP_DIR, filename);
+        const stats = fs.statSync(filePath);
+        return {
+          filename,
+          sizeBytes: stats.size,
+          sizeKb: Math.round(stats.size / 1024),
+          createdAt: stats.mtime
+        };
+      })
+      .sort((a, b) => b.createdAt - a.createdAt);
+
+    return res.json({ success: true, count: files.length, backups: files });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+app.post('/api/admin/backups', async (req, res) => {
+  try {
+    const backupResult = await runBackup();
+    await logAudit(null, 'manual_backup_created', 'database', backupResult.filename, {
+      sizeBytes: backupResult.sizeBytes,
+      tablesCount: backupResult.tablesCount
+    }, req);
+
+    return res.status(201).json({
+      success: true,
+      message: 'Pencadangan database berhasil dibuat.',
+      backup: backupResult
+    });
+  } catch (error) {
+    console.error('[Backup Error]', error);
+    return res.status(500).json({ success: false, message: 'Gagal membuat cadangan: ' + error.message });
+  }
+});
+
+app.get('/api/admin/audit-logs', async (req, res) => {
+  try {
+    const limit = parseInt(req.query.limit, 10) || 50;
+    const [rows] = await pool.query('SELECT * FROM audit_logs ORDER BY created_at DESC LIMIT ?', [limit]);
+    return res.json({ success: true, count: rows.length, auditLogs: rows });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// =================================================================
 // PENANGANAN ERROR UPLOAD
 // =================================================================
 app.use((error, _req, res, next) => {
@@ -1527,9 +1750,9 @@ async function ensureDatabaseSchema() {
 }
 
 // =================================================================
-// START SERVER
+// START SERVER & GRACEFUL SHUTDOWN
 // =================================================================
-app.listen(PORT, async () => {
+const server = app.listen(PORT, async () => {
   console.log('=====================================================');
   console.log(`  Bursa Limbah Backend Server Aktif di Port ${PORT}`);
   console.log(`  URL: http://localhost:${PORT}`);
@@ -1538,5 +1761,25 @@ app.listen(PORT, async () => {
   const connected = await testConnection();
   if (connected) {
     await ensureDatabaseSchema();
+    await runMigrations().catch(err => console.warn('[Migration Auto-run Warning]', err.message));
   }
+});
+
+// Penanganan Graceful Shutdown
+process.on('SIGTERM', async () => {
+  console.log('\n[Shutdown] Menerima sinyal SIGTERM. Menutup server HTTP dan pool database...');
+  server.close(async () => {
+    await pool.end();
+    console.log('[Shutdown] Server dan koneksi MySQL ditutup bersih.');
+    process.exit(0);
+  });
+});
+
+process.on('SIGINT', async () => {
+  console.log('\n[Shutdown] Menerima sinyal SIGINT (Ctrl+C). Menutup koneksi database...');
+  server.close(async () => {
+    await pool.end();
+    console.log('[Shutdown] Server dan koneksi MySQL ditutup bersih.');
+    process.exit(0);
+  });
 });

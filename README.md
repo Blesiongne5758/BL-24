@@ -166,3 +166,9 @@ Sesuai roadmap blueprint tahap lanjutan:
 3. Fitur Tiket Timbang Digital (*Digital Weighing Ticket*) dengan scan barcode QR langsung oleh supir armada.
 4. Dashboard ESG & Penerbitan Sertifikat Daur Ulang resmi (*Certificate of Recycling*).
 
+---
+
+## 📄 Lisensi
+
+Proyek ini dilisensikan di bawah ketentuan [Lisensi MIT](LICENSE).  
+Copyright (c) 2026 Bursa Limbah Team (Circulink).
