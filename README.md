@@ -102,6 +102,29 @@ Circulink mengintegrasikan dompet kripto Web3 dan token utilitas sirkular untuk 
 
 ---
 
+## ☁️ Arsitektur Penyimpanan Cloud Terpisah (Decoupled Object Storage & Media)
+
+Circulink menerapkan arsitektur penyimpanan berkas terpisah (*decoupled storage architecture*) berstandar enterprise tanpa menyimpan berkas unggahan pada sistem berkas lokal (*local filesystem*) server web:
+
+1. **Penyedia Cloud Object Storage (S3-Compatible)**:
+   - Mendukung **AWS S3**, **DigitalOcean Spaces**, **MinIO**, dan **Cloudflare R2**.
+   - Menghilangkan *memory overload* dan kejenuhan bandwidth pada server web Node.js.
+2. **Mekanisme Unggah Langsung via Pre-Signed URLs (Direct Client-to-Bucket)**:
+   - Klien meminta Pre-Signed PUT URL bertanda tangan AWS SigV4 (`POST /api/storage/presigned-upload`).
+   - Peramban mengalirkan berkas biner secara langsung ke bucket cloud storage (`PUT`).
+3. **Strategi 2-Bucket & Keamanan Bertingkat**:
+   - **Public Bucket** (`circulink-public-media`): Foto eviden limbah, foto katalog komoditas, dan foto profil mitra publik. Diakselerasi CDN.
+   - **Private Bucket / Vault** (`circulink-private-vault`): Dokumen identitas rahasia KYC (KTP, NPWP, NIB), dokumen izin lingkungan B3, dan bukti pelunasan transaksi.
+   - **Akses Dokumen Privat**: Akses berkas privat HANYA diberikan melalui **Pre-Signed GET URL berumur pendek** (TTL 15 menit) yang diterbitkan server (`GET /api/storage/private-url`) setelah memverifikasi kepemilikan dokumen atau status pembayaran DP pesanan terkait.
+4. **Validasi Berkas Ganda (Client & Server)**:
+   - **Validasi Sisi Klien (`js/storageClient.js`)**: Skema validasi Zod-equivalent untuk memeriksa MIME type yang diizinkan (JPEG, PNG, WebP, HEIC, PDF), batas ukuran berkas (maks. 10MB foto, maks. 20MB dokumen), dan pemblokiran ekstensi ganda/berbahaya.
+   - **Validasi Sisi Server (`storage.service.js`)**: Pemeriksaan *magic bytes* (header signature biner) untuk mencegah penyamaran skrip/berkas berbahaya (*polyglot injection*).
+5. **Optimasi Media Otomatis (ImageKit / Cloudinary)**:
+   - Konversi format otomatis ke **WebP / AVIF** dengan kompresi mutu cerdas (`q_auto`, `f_auto`).
+   - Pembuatan thumbnail otomatis berasio presisi (400x300) untuk kartu katalog marketplace.
+
+---
+
 ## 📦 10 Kategori Komoditas Limbah Terverifikasi
 
 1. **Minyak Jelantah (UCO)** (Liter) — FFA (<3%, 3-5%, >5%) & Kadar Air
@@ -151,14 +174,15 @@ bursalimbah/
 ├── js/
 │   ├── data.js                              # Seed data awal kategori, produk, fitur, dan Web3 config
 │   ├── store.js                             # State manager reaktif, feature flags, dan Web3 crypto wallet
+│   ├── storageClient.js                     # Klien direct upload Cloud Storage & Zod file validation
 │   └── app.js                               # Controller UI, modal checkout, airdrop, dan mitigasi XSS
 │
 ├── server/
 │   ├── Dockerfile                           # Definisi Docker container backend
 │   ├── ecosystem.config.js                  # Konfigurasi clustering proses PM2
-│   ├── package.json                         # Dependensi backend Node.js
-│   ├── .env.example                         # Template variabel lingkungan aman
-│   ├── server.js                            # Express server API RESTful
+│   ├── package.json                         # Dependensi backend Node.js (AWS SDK, Express, MySQL2)
+│   ├── .env.example                         # Template variabel lingkungan aman (S3, CDN, DB)
+│   ├── server.js                            # Express server API RESTful (Storage & Presigned Endpoints)
 │   ├── db.js                                # Koneksi pool MySQL (mysql2/promise)
 │   ├── database/
 │   │   └── migrate.js                       # Skrip migrasi database otomatis
@@ -167,6 +191,8 @@ bursalimbah/
 │   │   ├── rateLimiter.js                   # Proteksi rate limiting terhadap DDoS/Brute Force
 │   │   └── sanitizer.js                     # Middleware pembersih input Anti-XSS
 │   ├── services/
+│   │   ├── storage.service.js               # Layanan Cloud Storage Decoupled (AWS S3/Spaces/MinIO)
+│   │   ├── mediaOptimization.service.js     # Layanan optimasi media WebP (Cloudinary/ImageKit)
 │   │   ├── jwt.service.js                   # Layanan penerbitan & verifikasi token JWT
 │   │   ├── escrow.service.js                # State machine & kalkulasi rekening bersama escrow
 │   │   ├── tierRules.service.js             # Engine validasi kuota & limit transaksi paket buyer
@@ -194,7 +220,7 @@ bursalimbah/
 
 ## 🧪 Rangkaian Pengujian Otomatis (QA Test Suites)
 
-Platform ini dilengkapi 4 suite pengujian unit mandiri untuk menjamin stabilitas dan keandalan kode:
+Platform ini dilengkapi 5 suite pengujian unit mandiri untuk menjamin stabilitas dan keandalan kode:
 
 1. **Audit Kepatuhan & Lisensi (`test_audit.js`)**:
    - Memvalidasi 97 parameter: lisensi MIT, integritas skema database, keselarasan ID elemen QRIS/metode bayar, versi skrip cache-busting, dan sanitasi DOM.
@@ -208,10 +234,13 @@ Platform ini dilengkapi 4 suite pengujian unit mandiri untuk menjamin stabilitas
 4. **Fitur Sakelar Admin & Dompet Kripto (`test_crypto_and_features.js`)**:
    - Menguji master feature toggle on/off, konfigurasi blockchain, pembuatan dompet publik pengguna, transfer P2P token $CLNK, klaim insentif daur ulang, distribusi airdrop admin, dan pembayaran pemesanan via crypto escrow.
    - Hasil: **7/7 PASS** (100%).
+5. **Arsitektur Penyimpanan Cloud & Media (`test_storage_architecture.js`)**:
+   - Menguji validasi MIME/ekstensi ganda Zod, inspeksi magic bytes anti-skrip, pembuatan Pre-Signed PUT URL decoupled, proteksi private KYC vault dengan Pre-Signed GET URL, dan optimasi format WebP via ImageKit/Cloudinary.
+   - Hasil: **6/6 PASS** (100%).
 
 Jalankan seluruh pengujian dengan satu perintah:
 ```bash
-node test_audit.js; node test_logic.js; node test_backend_services.js; node test_crypto_and_features.js
+node test_audit.js; node test_logic.js; node test_backend_services.js; node test_crypto_and_features.js; node test_storage_architecture.js
 ```
 
 ---
