@@ -590,10 +590,10 @@ const INITIAL_SETTINGS = {
   },
   // Konfigurasi Database Supabase (PostgreSQL & REST API)
   supabaseConfig: {
-    enabled: false,
-    url: "",
-    anonKey: "",
-    syncEnabled: false
+    enabled: true,
+    url: "https://vnajenbubmglwlsvteed.supabase.co",
+    anonKey: "[REDACTED]",
+    syncEnabled: true
   },
   // Struktur Biaya & Jasa Logistik
   dpEnabled: false, // Status DP saat ini: SET OFF (Nonaktif) sesuai instruksi

@@ -4184,7 +4184,7 @@ class BursaLimbahApp {
       try {
         const res = await window.circulinkSupabase.testConnection({ url, anonKey });
         if (res && res.ok) {
-          this.showToast(`Koneksi ke Supabase berhasil terhubung! (Latensi: ${res.latency}ms)`, 'success');
+          this.showToast(res.message || `Koneksi ke Supabase berhasil terhubung! (Latensi: ${res.latency}ms)`, res.tablesExist ? 'success' : 'info');
         } else {
           this.showToast(`Gagal terhubung ke Supabase: ${res?.error || 'Periksa URL dan Anon Key.'}`, 'error');
         }
