@@ -10,7 +10,7 @@ class MediaOptimizationService {
   constructor() {
     this.provider = (process.env.MEDIA_OPTIMIZER_PROVIDER || 'imagekit').toLowerCase();
     this.imagekitEndpoint = (process.env.IMAGEKIT_URL_ENDPOINT || 'https://ik.imagekit.io/circulink').replace(/\/$/, '');
-    this.cloudinaryCloudName = process.env.CLOUDINARY_CLOUD_NAME || 'circulink';
+    this.cloudinaryCloudName = process.env.CLOUDINARY_CLOUD_NAME || 'v1pwadqp';
     this.cdnDomain = (process.env.STORAGE_CDN_DOMAIN || '').replace(/\/$/, '');
   }
 

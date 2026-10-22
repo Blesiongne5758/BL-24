@@ -92,10 +92,10 @@
         : {};
       return {
         enabled: storeConfig.enabled !== false,
-        cloudName: storeConfig.cloudName || window.CLOUDINARY_CLOUD_NAME || 'circulink',
+        cloudName: storeConfig.cloudName || window.CLOUDINARY_CLOUD_NAME || 'v1pwadqp',
         uploadPreset: storeConfig.uploadPreset || window.CLOUDINARY_UPLOAD_PRESET || 'circulink_preset',
-        folder: storeConfig.folder || 'bursalimbah',
-        apiKey: storeConfig.apiKey || ''
+        folder: storeConfig.folder || 'circulink',
+        apiKey: storeConfig.apiKey || '351693688969844'
       };
     }
 
