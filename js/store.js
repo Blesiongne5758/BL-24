@@ -843,6 +843,24 @@ class BursaLimbahStore {
   }
 
   async uploadProductEvidences(files) {
+    if (typeof window !== 'undefined' && window.circulinkStorage) {
+      try {
+        const uploaded = [];
+        for (const file of files) {
+          const res = await window.circulinkStorage.uploadDirect(file, 'public_listing');
+          uploaded.push({
+            url: res.url,
+            thumbnailUrl: res.thumbnailUrl || res.url,
+            filename: res.filename || file.name,
+            provider: res.provider || 'cloudinary'
+          });
+        }
+        return uploaded;
+      } catch (storageErr) {
+        console.warn('[Store] Direct Cloudinary/S3 storage upload failed, falling back to local backend:', storageErr.message);
+      }
+    }
+
     const formData = new FormData();
     files.forEach(file => formData.append('files', file));
 

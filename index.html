@@ -3443,6 +3443,107 @@
                 </div>
               </div>
 
+              <!-- SECTION 7: INTEGRASI CLOUDINARY (GAMBAR & MULTIMEDIA) -->
+              <div class="bg-gradient-to-br from-sky-950/20 via-slate-50 to-sky-50/30 p-5 rounded-2xl border border-sky-300/60 space-y-4">
+                <div class="flex items-center justify-between pb-2 border-b border-sky-200">
+                  <div class="flex items-center gap-2">
+                    <span class="w-7 h-7 rounded-lg bg-sky-600 text-white flex items-center justify-center text-xs">
+                      <i class="fa-solid fa-cloud-arrow-up"></i>
+                    </span>
+                    <h4 class="text-xs font-bold uppercase text-slate-800 tracking-wider">Integrasi Cloudinary (Penyimpanan Gambar &amp; Multimedia)</h4>
+                  </div>
+                  <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-sky-100 text-sky-900 border border-sky-300">
+                    CDN &amp; Auto WebP
+                  </span>
+                </div>
+
+                <div class="p-4 bg-white rounded-xl border border-slate-200 shadow-2xs space-y-4">
+                  <div class="flex items-center justify-between gap-3">
+                    <div>
+                      <label class="block text-xs font-bold uppercase text-slate-800">Status Direct Upload Cloudinary</label>
+                      <p class="text-[11px] text-slate-500 mt-0.5">Unggah langsung foto eviden produk, dokumen KYC, dan multimedia dari browser ke Cloudinary tanpa membebani server.</p>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                      <input type="checkbox" id="setting-cloudinary-enabled" class="sr-only peer" checked>
+                      <div class="w-11 h-6 bg-slate-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-sky-600"></div>
+                    </label>
+                  </div>
+
+                  <div class="grid sm:grid-cols-2 gap-3">
+                    <div>
+                      <label class="block text-xs font-bold text-slate-700">Cloud Name *</label>
+                      <input id="setting-cloudinary-cloud-name" type="text" value="circulink" placeholder="misal: dxxxxxx" class="mt-1 w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-xs font-mono font-bold">
+                    </div>
+                    <div>
+                      <label class="block text-xs font-bold text-slate-700">Upload Preset (Unsigned) *</label>
+                      <input id="setting-cloudinary-preset" type="text" value="circulink_preset" placeholder="misal: ml_default" class="mt-1 w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-xs font-mono font-bold">
+                    </div>
+                    <div>
+                      <label class="block text-xs font-bold text-slate-700">Folder Penyimpanan</label>
+                      <input id="setting-cloudinary-folder" type="text" value="bursalimbah" class="mt-1 w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-xs font-mono">
+                    </div>
+                    <div>
+                      <label class="block text-xs font-bold text-slate-700">API Key (Opsional)</label>
+                      <input id="setting-cloudinary-api-key" type="text" placeholder="123456789012345" class="mt-1 w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-xs font-mono">
+                    </div>
+                  </div>
+                  <div class="text-[11px] text-slate-500 bg-sky-50 p-3 rounded-lg border border-sky-100 flex items-center gap-2">
+                    <i class="fa-solid fa-circle-info text-sky-600"></i>
+                    <span>Semua foto otomatis dikonversi ke WebP, dikompresi (q_auto), dan dibuatkan thumbnail cerdas rasio 400x300.</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- SECTION 8: INTEGRASI SUPABASE (POSTGRESQL CLOUD DATABASE) -->
+              <div class="bg-gradient-to-br from-emerald-950/20 via-slate-50 to-emerald-50/30 p-5 rounded-2xl border border-emerald-300/60 space-y-4">
+                <div class="flex items-center justify-between pb-2 border-b border-emerald-200">
+                  <div class="flex items-center gap-2">
+                    <span class="w-7 h-7 rounded-lg bg-emerald-600 text-white flex items-center justify-center text-xs">
+                      <i class="fa-solid fa-database"></i>
+                    </span>
+                    <h4 class="text-xs font-bold uppercase text-slate-800 tracking-wider">Integrasi Supabase (Database PostgreSQL &amp; PostgREST API)</h4>
+                  </div>
+                  <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-900 border border-emerald-300">
+                    PostgreSQL Cloud
+                  </span>
+                </div>
+
+                <div class="p-4 bg-white rounded-xl border border-slate-200 shadow-2xs space-y-4">
+                  <div class="flex items-center justify-between gap-3">
+                    <div>
+                      <label class="block text-xs font-bold uppercase text-slate-800">Status Koneksi Supabase</label>
+                      <p class="text-[11px] text-slate-500 mt-0.5">Sinkronisasi data produk, order, penawaran, dan pengguna langsung ke cloud database Supabase.</p>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                      <input type="checkbox" id="setting-supabase-enabled" class="sr-only peer">
+                      <div class="w-11 h-6 bg-slate-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
+                    </label>
+                  </div>
+
+                  <div class="space-y-3">
+                    <div>
+                      <label class="block text-xs font-bold text-slate-700">Supabase Project URL *</label>
+                      <input id="setting-supabase-url" type="url" placeholder="https://xxxxxxxxxxxxxxxx.supabase.co" class="mt-1 w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-xs font-mono font-bold">
+                    </div>
+                    <div>
+                      <label class="block text-xs font-bold text-slate-700">Supabase Anon / Public Key *</label>
+                      <input id="setting-supabase-anon-key" type="password" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." class="mt-1 w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-xs font-mono">
+                    </div>
+                  </div>
+
+                  <div class="flex items-center justify-between pt-2 border-t border-slate-100">
+                    <label class="flex items-center gap-2 cursor-pointer text-xs text-slate-700">
+                      <input type="checkbox" id="setting-supabase-sync-enabled" class="rounded text-emerald-600 focus:ring-emerald-500">
+                      <span>Aktifkan Sinkronisasi Otomatis ke Supabase</span>
+                    </label>
+                    <button type="button" onclick="app.testSupabaseConnection()" class="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-xs transition flex items-center gap-1.5">
+                      <i class="fa-solid fa-plug"></i>
+                      <span>Uji Koneksi Supabase</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
               <!-- Pintasan Cepat ke Editor Layanan Resmi -->
               <div class="p-4 bg-emerald-50 rounded-xl border border-emerald-200 flex items-center justify-between gap-3">
                 <div class="flex items-center gap-3">

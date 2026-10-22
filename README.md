@@ -245,6 +245,52 @@ node test_audit.js; node test_logic.js; node test_backend_services.js; node test
 
 ---
 
+## ☁️ Integrasi Cloudinary & Supabase
+
+Platform Bursa Limbah CircuLink telah dirancang dengan arsitektur modern terdesentralisasi (*decoupled architecture*):
+
+### 1. Cloudinary (Penyimpanan Media & Optimasi Otomatis)
+- **Direct Unsigned Upload**: Foto eviden wadah limbah, sampel fisik, dan bukti tera timbangan langsung diunggah dari browser pengguna ke Cloudinary CDN tanpa membebani bandwidth web server hosting.
+- **Otomasi Format WebP**: Gambar otomatis dikonversi ke format WebP (`f_auto, q_auto`) dengan resolusi optimal dan pembuatan thumbnail otomatis (`c_fill, w_400, h_300, g_auto`).
+- **Cara Konfigurasi**:
+  1. Masuk ke Dasbor Admin Bursa Limbah -> Menu **Pengaturan**.
+  2. Buka tab **Penyimpanan Cloud & Multimedia (Cloudinary)**.
+  3. Masukkan `Cloud Name` dan `Upload Preset` (Unsigned mode di Cloudinary Settings -> Upload).
+  4. Klik **Simpan Pengaturan**.
+
+### 2. Supabase (Database PostgreSQL Terkelola & Sinkronisasi Cloud)
+- **Skema Lengkap**: Disediakan pada file [`database/supabase_schema.sql`](database/supabase_schema.sql) mencakup tabel `users`, `categories`, `products`, `orders`, `offers`, `events`, `system_settings`, dan `crypto_wallets` beserta Row Level Security (RLS).
+- **Koneksi REST & SDK**: Menggunakan PostgREST API dan Supabase JS Client resmi via CDN, mendukung uji koneksi latensi langsung dari Admin Panel.
+- **Cara Konfigurasi**:
+  1. Buka project Supabase Anda di [supabase.com](https://supabase.com).
+  2. Di menu **SQL Editor**, buka dan jalankan seluruh query dari [`database/supabase_schema.sql`](database/supabase_schema.sql).
+  3. Salin **Project URL** (`https://xxxx.supabase.co`) dan **Anon Public Key**.
+  4. Masuk ke Admin Panel Bursa Limbah -> **Pengaturan Database Supabase** -> Masukkan URL & Anon Key -> Klik **Uji Koneksi Supabase** -> Aktifkan Sinkronisasi Otomatis.
+
+---
+
+## 🌐 Panduan Deployment InfinityFree Hosting
+
+Aplikasi web CircuLink dapat di-hosting secara langsung pada hosting gratis [InfinityFree](https://infinityfree.com):
+
+1. **Struktur Folder Web**:
+   - Seluruh file statis (`index.html`, `css/`, `js/`, `assets/`, `.htaccess`) ditempatkan di dalam folder `/htdocs/`.
+   - File placeholder bawaan `index2.html` telah dihapus secara otomatis.
+2. **Kredensial FTP**:
+   - **Host**: `ftpupload.net` (Port 21, Passive Mode)
+   - **Target Root**: `/htdocs/`
+3. **Deployment Otomatis via PowerShell**:
+   ```powershell
+   powershell -ExecutionPolicy Bypass -File scripts/deploy_infinityfree.ps1
+   ```
+4. **Apache `.htaccess`**:
+   - Menangani `DirectoryIndex index.html index.php`.
+   - Gzip compression untuk file JavaScript, CSS, dan JSON.
+   - Header keamanan (`X-Content-Type-Options: nosniff`, `X-Frame-Options: SAMEORIGIN`, `X-XSS-Protection`).
+   - Browser caching untuk aset gambar dan script.
+
+---
+
 ## 📄 Lisensi
 
 Platform ini dirilis sebagai perangkat lunak sumber terbuka di bawah ketentuan **[Lisensi MIT](LICENSE)**.  
