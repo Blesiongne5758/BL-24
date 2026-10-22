@@ -27,9 +27,9 @@
         }
       } catch (_) {}
 
-      // Fallback to window globals or localStorage
-      cfg.url = cfg.url || window.SUPABASE_URL || localStorage.getItem('supabase_url') || '';
-      cfg.anonKey = cfg.anonKey || window.SUPABASE_ANON_KEY || localStorage.getItem('supabase_anon_key') || '';
+      // Fallback to window globals or localStorage or project default
+      cfg.url = cfg.url || window.SUPABASE_URL || localStorage.getItem('supabase_url') || 'https://vnajenbubmglwlsvteed.supabase.co';
+      cfg.anonKey = cfg.anonKey || window.SUPABASE_ANON_KEY || localStorage.getItem('supabase_anon_key') || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZuYWplbmJ1Ym1nbHdsc3Z0ZWVkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI2NDI0MjUsImV4cCI6MjEwODIxODQyNX0.Ft3UjkZa0nqkflx1gG1JaFCAfhFlIYY2Jy3xetLwDRE';
       if (cfg.url && cfg.anonKey) cfg.enabled = true;
       return cfg;
     }
@@ -88,12 +88,53 @@
       return text ? JSON.parse(text) : null;
     }
 
-    async testConnection() {
+    async testConnection(customCfg = null) {
+      const cfg = customCfg || this.getConfig();
+      if (!cfg.url || !cfg.anonKey) {
+        return { ok: false, success: false, message: 'Supabase URL atau Anon Key belum diisi.', error: 'Kredensial belum diisi' };
+      }
+      const t0 = (typeof performance !== 'undefined' ? performance.now() : Date.now());
+      const cleanUrl = cfg.url.replace(/\/$/, '');
       try {
-        const data = await this._restRequest('categories', { query: 'select=id,name&limit=1' });
-        return { success: true, message: 'Koneksi ke Supabase berhasil!', data };
+        const authRes = await fetch(`${cleanUrl}/auth/v1/health`, {
+          method: 'GET',
+          headers: {
+            'apikey': cfg.anonKey,
+            'Authorization': `Bearer ${cfg.anonKey}`
+          }
+        });
+        const t1 = (typeof performance !== 'undefined' ? performance.now() : Date.now());
+        const latency = Math.round(t1 - t0);
+
+        if (!authRes.ok) {
+          const errText = await authRes.text();
+          return { ok: false, success: false, latency, message: `HTTP ${authRes.status}: ${errText}`, error: errText };
+        }
+
+        // Test table existence
+        let tablesExist = false;
+        try {
+          const tableRes = await fetch(`${cleanUrl}/rest/v1/categories?select=id&limit=1`, {
+            method: 'GET',
+            headers: {
+              'apikey': cfg.anonKey,
+              'Authorization': `Bearer ${cfg.anonKey}`
+            }
+          });
+          tablesExist = tableRes.ok;
+        } catch (_) {}
+
+        return {
+          ok: true,
+          success: true,
+          latency,
+          tablesExist,
+          message: tablesExist
+            ? `Koneksi Supabase aktif! Database dan tabel terhubung (${latency}ms).`
+            : `Koneksi Supabase aktif (${latency}ms)! Tabel belum dibuat di SQL Editor.`
+        };
       } catch (err) {
-        return { success: false, message: err.message };
+        return { ok: false, success: false, message: err.message, error: err.message };
       }
     }
 
