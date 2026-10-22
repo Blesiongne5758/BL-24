@@ -579,6 +579,22 @@ const INITIAL_SETTINGS = {
     gasSponsorEnabled: true,    // Bebas gas fee (disponsori relayer platform)
     airdropPoolBalance: 2500000 // 2.500.000 CLNK Pool Reward Daur Ulang
   },
+  // Konfigurasi Cloudinary (Gambar & Multimedia)
+  cloudinaryConfig: {
+    enabled: true,
+    cloudName: "circulink",
+    uploadPreset: "circulink_preset",
+    apiKey: [REDACTED]
+    folder: "bursalimbah",
+    autoOptimize: true
+  },
+  // Konfigurasi Database Supabase (PostgreSQL & REST API)
+  supabaseConfig: {
+    enabled: false,
+    url: "",
+    anonKey: "",
+    syncEnabled: false
+  },
   // Struktur Biaya & Jasa Logistik
   dpEnabled: false, // Status DP saat ini: SET OFF (Nonaktif) sesuai instruksi
   downPaymentPercent: 30, // Persentase DP jika diaktifkan

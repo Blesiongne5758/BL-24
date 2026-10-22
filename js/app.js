@@ -1693,6 +1693,10 @@ class BursaLimbahApp {
 
   // ================= TICKER HARGA LIVE & KURS =================
   async fetchLiveMarketRates() {
+    if (window.circulinkSupabase && this.store.getSettings().supabaseConfig?.enabled) {
+      window.circulinkSupabase.init();
+      window.circulinkSupabase.syncWithStore(this.store).catch(e => console.warn('[Supabase] Sync:', e.message));
+    }
     const tickerSettings = this.store.getSettings();
     if (!tickerSettings.tickerEnabled) return;
     try {
@@ -3724,6 +3728,32 @@ class BursaLimbahApp {
       if (chk) chk.checked = couriers.includes(c);
     });
 
+    // Cloudinary Storage fields
+    const cloudEnabled = [REDACTED]'setting-cloudinary-enabled');
+    const cloudName = [REDACTED]'setting-cloudinary-cloud-name');
+    const cloudPreset = [REDACTED]'setting-cloudinary-upload-preset');
+    const cloudApiKey = [REDACTED]'setting-cloudinary-api-key');
+    const cloudFolder = [REDACTED]'setting-cloudinary-folder');
+    const cloudAutoOpt = [REDACTED]'setting-cloudinary-auto-optimize');
+    const cldCfg = s.cloudinaryConfig || {};
+    if (cloudEnabled) cloudEnabled.checked = !!cldCfg.enabled;
+    if (cloudName) cloudName.value = cldCfg.cloudName || '';
+    if (cloudPreset) cloudPreset.value = cldCfg.uploadPreset || '';
+    if (cloudApiKey) cloudApiKey.value = cldCfg.apiKey || '';
+    if (cloudFolder) cloudFolder.value = cldCfg.folder || 'circulink';
+    if (cloudAutoOpt) cloudAutoOpt.checked = cldCfg.autoOptimize !== false;
+
+    // Supabase Database fields
+    const supaEnabled = [REDACTED]'setting-supabase-enabled');
+    const supaUrl = [REDACTED]'setting-supabase-url');
+    const supaAnonKey = [REDACTED]'setting-supabase-anon-key');
+    const supaAutoSync = [REDACTED]'setting-supabase-auto-sync');
+    const supaCfg = s.supabaseConfig || {};
+    if (supaEnabled) supaEnabled.checked = !!supaCfg.enabled;
+    if (supaUrl) supaUrl.value = supaCfg.url || '';
+    if (supaAnonKey) supaAnonKey.value = supaCfg.anonKey || '';
+    if (supaAutoSync) supaAutoSync.checked = !!supaCfg.syncEnabled;
+
     const tickerEnabled = [REDACTED]'setting-ticker-enabled');
     const tickerTitle = [REDACTED]'setting-ticker-title');
     const tickerRefreshMinutes = [REDACTED]'setting-ticker-refresh-minutes');
@@ -3780,6 +3810,22 @@ class BursaLimbahApp {
       expeditionApiOrigin: [REDACTED]'setting-expedition-origin')?.value.trim() || '',
       expeditionApiWebhookUrl: [REDACTED]'setting-expedition-webhook-url')?.value.trim() || '',
       expeditionApiCouriers,
+      // Cloudinary Storage
+      cloudinaryConfig: {
+        enabled: [REDACTED]'setting-cloudinary-enabled')?.checked || false,
+        cloudName: [REDACTED]'setting-cloudinary-cloud-name')?.value.trim() || '',
+        uploadPreset: [REDACTED]'setting-cloudinary-upload-preset')?.value.trim() || '',
+        apiKey: [REDACTED]
+        folder: [REDACTED]'setting-cloudinary-folder')?.value.trim() || 'circulink',
+        autoOptimize: [REDACTED]'setting-cloudinary-auto-optimize')?.checked !== false
+      },
+      // Supabase Database
+      supabaseConfig: {
+        enabled: [REDACTED]'setting-supabase-enabled')?.checked || false,
+        url: [REDACTED]'setting-supabase-url')?.value.trim() || '',
+        anonKey: [REDACTED]'setting-supabase-anon-key')?.value.trim() || '',
+        syncEnabled: [REDACTED]'setting-supabase-auto-sync')?.checked || false
+      },
       // Ticker & Terms
       tickerEnabled: [REDACTED]'setting-ticker-enabled')?.checked || false,
       tickerTitle: [REDACTED]'setting-ticker-title')?.value.trim() || 'Harga Pasar Terkini',
@@ -4124,6 +4170,30 @@ class BursaLimbahApp {
     setTimeout(() => {
       this.showToast(`Koneksi API ekspedisi ${provider} berhasil diuji (mode simulasi). Verifikasi di dasbor provider.`, 'success');
     }, 1500);
+  }
+
+  async testSupabaseConnection() {
+    const url = [REDACTED]'setting-supabase-url')?.value.trim();
+    const anonKey = [REDACTED]'setting-supabase-anon-key')?.value.trim();
+    if (!url || !anonKey) {
+      this.showToast('Masukkan Project URL dan Anon Key Supabase terlebih dahulu.', 'error');
+      return;
+    }
+    this.showToast('Menguji koneksi ke Supabase...', 'info');
+    if (window.circulinkSupabase) {
+      try {
+        const res = await window.circulinkSupabase.testConnection({ url, anonKey });
+        if (res && res.ok) {
+          this.showToast(`Koneksi ke Supabase berhasil terhubung! (Latensi: ${res.latency}ms)`, 'success');
+        } else {
+          this.showToast(`Gagal terhubung ke Supabase: ${res?.error || 'Periksa URL dan Anon Key.'}`, 'error');
+        }
+      } catch (err) {
+        this.showToast(`Koneksi gagal: ${err.message}`, 'error');
+      }
+    } else {
+      this.showToast('Klien Supabase belum dimuat di browser.', 'warning');
+    }
   }
 
 
