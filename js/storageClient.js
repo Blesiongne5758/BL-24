@@ -92,9 +92,9 @@
         : {};
       return {
         enabled: storeConfig.enabled !== false,
-        cloudName: storeConfig.cloudName || window.CLOUDINARY_CLOUD_NAME || 'circulink',
+        cloudName: storeConfig.cloudName || window.CLOUDINARY_CLOUD_NAME || 'v1pwadqp',
         uploadPreset: storeConfig.uploadPreset || window.CLOUDINARY_UPLOAD_PRESET || 'circulink_preset',
-        folder: storeConfig.folder || 'bursalimbah',
+        folder: storeConfig.folder || 'circulink',
         apiKey: [REDACTED]
       };
     }

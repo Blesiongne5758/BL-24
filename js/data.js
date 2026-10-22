@@ -582,10 +582,10 @@ const INITIAL_SETTINGS = {
   // Konfigurasi Cloudinary (Gambar & Multimedia)
   cloudinaryConfig: {
     enabled: true,
-    cloudName: "circulink",
+    cloudName: "v1pwadqp",
     uploadPreset: "circulink_preset",
     apiKey: [REDACTED]
-    folder: "bursalimbah",
+    folder: "circulink",
     autoOptimize: true
   },
   // Konfigurasi Database Supabase (PostgreSQL & REST API)
