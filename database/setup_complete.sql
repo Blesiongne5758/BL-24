@@ -2,7 +2,7 @@
 -- BURSA LIMBAH — SETUP DATABASE LENGKAP (MySQL 8.4 LTS)
 -- Sinkron 100% dengan server/server.js & server/db.js
 -- Jalankan script ini sebagai root MySQL untuk setup awal
--- Target DB: bursalimbahdb | User: admin | Host: 108.136.70.118
+-- Target DB/user/host must be configured for the deployment environment.
 -- ====================================================================
 
 -- 1. Buat database dan user
@@ -465,6 +465,7 @@ CREATE TABLE IF NOT EXISTS `addresses` (
 -- INSERT DEFAULT SYSTEM SETTINGS
 -- ====================================================================
 INSERT INTO `system_settings` (`setting_key`, `setting_value`, `description`) VALUES
+('google_login_enabled',    'false',         'Aktifkan login OAuth Google dari panel admin setelah konfigurasi Google Identity Services'),
 ('dp_enabled',              'false',         'Aktifkan fitur uang muka (DP) 30%'),
 ('dp_percentage',           '30',            'Persentase DP dari total transaksi'),
 ('dp_enabled',              'false',         'Aktivasi metode pembayaran DP'),

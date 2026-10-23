@@ -15,9 +15,9 @@ services:
       - DB_HOST=db
       - DB_PORT=3306
       - DB_USER=bursalimbah_user
-      - DB_PASSWORD=${DB_PASSWORD:-SecretPassword2026!}
+      - DB_PASSWORD=${DB_PASSWORD:?DB_PASSWORD wajib diset}
       - [REDACTED]
-      - JWT_SECRET=${JWT_SECRET:-bursalimbah_jwt_production_secret_key_2026}
+      - JWT_SECRET=${JWT_SECRET:?JWT_SECRET wajib diset}
       - DEMO_MODE=false
     volumes:
       - ./server/uploads:/usr/src/app/uploads

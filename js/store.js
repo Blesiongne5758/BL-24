@@ -22,6 +22,22 @@ class BursaLimbahStore {
     return 'http://localhost:5000';
   }
 
+  getAuthToken() {
+    if (typeof localStorage === 'undefined') return null;
+    return localStorage.getItem('token') || localStorage.getItem('authToken');
+  }
+
+  authHeaders(headers = {}) {
+    const token = this.getAuthToken();
+    return token ? { ...headers, Authorization: `Bearer ${token}` } : { ...headers };
+  }
+
+  persistAuthSession(data) {
+    if (typeof localStorage === 'undefined' || !data) return;
+    if (data.token) localStorage.setItem('token', data.token);
+    if (data.refreshToken) localStorage.setItem('refreshToken', data.refreshToken);
+  }
+
   async checkBackendHealth() {
     try {
       const res = await fetch(`${this.apiBaseUrl}/api/health`, { method: 'GET' });
@@ -132,6 +148,7 @@ class BursaLimbahStore {
             expeditionApiCouriers: remote.expeditionApiCouriers ? (typeof remote.expeditionApiCouriers === 'string' ? JSON.parse(remote.expeditionApiCouriers) : remote.expeditionApiCouriers) : this.state.settings.expeditionApiCouriers,
             expeditionApiWebhookUrl: remote.expeditionApiWebhookUrl || this.state.settings.expeditionApiWebhookUrl,
             tickerEnabled: remote.ticker_enabled === undefined ? this.state.settings.tickerEnabled : remote.ticker_enabled === 'true',
+            googleLoginEnabled: remote.google_login_enabled === 'true',
             tickerTitle: remote.ticker_title || this.state.settings.tickerTitle,
             tickerRefreshMinutes: Math.min(120, Math.max(1, Number(remote.ticker_refresh_minutes) || this.state.settings.tickerRefreshMinutes || 15)),
             termsTitle: remote.terms_title || this.state.settings.termsTitle,
@@ -455,6 +472,7 @@ class BursaLimbahStore {
 
   isAdminAuthenticated() {
     if (!this.state.adminUserId) return false;
+    if (!this.getAuthToken()) return false;
     const adminUser = (this.state.users || []).find(u => u.id === this.state.adminUserId && u.role === "admin");
     return !!adminUser;
   }
@@ -564,6 +582,7 @@ class BursaLimbahStore {
       const data = await res.json();
 
       if (res.ok && data.success) {
+        this.persistAuthSession(data);
         const user = data.user;
         const existingIdx = this.state.users.findIndex(u => u.id === user.id || (u.email && u.email.toLowerCase() === user.email.toLowerCase()));
         if (existingIdx !== -1) {
@@ -600,12 +619,10 @@ class BursaLimbahStore {
         };
       }
     } catch (netErr) {
-      console.warn('[Store] Server MySQL offline, fallback ke penyimpanan lokal:', netErr.message);
+      console.warn('[Store] Server autentikasi tidak tersedia:', netErr.message);
     }
 
-    const localRes = this.loginUser(identifier, password, expectedRole);
-    localRes.source = 'local';
-    return localRes;
+    return { success: false, message: 'Layanan autentikasi tidak tersedia. Silakan coba lagi.' };
   }
 
   async registerSellerAsync(sellerData) {
@@ -617,6 +634,7 @@ class BursaLimbahStore {
       });
       const data = await res.json();
       if (res.ok && data.success) {
+        this.persistAuthSession(data);
         const user = data.user;
         const existingIdx = this.state.users.findIndex(u => u.id === user.id);
         if (existingIdx !== -1) {
@@ -633,11 +651,10 @@ class BursaLimbahStore {
         return { success: false, message: data.message };
       }
     } catch (err) {
-      console.warn('[Store] Gagal register ke MySQL backend, fallback ke lokal:', err.message);
+      console.warn('[Store] Layanan registrasi tidak tersedia:', err.message);
     }
 
-    const newUser = this.registerSeller(sellerData);
-    return { success: true, user: newUser, isNewAccount: true, source: 'local' };
+    return { success: false, message: 'Layanan registrasi tidak tersedia. Silakan coba lagi.' };
   }
 
   async registerBuyerAsync(buyerData) {
@@ -649,6 +666,7 @@ class BursaLimbahStore {
       });
       const data = await res.json();
       if (res.ok && data.success) {
+        this.persistAuthSession(data);
         const user = data.user;
         const existingIdx = this.state.users.findIndex(u => u.id === user.id);
         if (existingIdx !== -1) {
@@ -665,22 +683,28 @@ class BursaLimbahStore {
         return { success: false, message: data.message };
       }
     } catch (err) {
-      console.warn('[Store] Gagal register buyer ke MySQL, fallback ke lokal:', err.message);
+      console.warn('[Store] Layanan registrasi tidak tersedia:', err.message);
     }
 
-    const newUser = this.registerBuyer(buyerData);
-    return { success: true, user: newUser, isNewAccount: true, source: 'local' };
+    return { success: false, message: 'Layanan registrasi tidak tersedia. Silakan coba lagi.' };
   }
 
-  async loginWithGoogleAsync({ email, name, avatar, role = 'buyer' }) {
+  async loginWithGoogleAsync({ idToken, role = 'buyer' }) {
+    if (this.getSettings().googleLoginEnabled !== true) {
+      return { success: false, message: 'Login dengan Google sedang dinonaktifkan oleh administrator.' };
+    }
+    if (!idToken) {
+      return { success: false, message: 'Google ID token wajib tersedia.' };
+    }
     try {
       const res = await fetch(`${this.apiBaseUrl}/api/auth/google`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, name, avatar, role })
+        body: JSON.stringify({ idToken, role })
       });
       const data = await res.json();
       if (res.ok && data.success) {
+        this.persistAuthSession(data);
         const user = data.user;
         const existingIdx = this.state.users.findIndex(u => u.id === user.id || (u.email && u.email.toLowerCase() === user.email.toLowerCase()));
         if (existingIdx !== -1) {
@@ -710,12 +734,9 @@ class BursaLimbahStore {
         };
       }
     } catch (err) {
-      console.warn('[Store] Backend MySQL offline untuk Google Auth, fallback lokal');
+      console.warn('[Store] Backend MySQL offline untuk Google Auth:', err.message);
     }
-
-    const localRes = this.loginWithGoogle({ email, name, avatar, role });
-    localRes.source = 'local';
-    return localRes;
+    return { success: false, message: 'Layanan login Google tidak tersedia.' };
   }
 
   loginWithGoogle({ email, name, avatar, role = 'buyer' }) {
@@ -803,7 +824,7 @@ class BursaLimbahStore {
     if (this.isBackendConnected) {
       fetch(`${this.apiBaseUrl}/api/users/${userId}/profile`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: this.authHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({
           name: user.name,
           company: user.company,
@@ -866,6 +887,7 @@ class BursaLimbahStore {
 
     const response = await fetch(`${this.apiBaseUrl}/api/uploads/product-evidence`, {
       method: 'POST',
+      headers: this.authHeaders(),
       body: formData
     });
     const data = await response.json().catch(() => ({}));
@@ -881,6 +903,7 @@ class BursaLimbahStore {
 
     const response = await fetch(`${this.apiBaseUrl}/api/uploads/identity-document`, {
       method: 'POST',
+      headers: this.authHeaders(),
       body: formData
     });
     const data = await response.json().catch(() => ({}));
@@ -893,7 +916,7 @@ class BursaLimbahStore {
   async uploadWeighingProof(file) {
     const formData = new FormData();
     formData.append('file', file);
-    const response = await fetch(`${this.apiBaseUrl}/api/uploads/weighing-proof`, { method: 'POST', body: formData });
+    const response = await fetch(`${this.apiBaseUrl}/api/uploads/weighing-proof`, { method: 'POST', headers: this.authHeaders(), body: formData });
     const data = await response.json().catch(() => ({}));
     if (!response.ok || !data.success) throw new Error(data.message || 'Gagal mengunggah bukti timbang.');
     return data.file;
@@ -906,6 +929,11 @@ class BursaLimbahStore {
     this.state.authenticatedSellerId = null;
     this.state.activeUserId = null;
     this.state.sellerUserId = null;
+    if (typeof localStorage !== 'undefined') {
+      localStorage.removeItem('token');
+      localStorage.removeItem('authToken');
+      localStorage.removeItem('refreshToken');
+    }
     this.save();
   }
 
@@ -1266,7 +1294,7 @@ class BursaLimbahStore {
     if (this.isBackendConnected) {
       fetch(`${this.apiBaseUrl}/api/products`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: this.authHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify(newProduct)
       }).catch(e => console.warn('[Add Product API Error]', e));
     }
@@ -1291,7 +1319,7 @@ class BursaLimbahStore {
       if (this.isBackendConnected) {
         fetch(`${this.apiBaseUrl}/api/products/${productId}/status`, {
           method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
+          headers: this.authHeaders({ 'Content-Type': 'application/json' }),
           body: JSON.stringify({ status, adminNotes })
         }).catch(e => console.warn('[Update Product Status API Error]', e));
       }
@@ -1388,7 +1416,7 @@ class BursaLimbahStore {
     if (this.isBackendConnected) {
       fetch(`${this.apiBaseUrl}/api/chats`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: this.authHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify(newMsg)
       }).catch(e => console.warn('[Send Chat API Error]', e));
     }
@@ -1540,7 +1568,7 @@ class BursaLimbahStore {
     if (this.isBackendConnected) {
       fetch(`${this.apiBaseUrl}/api/orders`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: this.authHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify(newOrder)
       }).catch(e => console.warn('[Create Order API Error]', e));
     }
@@ -1568,7 +1596,7 @@ class BursaLimbahStore {
       if (this.isBackendConnected) {
         fetch(`${this.apiBaseUrl}/api/orders/${orderId}/status`, {
           method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
+          headers: this.authHeaders({ 'Content-Type': 'application/json' }),
           body: JSON.stringify({ escrowStatus: 'completed' })
         }).catch(e => console.warn('[Complete Order API Error]', e));
       }
@@ -1624,7 +1652,7 @@ class BursaLimbahStore {
     if (this.isBackendConnected) {
       fetch(`${this.apiBaseUrl}/api/orders/${orderId}/remaining-proof`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: this.authHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify(order.remainingPaymentProof)
       }).catch(e => console.warn('[Remaining Proof API Error]', e));
     }
@@ -1679,7 +1707,7 @@ class BursaLimbahStore {
     if (this.isBackendConnected) {
       fetch(`${this.apiBaseUrl}/api/orders/${orderId}/verify-remaining`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: this.authHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({ verifierRole, verifierName, verifiedAt: now })
       }).catch(e => console.warn('[Verify Remaining API Error]', e));
     }
@@ -1984,7 +2012,7 @@ class BursaLimbahStore {
     if (this.isBackendConnected) {
       fetch(`${this.apiBaseUrl}/api/settings`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: this.authHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({
           dp_enabled: String(enabled),
           dp_percentage: String(this.state.settings.downPaymentPercent || 30)
@@ -2016,7 +2044,7 @@ class BursaLimbahStore {
     if (this.isBackendConnected) {
       fetch(`${this.apiBaseUrl}/api/settings`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: this.authHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({ [`feature_${featureKey}`]: String(enabled) })
       }).catch(e => console.warn('[Feature Toggle API Error]', e));
     }
@@ -2073,7 +2101,7 @@ class BursaLimbahStore {
     if (this.isBackendConnected) {
       fetch(`${this.apiBaseUrl}/api/settings`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: this.authHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({ crypto_config: JSON.stringify(this.state.settings.cryptoConfig) })
       }).catch(e => console.warn('[Crypto Config API Error]', e));
     }
@@ -2344,6 +2372,10 @@ class BursaLimbahStore {
         apiSettings.ticker_refresh_minutes = String(apiSettings.tickerRefreshMinutes);
         delete apiSettings.tickerRefreshMinutes;
       }
+      if (apiSettings.googleLoginEnabled !== undefined) {
+        apiSettings.google_login_enabled = String(apiSettings.googleLoginEnabled);
+        delete apiSettings.googleLoginEnabled;
+      }
       if (apiSettings.termsTitle !== undefined) { apiSettings.terms_title = apiSettings.termsTitle; delete apiSettings.termsTitle; }
       if (apiSettings.termsVersion !== undefined) { apiSettings.terms_version = apiSettings.termsVersion; delete apiSettings.termsVersion; }
       if (apiSettings.termsContent !== undefined) { apiSettings.terms_content = apiSettings.termsContent; delete apiSettings.termsContent; }
@@ -2364,7 +2396,7 @@ class BursaLimbahStore {
       if (apiSettings.cryptoConfig !== undefined) { apiSettings.crypto_config = JSON.stringify(apiSettings.cryptoConfig); delete apiSettings.cryptoConfig; }
       fetch(`${this.apiBaseUrl}/api/settings`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: this.authHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify(apiSettings)
       }).catch(e => console.warn('[Update Settings API Error]', e));
     }
@@ -2395,7 +2427,7 @@ class BursaLimbahStore {
     this.save();
     if (this.isBackendConnected) {
       fetch(`${this.apiBaseUrl}/api/settings`, {
-        method: 'PUT', headers: { 'Content-Type': 'application/json' },
+        method: 'PUT', headers: this.authHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({ custom_fees: JSON.stringify(this.state.settings.customFees) })
       }).catch(e => console.warn('[CustomFee Add API Error]', e));
     }
@@ -2411,7 +2443,7 @@ class BursaLimbahStore {
     this.save();
     if (this.isBackendConnected) {
       fetch(`${this.apiBaseUrl}/api/settings`, {
-        method: 'PUT', headers: { 'Content-Type': 'application/json' },
+        method: 'PUT', headers: this.authHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({ custom_fees: JSON.stringify(fees) })
       }).catch(e => console.warn('[CustomFee Update API Error]', e));
     }
@@ -2424,7 +2456,7 @@ class BursaLimbahStore {
     this.save();
     if (this.isBackendConnected) {
       fetch(`${this.apiBaseUrl}/api/settings`, {
-        method: 'PUT', headers: { 'Content-Type': 'application/json' },
+        method: 'PUT', headers: this.authHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({ custom_fees: JSON.stringify(fees) })
       }).catch(e => console.warn('[CustomFee Delete API Error]', e));
     }
@@ -2440,7 +2472,7 @@ class BursaLimbahStore {
     this.save();
     if (this.isBackendConnected) {
       fetch(`${this.apiBaseUrl}/api/settings`, {
-        method: 'PUT', headers: { 'Content-Type': 'application/json' },
+        method: 'PUT', headers: this.authHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({ custom_fees: JSON.stringify(fees) })
       }).catch(e => console.warn('[CustomFee Toggle API Error]', e));
     }
@@ -2514,7 +2546,7 @@ class BursaLimbahStore {
     this.createNotification(buyer.id, 'info', 'Penawaran dikirim', `Penawaran Anda untuk ${product.title} sudah diteruskan kepada penjual.`, `/buyer/offers/${offer.id}`);
     this.save();
     if (this.isBackendConnected) {
-      fetch(`${this.apiBaseUrl}/api/offers`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(offer) }).catch(e => console.warn('[Offer API Error]', e));
+      fetch(`${this.apiBaseUrl}/api/offers`, { method: 'POST', headers: this.authHeaders({ 'Content-Type': 'application/json' }), body: JSON.stringify(offer) }).catch(e => console.warn('[Offer API Error]', e));
     }
     return offer;
   }
@@ -2529,7 +2561,7 @@ class BursaLimbahStore {
     this.createNotification(sellerId, accepted ? 'success' : 'info', accepted ? 'Penawaran diterima' : 'Penawaran ditolak', `Anda ${accepted ? 'menerima' : 'menolak'} penawaran ${offer.buyerName} untuk ${offer.productTitle}.`, `/seller/offers/${offer.id}`);
     this.save();
     if (this.isBackendConnected) {
-      fetch(`${this.apiBaseUrl}/api/offers/${offerId}/status`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sellerId, status: offer.status }) }).catch(e => console.warn('[Offer status API Error]', e));
+      fetch(`${this.apiBaseUrl}/api/offers/${offerId}/status`, { method: 'PATCH', headers: this.authHeaders({ 'Content-Type': 'application/json' }), body: JSON.stringify({ sellerId, status: offer.status }) }).catch(e => console.warn('[Offer status API Error]', e));
     }
     return offer;
   }
