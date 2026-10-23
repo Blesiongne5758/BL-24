@@ -11,6 +11,7 @@ Thumbs.db
 server/.env
 server/.env.*
 !server/.env.example
+!server/.env.staging.example
 server/backups/*.sql
 server/backups/*.gz
 server/uploads/identity-documents/*
@@ -19,4 +20,3 @@ scratch/
 test_backend_services.js
 test_crypto_and_features.js
 test_storage_architecture.js
-
