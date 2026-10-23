@@ -20,21 +20,6 @@ body {
   font-family: 'JetBrains Mono', monospace;
 }
 
-/* Glassmorphism effects */
-.glass-panel {
-  background: rgba(255, 255, 255, 0.88);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  border: 1px solid rgba(226, 232, 240, 0.9);
-}
-
-.dark-glass-panel {
-  background: rgba(15, 23, 42, 0.88);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  border: 1px solid rgba(51, 65, 85, 0.7);
-}
-
 /* Card hover lift effect */
 .card-hover {
   transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
@@ -43,15 +28,6 @@ body {
 .card-hover:hover {
   transform: translateY(-4px);
   box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.04);
-}
-
-/* Interactive button effects */
-.btn-press {
-  transition: all 0.15s ease;
-}
-
-.btn-press:active {
-  transform: scale(0.97);
 }
 
 /* Custom scrollbars */
@@ -127,37 +103,6 @@ body {
     opacity: 1;
     transform: translateY(0);
   }
-}
-
-/* Status Badges */
-.badge-draft {
-  background-color: #f1f5f9;
-  color: #475569;
-  border: 1px solid #cbd5e1;
-}
-
-.badge-pending {
-  background-color: #fef3c7;
-  color: #92400e;
-  border: 1px solid #fde68a;
-}
-
-.badge-approved {
-  background-color: #d1fae5;
-  color: #065f46;
-  border: 1px solid #a7f3d0;
-}
-
-.badge-booked {
-  background-color: #dbeafe;
-  color: #1e40af;
-  border: 1px solid #bfdbfe;
-}
-
-.badge-completed {
-  background-color: #e0e7ff;
-  color: #3730a3;
-  border: 1px solid #c7d2fe;
 }
 
 /* Map Container */
@@ -284,14 +229,6 @@ input[type="range"] {
   box-shadow: 0 4px 12px -2px rgba(5, 150, 105, 0.3);
 }
 
-/* Mobile Quick Action Hub */
-.mobile-action-card {
-  transition: all 0.2s ease;
-}
-.mobile-action-card:active {
-  transform: scale(0.94);
-}
-
 /* Mobile Role Switcher Pills */
 .mobile-role-pill {
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
@@ -320,12 +257,6 @@ input[type="range"] {
   border-radius: 9999px;
   background-color: #cbd5e1;
   margin: 0 auto 12px auto;
-}
-
-/* Mobile Sticky Search Bar Blur */
-.mobile-search-dock {
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
 }
 
 /* MVP Mobile App Bottom Navigation */
@@ -498,7 +429,6 @@ input[type="range"] {
   .icon-amber { background: #fef3c7; color: #d97706; }
   .icon-violet { background: #ede9fe; color: #7c3aed; }
 
-  .mobile-search-dock,
   #tab-home > .sticky {
     border-bottom-color: rgba(226, 232, 240, 0.85) !important;
     box-shadow: 0 8px 20px rgba(15, 23, 42, 0.045);
@@ -630,9 +560,219 @@ input[type="range"] {
     box-shadow: none !important;
     border: none !important;
   }
-  .no-print {
-    display: none !important;
-  }
 }
 
+/* ================= MOBILE CARD COMPOSITION ================= */
+@media (max-width: 640px) {
+  #public-postings-grid,
+  #buyer-products-grid,
+  #event-cards-grid,
+  #tab-event-grid,
+  #subscription-cards-container,
+  #buyer-accepted-offers-list {
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 0.75rem !important;
+  }
 
+  #public-postings-grid > *,
+  #buyer-products-grid > *,
+  #event-cards-grid > *,
+  #tab-event-grid > *,
+  #subscription-cards-container > *,
+  #buyer-accepted-offers-list > *,
+  .source-card {
+    min-width: 0;
+    max-width: 100%;
+    border-radius: 1.15rem !important;
+  }
+
+  #public-postings-grid img,
+  #buyer-products-grid img {
+    max-width: 100%;
+  }
+
+  #public-postings-grid .relative.h-44,
+  #buyer-products-grid .relative.h-44 {
+    height: 10.25rem;
+  }
+
+  #public-postings-grid .p-4,
+  #buyer-products-grid .p-4,
+  #buyer-accepted-offers-list .p-4,
+  #event-cards-grid .p-4,
+  #tab-event-grid .p-4 {
+    padding: 0.875rem !important;
+  }
+
+  #public-postings-grid h4,
+  #buyer-products-grid h4,
+  #buyer-accepted-offers-list h4,
+  #event-cards-grid h3,
+  #tab-event-grid h3 {
+    font-size: 0.8125rem;
+    line-height: 1.4;
+    overflow-wrap: anywhere;
+  }
+
+  #public-postings-grid .flex.items-center.space-x-2,
+  #buyer-products-grid .flex.items-center.space-x-2 {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem 0.5rem;
+    line-height: 1.35;
+  }
+
+  #public-postings-grid .flex.flex-wrap.gap-1,
+  #buyer-products-grid .flex.flex-wrap.gap-1 {
+    gap: 0.3rem;
+  }
+
+  #public-postings-grid .flex.flex-wrap.gap-1 > span,
+  #buyer-products-grid .flex.flex-wrap.gap-1 > span {
+    max-width: 100%;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.625rem;
+    line-height: 1.25;
+    overflow-wrap: anywhere;
+  }
+
+  #public-postings-grid .p-3,
+  #buyer-products-grid .p-3 {
+    padding: 0.75rem !important;
+    border-radius: 0.9rem !important;
+  }
+
+  #public-postings-grid .p-3 .flex,
+  #buyer-products-grid .p-3 .flex {
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  #public-postings-grid .p-3 .font-mono,
+  #buyer-products-grid .p-3 .font-mono {
+    max-width: 65%;
+    text-align: right;
+    overflow-wrap: anywhere;
+  }
+
+  #public-postings-grid .p-4.pt-0,
+  #buyer-products-grid .p-4.pt-0 {
+    padding: 0 0.875rem 0.875rem !important;
+  }
+
+  #public-postings-grid button,
+  #buyer-products-grid button,
+  #buyer-accepted-offers-list button,
+  #event-cards-grid button,
+  #tab-event-grid button {
+    min-height: 2.5rem;
+    padding: 0.6rem 0.65rem;
+    font-size: 0.6875rem;
+    line-height: 1.25;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  #subscription-cards-container > * {
+    padding: 1.125rem !important;
+  }
+
+  #subscription-cards-container h4 {
+    font-size: 1.45rem;
+    line-height: 1.2;
+    overflow-wrap: anywhere;
+  }
+
+  #subscription-cards-container ul {
+    gap: 0.65rem;
+    line-height: 1.45;
+  }
+
+  #subscription-cards-container .text-2xl {
+    font-size: 1.5rem;
+  }
+
+  .source-card,
+  #tab-pesan-list > div,
+  #admin-reports-commodity-container > div {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  /* Fixed chat panel: use the viewport width minus safe side gutters. */
+  #chat-drawer {
+    right: 0.75rem;
+    left: 0.75rem;
+    bottom: 5.25rem;
+    width: auto;
+    max-width: none;
+    height: min(520px, calc(100dvh - 7rem));
+    border-radius: 1.25rem;
+  }
+
+  #chat-messages-body {
+    padding: 0.75rem;
+  }
+
+  /* Long modal forms stay scrollable without extending beyond the viewport. */
+  #modal-fee-editor > div,
+  #modal-product-detail > div,
+  #modal-registration-terms > div,
+  #modal-buyer-register > div,
+  #modal-seller-register > div,
+  #modal-register-choice > div,
+  #modal-checkout > div,
+  #modal-receipt > div,
+  #modal-google-auth > div,
+  #modal-user-profile > div,
+  #modal-admin-event > div,
+  #modal-event-registration > div,
+  #modal-help > div,
+  #modal-seller-dispatch > div,
+  #modal-buyer-receive-confirm > div,
+  #modal-buyer-qr-scanner > div,
+  #modal-delivery-details > div,
+  #modal-gps-location > div,
+  #modal-crypto-wallet > div,
+  #modal-admin-airdrop > div {
+    max-height: calc(100dvh - 1rem);
+    overflow-y: auto;
+  }
+
+  /* Keep dashboard surfaces dense but readable on phones. */
+  #view-buyer .p-6,
+  #view-seller .p-6,
+  #view-admin .p-6 {
+    padding: 1rem !important;
+  }
+
+  #view-buyer h3,
+  #view-seller h3,
+  #view-admin h3 {
+    line-height: 1.35;
+    overflow-wrap: anywhere;
+  }
+
+  /* Tables remain horizontally scrollable, but their cells do not become tiny. */
+  [id$="-table-container"] table {
+    min-width: 34rem;
+  }
+
+  [id$="-table-container"] th,
+  [id$="-table-container"] td {
+    padding: 0.55rem 0.6rem;
+    vertical-align: top;
+    line-height: 1.35;
+  }
+
+  /* The upload source selector keeps three choices but gives each one a stable frame. */
+  #up-source-cards {
+    gap: 0.5rem;
+  }
+
+  #up-source-cards .source-card {
+    padding: 0.65rem !important;
+    font-size: 0.6875rem;
+    line-height: 1.3;
+  }
+}
