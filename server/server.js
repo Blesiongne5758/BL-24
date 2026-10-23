@@ -11,7 +11,7 @@ const compression = require('compression');
 
 // Database & Services
 const { pool, testConnection, ping } = require('./db');
-const { generateAccessToken, generateRefreshToken } = require('./services/jwt.service');
+const { generateAccessToken, generateRefreshToken, verifyToken } = require('./services/jwt.service');
 const { authenticate, optionalAuth, requireRole } = require('./middleware/auth');
 const { authRateLimiter, apiRateLimiter } = require('./middleware/rateLimiter');
 const { sanitizeInput } = require('./middleware/sanitizer');
@@ -46,15 +46,21 @@ app.use((req, res, next) => {
   const start = Date.now();
   res.on('finish', () => {
     const duration = Date.now() - start;
-    res.setHeader('X-Response-Time', `${duration}ms`);
+    // `finish` fires after headers are sent; never mutate headers at this point.
+    if (!res.headersSent) res.setHeader('X-Response-Time', `${duration}ms`);
   });
   next();
 });
 
 // Konfigurasi CORS
-const allowedOrigins = process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',') : '*';
+const allowedOrigins = (process.env.CORS_ORIGIN || 'http://localhost:5000,http://127.0.0.1:5000,http://localhost:5500,http://127.0.0.1:5500')
+  .split(',').map(origin => origin.trim()).filter(Boolean);
 app.use(cors({
-  origin: allowedOrigins === '*' ? '*' : allowedOrigins,
+  origin: (origin, callback) => {
+    // Same-origin/non-browser requests have no Origin and remain compatible.
+    if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
+    return callback(new Error('Origin tidak diizinkan oleh kebijakan CORS.'));
+  },
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
 }));
@@ -62,6 +68,8 @@ app.use(cors({
 // Body Parser & Anti-XSS Sanitizer
 app.use(express.json({ limit: '20mb' }));
 app.use(express.urlencoded({ extended: true, limit: '20mb' }));
+app.disable('x-powered-by');
+app.set('trust proxy', process.env.TRUST_PROXY === 'true' ? 1 : false);
 app.use(sanitizeInput);
 
 // Rate Limiting untuk proteksi API
@@ -213,6 +221,10 @@ app.post('/api/storage/presigned-upload', optionalAuth, async (req, res) => {
           error: 'Validasi Magic Bytes gagal: Isi berkas tidak cocok dengan tipe yang dideklarasikan atau terdeteksi script berbahaya.'
         });
       }
+    }
+
+    if (String(category || 'public_listing').startsWith('private_') && !req.user) {
+      return res.status(401).json({ success: false, error: 'Upload dokumen privat memerlukan autentikasi.' });
     }
 
     const userId = req.user ? req.user.id : (req.body.userId || 'anon');
@@ -419,8 +431,11 @@ app.post('/api/auth/register', async (req, res) => {
       termsVersion = ''
     } = req.body;
 
-    if (!email || !email.includes('@')) {
+    if (!email || typeof email !== 'string' || !email.includes('@')) {
       return res.status(400).json({ success: false, message: 'Alamat email tidak valid.' });
+    }
+    if (typeof password !== 'string' || password.length < 8 || password.length > 128) {
+      return res.status(400).json({ success: false, message: 'Kata sandi harus terdiri dari 8-128 karakter.' });
     }
     if (!['buyer', 'seller'].includes(role) || termsAccepted !== true) {
       return res.status(400).json({ success: false, message: 'Syarat dan Ketentuan wajib disetujui sebelum membuat akun.' });
@@ -440,8 +455,10 @@ app.post('/api/auth/register', async (req, res) => {
     }
 
     // 2. Hash password menggunakan bcrypt
-    const rawPass = password || '123456';
-    const passwordHash = await bcrypt.hash(rawPass, 10);
+    if (password.length < 8 || password.length > 128) {
+      return res.status(400).json({ success: false, message: 'Kata sandi harus terdiri dari 8-128 karakter.' });
+    }
+    const passwordHash = await bcrypt.hash(password, 12);
 
     // 3. Tentukan default nilai
     const newId = `user_${role}_${Date.now()}`;
@@ -519,8 +536,8 @@ app.post('/api/auth/login', async (req, res) => {
   try {
     const { identifier, password, role: expectedRole } = req.body;
 
-    if (!identifier) {
-      return res.status(400).json({ success: false, message: 'Harap masukkan email atau nomor WhatsApp.' });
+    if (typeof identifier !== 'string' || !identifier.trim() || typeof password !== 'string' || password.length < 8 || password.length > 128) {
+      return res.status(400).json({ success: false, message: 'Identifier dan kata sandi wajib diisi; kata sandi harus 8-128 karakter.' });
     }
 
     const cleanId = identifier.trim().toLowerCase();
@@ -540,8 +557,10 @@ app.post('/api/auth/login', async (req, res) => {
     if (users.length === 0) {
       if (cleanId.includes('@') && cleanId.includes('.')) {
         const roleToAssign = expectedRole || 'buyer';
-        const rawPass = password || '123456';
-        const passwordHash = await bcrypt.hash(rawPass, 10);
+        if (!['buyer', 'seller'].includes(roleToAssign) || password.length < 8 || password.length > 128) {
+          return res.status(400).json({ success: false, message: 'Role atau kata sandi tidak valid.' });
+        }
+        const passwordHash = await bcrypt.hash(password, 12);
         const newId = `user_${roleToAssign}_${Date.now()}`;
         const emailPrefix = cleanId.split('@')[0].replace(/[^a-zA-Z0-9]/g, ' ');
         const displayPrefix = emailPrefix.charAt(0).toUpperCase() + emailPrefix.slice(1);
@@ -611,13 +630,13 @@ app.post('/api/auth/login', async (req, res) => {
 
     // Password verification
     let passwordMatch = false;
-    const isDemoMode = process.env.DEMO_MODE !== 'false';
+    const isDemoMode = process.env.DEMO_MODE === 'true';
 
     if (userRecord.password_hash) {
       if (userRecord.password_hash.startsWith('$2')) {
-        passwordMatch = await bcrypt.compare(password || (isDemoMode ? '123456' : ''), userRecord.password_hash);
+        passwordMatch = await bcrypt.compare(password, userRecord.password_hash);
       } else if (isDemoMode) {
-        passwordMatch = (userRecord.password_hash === password) || (password === '123456');
+        passwordMatch = isDemoMode && userRecord.password_hash === password;
       }
     } else if (isDemoMode) {
       passwordMatch = true;
@@ -626,7 +645,7 @@ app.post('/api/auth/login', async (req, res) => {
     if (!passwordMatch) {
       return res.status(401).json({
         success: false,
-        message: isDemoMode ? 'Kata sandi salah. Kata sandi default akun demo: 123456.' : 'Kredensial login tidak cocok.'
+        message: 'Kredensial login tidak cocok.'
       });
     }
 
@@ -654,12 +673,42 @@ app.post('/api/auth/login', async (req, res) => {
 // =================================================================
 // 4. GOOGLE OAUTH
 // =================================================================
+async function verifyGoogleIdToken(idToken) {
+  if (!idToken || typeof idToken !== 'string' || idToken.length > 4096) return null;
+  try {
+    const response = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(idToken)}`);
+    if (!response.ok) return null;
+    const claims = await response.json();
+    const validIssuer = claims.iss === 'https://accounts.google.com' || claims.iss === 'accounts.google.com';
+    const validAudience = !process.env.GOOGLE_CLIENT_ID || claims.aud === process.env.GOOGLE_CLIENT_ID;
+    if (!validIssuer || !validAudience || claims.email_verified !== 'true' || !claims.email) return null;
+    return claims;
+  } catch (_) {
+    return null;
+  }
+}
 app.post('/api/auth/google', async (req, res) => {
   try {
-    const { email, name, avatar, role = 'buyer' } = req.body;
-    if (!email || !email.includes('@')) {
-      return res.status(400).json({ success: false, message: 'Email Google tidak valid.' });
+    const { idToken, role = 'buyer' } = req.body;
+    if (!['buyer', 'seller'].includes(role)) {
+      return res.status(400).json({ success: false, message: 'Role tidak valid.' });
     }
+    if (!idToken || typeof idToken !== 'string' || idToken.length > 4096) {
+      return res.status(401).json({ success: false, message: 'Token Google tidak valid atau belum diverifikasi.' });
+    }
+    const [googleSettingRows] = await pool.query(
+      'SELECT setting_value FROM system_settings WHERE setting_key = ?',
+      ['google_login_enabled']
+    );
+    const googleLoginEnabled = googleSettingRows.length > 0 && googleSettingRows[0].setting_value === 'true';
+    if (!googleLoginEnabled) {
+      return res.status(403).json({ success: false, message: 'Login dengan Google sedang dinonaktifkan oleh administrator.' });
+    }
+    const claims = await verifyGoogleIdToken(idToken);
+    if (!claims) return res.status(401).json({ success: false, message: 'Token Google tidak valid atau belum diverifikasi.' });
+    const email = claims.email;
+    const name = claims.name || claims.email.split('@')[0];
+    const avatar = claims.picture || null;
 
     const cleanEmail = email.trim().toLowerCase();
     const [existing] = await pool.query('SELECT * FROM users WHERE LOWER(email) = ?', [cleanEmail]);
@@ -726,7 +775,7 @@ app.post('/api/auth/refresh', async (req, res) => {
     return res.status(400).json({ success: false, message: 'Refresh token wajib disertakan.' });
   }
   const payload = verifyToken(refreshToken);
-  if (!payload) {
+  if (!payload || payload.tokenType !== 'refresh') {
     return res.status(401).json({ success: false, message: 'Refresh token kedaluwarsa atau tidak valid.' });
   }
 
@@ -763,7 +812,8 @@ app.get('/api/users', async (req, res) => {
   }
 });
 
-app.put('/api/users/:id/profile', async (req, res) => {
+app.put('/api/users/:id/profile', authenticate, async (req, res) => {
+  if (req.user.id !== req.params.id && req.user.role !== 'admin') return res.status(403).json({ success: false, message: 'Akses profil ditolak.' });
   try {
     const { id } = req.params;
     const { name, company, phone, location, bankAccount, avatar, paymentMethods } = req.body;
@@ -798,7 +848,8 @@ app.put('/api/users/:id/profile', async (req, res) => {
   }
 });
 
-app.post('/api/users/:id/verify', async (req, res) => {
+app.post('/api/users/:id/verify', authenticate, async (req, res) => {
+  if (req.user.id !== req.params.id && req.user.role !== 'admin') return res.status(403).json({ success: false, message: 'Akses verifikasi ditolak.' });
   try {
     const { id } = req.params;
     const { type, ktpNumber, npwpNumber, docUrl } = req.body;
@@ -837,7 +888,7 @@ app.post('/api/users/:id/verify', async (req, res) => {
 // =================================================================
 // 6. UPLOAD EVIDEN PRODUK & DOKUMEN IDENTITAS
 // =================================================================
-app.post('/api/uploads/product-evidence', productEvidenceUpload.array('files', 3), verifyUploadedFileContent, (req, res) => {
+app.post('/api/uploads/product-evidence', authenticate, requireRole('seller', 'admin'), productEvidenceUpload.array('files', 3), verifyUploadedFileContent, (req, res) => {
   const files = req.files || [];
   if (files.length === 0) {
     return res.status(400).json({ success: false, message: 'Minimal satu gambar eviden wajib diunggah.' });
@@ -855,7 +906,7 @@ app.post('/api/uploads/product-evidence', productEvidenceUpload.array('files', 3
   });
 });
 
-app.post('/api/uploads/identity-document', identityDocumentUpload.single('file'), verifyUploadedFileContent, (req, res) => {
+app.post('/api/uploads/identity-document', authenticate, identityDocumentUpload.single('file'), verifyUploadedFileContent, (req, res) => {
   if (!req.file) {
     return res.status(400).json({ success: false, message: 'Dokumen identitas wajib dipilih.' });
   }
@@ -872,7 +923,7 @@ app.post('/api/uploads/identity-document', identityDocumentUpload.single('file')
   });
 });
 
-app.post('/api/uploads/weighing-proof', weighingProofUpload.single('file'), verifyUploadedFileContent, (req, res) => {
+app.post('/api/uploads/weighing-proof', authenticate, weighingProofUpload.single('file'), verifyUploadedFileContent, (req, res) => {
   if (!req.file) return res.status(400).json({ success: false, message: 'Foto atau dokumen bukti timbang wajib dipilih.' });
   return res.status(201).json({
     success: true,
@@ -976,7 +1027,7 @@ app.get('/api/products/:id', async (req, res) => {
   }
 });
 
-app.post('/api/products', async (req, res) => {
+app.post('/api/products', authenticate, requireRole('seller', 'admin'), async (req, res) => {
   try {
     const data = req.body;
     const id = data.id || `PRD-2026-${Math.floor(100 + Math.random() * 900)}`;
@@ -987,10 +1038,7 @@ app.post('/api/products', async (req, res) => {
     if (data.sellerId) {
       const [uCheck] = await pool.query('SELECT id FROM users WHERE id = ?', [data.sellerId]);
       if (uCheck.length === 0) {
-        await pool.query(
-          'INSERT INTO users (id, name, email, role, password_hash) VALUES (?, ?, ?, ?, ?)',
-          [data.sellerId, data.sellerName || 'Penjual Mitra', `${data.sellerId}@bursalimbah.id`, 'seller', '123456']
-        );
+        return res.status(400).json({ success: false, message: 'Penjual harus memiliki akun terdaftar.' });
       }
     }
 
@@ -1064,7 +1112,7 @@ app.post('/api/products', async (req, res) => {
   }
 });
 
-app.patch('/api/products/:id/status', async (req, res) => {
+app.patch('/api/products/:id/status', authenticate, requireRole('admin'), async (req, res) => {
   try {
     const { id } = req.params;
     const { status, adminNotes } = req.body;
@@ -1080,7 +1128,7 @@ app.patch('/api/products/:id/status', async (req, res) => {
   }
 });
 
-app.delete('/api/products/:id', async (req, res) => {
+app.delete('/api/products/:id', authenticate, requireRole('seller', 'admin'), async (req, res) => {
   try {
     const { id } = req.params;
     await pool.query('DELETE FROM product_images WHERE product_id = ?', [id]);
@@ -1123,7 +1171,8 @@ app.get('/api/orders', async (req, res) => {
   }
 });
 
-app.post('/api/orders', async (req, res) => {
+app.post('/api/orders', authenticate, requireRole('buyer', 'admin'), async (req, res) => {
+    if (req.user.role !== 'admin' && req.user.id !== req.body.buyerId) return res.status(403).json({ success: false, message: 'Pembeli tidak sesuai dengan sesi aktif.' });
   try {
     const data = req.body;
     const orderId = data.id || `ORD-2026-${Math.floor(1000 + Math.random() * 9000)}`;
@@ -1167,19 +1216,13 @@ app.post('/api/orders', async (req, res) => {
     if (data.buyerId) {
       const [bCheck] = await pool.query('SELECT id FROM users WHERE id = ?', [data.buyerId]);
       if (bCheck.length === 0) {
-        await pool.query(
-          'INSERT INTO users (id, name, email, role, password_hash) VALUES (?, ?, ?, ?, ?)',
-          [data.buyerId, data.buyerName || 'Pembeli', `${data.buyerId}@bursalimbah.id`, 'buyer', '123456']
-        );
+        return res.status(400).json({ success: false, message: 'Pembeli harus memiliki akun terdaftar.' });
       }
     }
     if (data.sellerId) {
       const [sCheck] = await pool.query('SELECT id FROM users WHERE id = ?', [data.sellerId]);
       if (sCheck.length === 0) {
-        await pool.query(
-          'INSERT INTO users (id, name, email, role, password_hash) VALUES (?, ?, ?, ?, ?)',
-          [data.sellerId, data.sellerName || 'Penjual', `${data.sellerId}@bursalimbah.id`, 'seller', '123456']
-        );
+        return res.status(400).json({ success: false, message: 'Penjual harus memiliki akun terdaftar.' });
       }
     }
 
@@ -1236,7 +1279,7 @@ app.post('/api/orders', async (req, res) => {
   }
 });
 
-app.patch('/api/orders/:id/status', async (req, res) => {
+app.patch('/api/orders/:id/status', authenticate, requireRole('admin', 'seller'), async (req, res) => {
   try {
     const { id } = req.params;
     const { escrowStatus } = req.body;
@@ -1256,7 +1299,7 @@ app.patch('/api/orders/:id/status', async (req, res) => {
   }
 });
 
-app.post('/api/orders/:id/remaining-proof', async (req, res) => {
+app.post('/api/orders/:id/remaining-proof', authenticate, requireRole('buyer', 'admin'), async (req, res) => {
   try {
     const { id } = req.params;
     const proofData = req.body || {};
@@ -1289,7 +1332,7 @@ app.post('/api/orders/:id/remaining-proof', async (req, res) => {
   }
 });
 
-app.post('/api/orders/:id/verify-remaining', async (req, res) => {
+app.post('/api/orders/:id/verify-remaining', authenticate, requireRole('admin', 'seller'), async (req, res) => {
   try {
     const { id } = req.params;
     const { verifierRole, verifierName } = req.body;
@@ -1723,7 +1766,7 @@ app.get('/api/settings', async (req, res) => {
   }
 });
 
-app.put('/api/settings', async (req, res) => {
+app.put('/api/settings', authenticate, requireRole('admin'), async (req, res) => {
   try {
     const entries = Object.entries(req.body);
     for (const [key, value] of entries) {
@@ -1741,7 +1784,7 @@ app.put('/api/settings', async (req, res) => {
 // =================================================================
 // 12. PENCADANGAN DATABASE & AUDIT LOGS (ADMIN ONLY)
 // =================================================================
-app.get('/api/admin/backups', async (req, res) => {
+app.get('/api/admin/backups', authenticate, requireRole('admin'), async (req, res) => {
   try {
     if (!fs.existsSync(BACKUP_DIR)) {
       return res.json({ success: true, backups: [] });
@@ -1766,7 +1809,7 @@ app.get('/api/admin/backups', async (req, res) => {
   }
 });
 
-app.post('/api/admin/backups', async (req, res) => {
+app.post('/api/admin/backups', authenticate, requireRole('admin'), async (req, res) => {
   try {
     const backupResult = await runBackup();
     await logAudit(null, 'manual_backup_created', 'database', backupResult.filename, {
@@ -1785,7 +1828,7 @@ app.post('/api/admin/backups', async (req, res) => {
   }
 });
 
-app.get('/api/admin/audit-logs', async (req, res) => {
+app.get('/api/admin/audit-logs', authenticate, requireRole('admin'), async (req, res) => {
   try {
     const limit = parseInt(req.query.limit, 10) || 50;
     const [rows] = await pool.query('SELECT * FROM audit_logs ORDER BY created_at DESC LIMIT ?', [limit]);

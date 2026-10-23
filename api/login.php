@@ -11,12 +11,17 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 $input = json_decode(file_get_contents('php://input'), true) ?? $_POST;
 
 $identifier = trim($input['identifier'] ?? '');
-$password = $input['password'] ?? '123456';
+$password = $input['password'] ?? '';
 $expectedRole = $input['role'] ?? null;
 
-if (empty($identifier)) {
+if (empty($identifier) || !is_string($password) || strlen($password) < 8 || strlen($password) > 128) {
     http_response_code(400);
-    echo json_encode(['success' => false, 'message' => 'Harap masukkan email atau nomor WhatsApp.']);
+    echo json_encode(['success' => false, 'message' => 'Identifier dan kata sandi 8-128 karakter wajib diisi.']);
+    exit;
+}
+if ($expectedRole !== null && !in_array($expectedRole, ['buyer', 'seller', 'admin'], true)) {
+    http_response_code(400);
+    echo json_encode(['success' => false, 'message' => 'Role tidak valid.']);
     exit;
 }
 
@@ -41,7 +46,7 @@ try {
     if (!$user) {
         if (strpos($cleanId, '@') !== false && strpos($cleanId, '.') !== false) {
             $roleToAssign = $expectedRole ?: 'buyer';
-            $passwordHash = password_hash($password ?: '123456', PASSWORD_BCRYPT);
+            $passwordHash = password_hash($password, PASSWORD_BCRYPT);
             $newId = 'user_' . $roleToAssign . '_' . round(microtime(true) * 1000);
             $emailPrefix = ucwords(preg_replace('/[^a-zA-Z0-9]/', ' ', explode('@', $cleanId)[0]));
             $newName = $roleToAssign === 'seller' ? "{$emailPrefix} (Mitra Penjual)" : "{$emailPrefix} (Pembeli)";
@@ -97,20 +102,14 @@ try {
     }
 
     // 4. Verifikasi password
-    $passwordMatch = false;
     $storedHash = $user['password_hash'] ?? '';
-
-    if (strpos($storedHash, '$2') === 0) {
-        $passwordMatch = password_verify($password, $storedHash);
-    } else {
-        $passwordMatch = ($storedHash === $password) || ($password === '123456');
-    }
+    $passwordMatch = strpos($storedHash, '$2') === 0 && password_verify($password, $storedHash);
 
     if (!$passwordMatch) {
         http_response_code(401);
         echo json_encode([
             'success' => false,
-            'message' => 'Kata sandi yang Anda masukkan salah. Kata sandi bawaan demo: 123456.'
+            'message' => 'Kredensial login tidak cocok.'
         ]);
         exit;
     }

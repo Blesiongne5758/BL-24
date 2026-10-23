@@ -3,15 +3,15 @@
 -- Sesuai cetak biru struktur_db.md: 18 Tabel Lengkap, 3-Tier, DP 30%, 
 -- 10 Atribut Wajib Listing, Master 16 Kategori (Utama, B2B, B3)
 -- Target Database: bursalimbahdb
--- Target User: admin@% (Password: AdminPassword2026!)
+-- Target user password must be supplied through a secret manager at deployment.
 -- ====================================================================
 
 CREATE DATABASE IF NOT EXISTS `bursalimbahdb`
   DEFAULT CHARACTER SET utf8mb4
   DEFAULT COLLATE utf8mb4_unicode_ci;
 
-CREATE USER IF NOT EXISTS 'admin'@'%' IDENTIFIED BY 'AdminPassword2026!';
-ALTER USER 'admin'@'%' IDENTIFIED BY 'AdminPassword2026!';
+CREATE USER IF NOT EXISTS 'admin'@'%' IDENTIFIED BY 'CHANGE_ME_SET_FROM_SECRET_MANAGER';
+ALTER USER 'admin'@'%' IDENTIFIED BY 'CHANGE_ME_SET_FROM_SECRET_MANAGER';
 GRANT ALL PRIVILEGES ON `bursalimbahdb`.* TO 'admin'@'%';
 FLUSH PRIVILEGES;
 
@@ -333,6 +333,7 @@ CREATE TABLE IF NOT EXISTS `system_settings` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 INSERT INTO `system_settings` (`setting_key`, `setting_value`) VALUES
+('google_login_enabled', 'false'),
 ('ticker_enabled', 'true'),
 ('ticker_title', 'Harga Pasar Terkini'),
 ('ticker_refresh_minutes', '15'),

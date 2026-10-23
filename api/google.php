@@ -10,16 +10,36 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 
 $input = json_decode(file_get_contents('php://input'), true) ?? $_POST;
 
-$email = trim(strtolower($input['email'] ?? ''));
-$name = trim($input['name'] ?? '');
-$avatar = trim($input['avatar'] ?? '');
-$role = $input['role'] ?? 'buyer';
-
-if (empty($email) || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
-    http_response_code(400);
-    echo json_encode(['success' => false, 'message' => 'Email Google tidak valid.']);
+$settingStmt = $pdo->prepare('SELECT setting_value FROM system_settings WHERE setting_key = ?');
+$settingStmt->execute(['google_login_enabled']);
+$googleSetting = $settingStmt->fetchColumn();
+if ($googleSetting !== 'true') {
+    http_response_code(403);
+    echo json_encode(['success' => false, 'message' => 'Login dengan Google sedang dinonaktifkan oleh administrator.']);
     exit;
 }
+
+$idToken = $input['idToken'] ?? $input['id_token'] ?? '';
+$role = $input['role'] ?? 'buyer';
+
+if (!in_array($role, ['buyer', 'seller'], true) || !is_string($idToken) || strlen($idToken) > 4096) {
+    http_response_code(400);
+    echo json_encode(['success' => false, 'message' => 'Token Google atau role tidak valid.']);
+    exit;
+}
+$tokenResponse = @file_get_contents('https://oauth2.googleapis.com/tokeninfo?id_token=' . rawurlencode($idToken));
+$claims = $tokenResponse ? json_decode($tokenResponse, true) : null;
+$expectedAudience = getenv('GOOGLE_CLIENT_ID');
+$validIssuer = is_array($claims) && in_array($claims['iss'] ?? '', ['https://accounts.google.com', 'accounts.google.com'], true);
+$validAudience = !$expectedAudience || (($claims['aud'] ?? '') === $expectedAudience);
+if (!$validIssuer || !$validAudience || (($claims['email_verified'] ?? '') !== 'true') || empty($claims['email'])) {
+    http_response_code(401);
+    echo json_encode(['success' => false, 'message' => 'Token Google tidak valid atau belum diverifikasi.']);
+    exit;
+}
+$email = trim(strtolower($claims['email']));
+$name = trim($claims['name'] ?? explode('@', $email)[0]);
+$avatar = trim($claims['picture'] ?? '');
 
 try {
     $stmt = $pdo->prepare('SELECT * FROM users WHERE LOWER(email) = ?');

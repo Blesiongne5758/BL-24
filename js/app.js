@@ -53,6 +53,7 @@ class BursaLimbahApp {
       this.renderPriceTicker();
       this.fetchLiveMarketRates();
       this.renderFooterSupport();
+      this.applyGoogleLoginVisibility();
     });
     this.renderPriceTicker();
     this.fetchLiveMarketRates();
@@ -80,6 +81,13 @@ class BursaLimbahApp {
     this.updateNavUI();
     this.applyFeatureFlags();
     this.updateCryptoNavBadge();
+    this.applyGoogleLoginVisibility();
+  }
+
+  applyGoogleLoginVisibility() {
+    const option = document.getElementById('google-login-option');
+    if (!option) return;
+    option.classList.toggle('hidden', this.store.getSettings().googleLoginEnabled !== true);
   }
 
   // ================= FUNGSI BANTU & FORMATTER =================
@@ -701,16 +709,13 @@ class BursaLimbahApp {
       `;
     } else if (tab === 'admin') {
       container.innerHTML = `
-        <button type="button" onclick="app.quickLogin('admin@bursalimbah.com', 'admin', 'admin')" class="p-3.5 text-left rounded-xl border border-amber-300/80 bg-amber-50/80 hover:bg-amber-100/90 transition group flex items-center justify-between">
+        <div class="p-3.5 text-left rounded-xl border border-amber-200 bg-amber-50/70 flex items-start gap-2.5">
+          <i class="fa-solid fa-shield-halved text-amber-600 text-xs mt-0.5"></i>
           <div>
-            <div class="flex items-center space-x-1.5">
-              <i class="fa-solid fa-key text-amber-600 text-xs"></i>
-              <span class="text-xs font-bold text-slate-900 group-hover:text-amber-950">Pengelola Utama Bursa Limbah</span>
-            </div>
-            <div class="text-[11px] text-slate-500 font-mono mt-0.5">admin@bursalimbah.com • Sandi: admin</div>
+            <div class="text-xs font-bold text-slate-900">Akses admin hanya melalui akun resmi</div>
+            <div class="text-[11px] text-slate-600 mt-0.5">Login demo dan fallback offline dinonaktifkan untuk mencegah bypass autentikasi.</div>
           </div>
-          <span class="text-[10px] px-2 py-0.5 rounded-full bg-slate-900 text-amber-300 font-bold">Akses Penuh</span>
-        </button>
+        </div>
       `;
     }
   }
@@ -3670,6 +3675,8 @@ class BursaLimbahApp {
 
   populateAdminSettings() {
     const s = this.store.getSettings();
+    const googleLoginEnabled = document.getElementById('setting-google-login-enabled');
+    if (googleLoginEnabled) googleLoginEnabled.checked = s.googleLoginEnabled === true;
     const handling = document.getElementById('setting-handling');
     const dp = document.getElementById('setting-dp');
     const dpEnabledCheckbox = document.getElementById('setting-dp-enabled');
@@ -3792,6 +3799,7 @@ class BursaLimbahApp {
 
     this.store.setDpSettings(dpEnabled, dp);
     this.store.updateSettings({
+      googleLoginEnabled: document.getElementById('setting-google-login-enabled')?.checked === true,
       handlingFeePerTransaction: handling,
       handlingFeeByTier,
       // Payment Gateway
@@ -3847,6 +3855,7 @@ class BursaLimbahApp {
     }
 
     this.applyFeatureFlags();
+    this.applyGoogleLoginVisibility();
     const statusText = dpEnabled ? `diaktifkan (DP ${dp}%)` : 'dinonaktifkan (SET OFF)';
     this.showToast(`Pengaturan berhasil disimpan! Fitur DP ${statusText}; ticker harga pasar ${tickerSettings.tickerEnabled ? 'aktif' : 'nonaktif'}.`, "success");
   }

@@ -36,11 +36,14 @@ const MAGIC_SIGNATURES = [
 
 class StorageService {
   constructor() {
-    this.provider = process.env.STORAGE_PROVIDER || 's3'; // 's3' | 'spaces' | 'minio' | 'mock'
+    this.provider = process.env.STORAGE_PROVIDER || 'mock'; // 's3' | 'spaces' | 'minio' | 'mock'
     this.region = process.env.STORAGE_REGION || 'ap-southeast-1';
     this.endpoint = process.env.STORAGE_ENDPOINT || (this.provider === 'spaces' ? 'https://sgp1.digitaloceanspaces.com' : `https://s3.${this.region}.amazonaws.com`);
-    this.accessKeyId = process.env.STORAGE_ACCESS_KEY_ID || 'CIRCULINK_MOCK_KEY';
-    this.secretAccessKey = process.env.STORAGE_SECRET_ACCESS_KEY || 'CIRCULINK_MOCK_SECRET';
+    this.accessKeyId = process.env.STORAGE_ACCESS_KEY_ID || '';
+    this.secretAccessKey = process.env.STORAGE_SECRET_ACCESS_KEY || '';
+    if (this.provider !== 'mock' && (!this.accessKeyId || !this.secretAccessKey)) {
+      throw new Error('STORAGE_ACCESS_KEY_ID dan STORAGE_SECRET_ACCESS_KEY wajib diset untuk storage non-mock.');
+    }
 
     // 2-Bucket Strategy
     this.publicBucket = process.env.STORAGE_PUBLIC_BUCKET || 'circulink-public-media';

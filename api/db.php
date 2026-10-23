@@ -1,10 +1,11 @@
 <?php
 // SPDX-License-Identifier: MIT
-// =======================================================
-// KONEKSI DATABASE MYSQL VIA PHP PDO (XAMPP / LARAGON)
-// =======================================================
-
-header('Access-Control-Allow-Origin: *');
+// Koneksi database MySQL via PHP PDO.
+$corsOrigin = getenv('CORS_ORIGIN');
+if ($corsOrigin) {
+    header('Access-Control-Allow-Origin: ' . $corsOrigin);
+    header('Vary: Origin');
+}
 header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With');
 header('Content-Type: application/json; charset=UTF-8');
@@ -14,11 +15,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit;
 }
 
-$host = getenv('DB_HOST') ?: '108.136.70.118';
+$host = getenv('DB_HOST') ?: '127.0.0.1';
 $port = getenv('DB_PORT') ?: '3306';
 $dbname = getenv('DB_NAME') ?: 'bursalimbahdb';
-$username = getenv('DB_USER') ?: 'admin';
-$password = getenv('DB_PASSWORD') ?: 'AdminPassword2026!';
+$username = getenv('DB_USER') ?: 'bursalimbah';
+$password = getenv('DB_PASSWORD');
+if ($password === false) {
+    http_response_code(500);
+    echo json_encode(['success' => false, 'message' => 'Konfigurasi database belum lengkap.']);
+    exit;
+}
 
 try {
     $dsn = "mysql:host={$host};port={$port};dbname={$dbname};charset=utf8mb4";
@@ -29,10 +35,8 @@ try {
     ]);
 } catch (PDOException $e) {
     http_response_code(500);
-    echo json_encode([
-        'success' => false,
-        'message' => 'Gagal terhubung ke database MySQL: ' . $e->getMessage()
-    ]);
+    error_log('[DB] Connection failed: ' . $e->getMessage());
+    echo json_encode(['success' => false, 'message' => 'Gagal terhubung ke database.']);
     exit;
 }
 

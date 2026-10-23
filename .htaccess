@@ -14,10 +14,8 @@ Options -Indexes
     Header set X-Frame-Options "SAMEORIGIN"
     Header set X-XSS-Protection "1; mode=block"
     Header set Referrer-Policy "strict-origin-when-cross-origin"
-    # CORS Header for API calls if needed
-    Header set Access-Control-Allow-Origin "*"
-    Header set Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
-    Header set Access-Control-Allow-Headers "Content-Type, Authorization, X-Requested-With"
+    # Configure CORS explicitly at the API/vhost layer when cross-origin use is required.
+    # Do not emit a wildcard policy for authenticated endpoints.
 </IfModule>
 
 # 4. Gzip / Deflate Compression

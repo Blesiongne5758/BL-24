@@ -2,7 +2,7 @@
 -- BURSA LIMBAH — SETUP DATABASE LENGKAP (MySQL 8.4 LTS)
 -- Sinkron 100% dengan server/server.js & server/db.js
 -- Jalankan script ini sebagai root MySQL untuk setup awal
--- Target DB: bursalimbahdb | User: admin | Host: 108.136.70.118
+-- Target DB/user/host must be configured for the deployment environment.
 -- ====================================================================
 
 -- 1. Buat database dan user
@@ -10,8 +10,8 @@ CREATE DATABASE IF NOT EXISTS `bursalimbahdb`
   DEFAULT CHARACTER SET utf8mb4
   DEFAULT COLLATE utf8mb4_unicode_ci;
 
-CREATE USER IF NOT EXISTS 'admin'@'%' IDENTIFIED BY 'AdminPassword2026!';
-ALTER USER 'admin'@'%' IDENTIFIED BY 'AdminPassword2026!';
+CREATE USER IF NOT EXISTS 'admin'@'%' IDENTIFIED BY 'CHANGE_ME_SET_FROM_SECRET_MANAGER';
+ALTER USER 'admin'@'%' IDENTIFIED BY 'CHANGE_ME_SET_FROM_SECRET_MANAGER';
 GRANT ALL PRIVILEGES ON `bursalimbahdb`.* TO 'admin'@'%';
 FLUSH PRIVILEGES;
 
@@ -465,6 +465,7 @@ CREATE TABLE IF NOT EXISTS `addresses` (
 -- INSERT DEFAULT SYSTEM SETTINGS
 -- ====================================================================
 INSERT INTO `system_settings` (`setting_key`, `setting_value`, `description`) VALUES
+('google_login_enabled',    'false',         'Aktifkan login OAuth Google dari panel admin setelah konfigurasi Google Identity Services'),
 ('dp_enabled',              'false',         'Aktifkan fitur uang muka (DP) 30%'),
 ('dp_percentage',           '30',            'Persentase DP dari total transaksi'),
 ('dp_enabled',              'false',         'Aktivasi metode pembayaran DP'),

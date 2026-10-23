@@ -6,11 +6,11 @@ Database MySQL untuk platform Bursa Limbah. Berisi 20 tabel lengkap untuk mengel
 
 | Setting | Nilai |
 |---------|-------|
-| Host | `108.136.70.118` |
+| Host | Set via environment/secret manager |
 | Port | `3306` |
 | Database | `bursalimbahdb` |
-| User | `admin` |
-| Password | `AdminPassword2026!` |
+| User | Set via environment/secret manager |
+| Password | Never commit; set via secret manager |
 
 > Konfigurasi tersimpan di `server/.env`
 
@@ -84,11 +84,7 @@ mysql -h 108.136.70.118 -u admin -p bursalimbahdb -e "SHOW TABLES;"
 
 | Role | Email | Password |
 |------|-------|----------|
-| Admin | `admin@bursalimbah.id` | `123456` |
-| Penjual 1 | `budi.seller@demo.id` | `123456` |
-| Penjual 2 | `siti.seller@demo.id` | `123456` |
-| Pembeli 1 | `hijau.buyer@demo.id` | `123456` |
-| Pembeli 2 | `ahmad.buyer@demo.id` | `123456` |
+| Demo accounts | Disabled by default; create test credentials only in an isolated environment |
 
 ---
 

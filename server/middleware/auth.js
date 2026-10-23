@@ -22,7 +22,7 @@ async function authenticate(req, res, next) {
 
   const token = authHeader.split(' ')[1];
   const payload = verifyToken(token);
-  if (!payload) {
+  if (!payload || payload.tokenType !== 'access') {
     return res.status(401).json({
       success: false,
       message: 'Sesi kedaluwarsa atau token tidak valid. Silakan login kembali.'
@@ -74,7 +74,7 @@ async function optionalAuth(req, _res, next) {
 
   const token = authHeader.split(' ')[1];
   const payload = verifyToken(token);
-  if (payload) {
+  if (payload && payload.tokenType === 'access') {
     try {
       const [rows] = await pool.query('SELECT * FROM users WHERE id = ?', [payload.id]);
       if (rows.length > 0) {

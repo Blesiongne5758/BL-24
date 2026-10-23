@@ -544,6 +544,7 @@ const WASTE_SOURCE_TIERS = [
 const INITIAL_SETTINGS = {
   appName: "BURSA LIMBAH",
   tagline: "Limbah Terverifikasi. Transaksi Terpercaya.",
+  googleLoginEnabled: false,
   // Data Rekening Bank Pengelola (Escrow DP 30%)
   escrowBankName: "Bank Central Asia (BCA)",
   escrowAccountNumber: "8271-9920-1122",
@@ -2250,4 +2251,3 @@ const INITIAL_EVENT_TICKETS = [
     createdAt: "2026-10-03 09:10:00"
   }
 ];
-
