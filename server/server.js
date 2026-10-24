@@ -1405,8 +1405,14 @@ app.patch('/api/offers/:id/status', async (req, res) => {
     const { id } = req.params;
     const { sellerId, status } = req.body;
     if (!['accepted', 'rejected'].includes(status)) return res.status(400).json({ success: false, message: 'Status penawaran tidak valid.' });
-    const [result] = await pool.query(`UPDATE offers o JOIN products p ON p.id = o.product_id
-      SET o.status = ? WHERE o.id = ? AND p.seller_id = ? AND o.status = 'pending'`, [status, id, sellerId]);
+    const [result] = await pool.query(`UPDATE offers
+      SET status = ?
+      WHERE id = ?
+        AND status = 'pending'
+        AND EXISTS (
+          SELECT 1 FROM products p
+          WHERE p.id = offers.product_id AND p.seller_id = ?
+        )`, [status, id, sellerId]);
     if (!result.affectedRows) return res.status(404).json({ success: false, message: 'Penawaran tidak ditemukan atau sudah diproses.' });
     return res.json({ success: true, message: 'Status penawaran diperbarui.' });
   } catch (error) { return res.status(500).json({ success: false, message: error.message }); }
@@ -1549,7 +1555,10 @@ async function upsertEventParticipant(connection, participant) {
   const participantId = `EVP-${crypto.randomUUID()}`;
   await connection.query(
     `INSERT INTO event_participants (id, full_name, email, phone, company) VALUES (?, ?, ?, ?, ?)
-     ON DUPLICATE KEY UPDATE full_name = VALUES(full_name), phone = VALUES(phone), company = VALUES(company)`,
+     ON CONFLICT (email) DO UPDATE SET
+       full_name = EXCLUDED.full_name,
+       phone = EXCLUDED.phone,
+       company = EXCLUDED.company`,
     [participantId, participant.fullName, participant.email, participant.phone, participant.company]
   );
   const [rows] = await connection.query('SELECT id FROM event_participants WHERE email = ?', [participant.email]);
@@ -1620,9 +1629,16 @@ app.post('/api/event-payments/:registrationId/submit', async (req, res) => {
   const reference = String(req.body.paymentReference || '').trim();
   if (!reference) return res.status(400).json({ success: false, message: 'Masukkan nomor referensi pembayaran.' });
   try {
-    const [result] = await pool.query(`UPDATE event_payments ep JOIN event_registrations_v2 er ON er.id = ep.registration_id
-      SET ep.payment_reference = ?, ep.payment_status = 'submitted', ep.paid_at = NOW(), er.registration_status = 'payment_review'
-      WHERE ep.registration_id = ? AND ep.payment_status = 'pending'`, [reference, req.params.registrationId]);
+    const [result] = await pool.query(`WITH updated_payment AS (
+        UPDATE event_payments
+        SET payment_reference = ?, payment_status = 'submitted', paid_at = CURRENT_TIMESTAMP
+        WHERE registration_id = ? AND payment_status = 'pending'
+        RETURNING registration_id
+      )
+      UPDATE event_registrations_v2 er
+      SET registration_status = 'payment_review'
+      FROM updated_payment up
+      WHERE er.id = up.registration_id`, [reference, req.params.registrationId]);
     if (!result.affectedRows) return res.status(404).json({ success: false, message: 'Tagihan tidak ditemukan atau sudah diproses.' });
     return res.json({ success: true, message: 'Konfirmasi pembayaran diterima dan menunggu verifikasi admin.' });
   } catch (error) { return res.status(500).json({ success: false, message: error.message }); }
@@ -1768,10 +1784,10 @@ app.get('/api/settings', async (req, res) => {
 
 app.put('/api/settings', authenticate, requireRole('admin'), async (req, res) => {
   try {
-    const entries = Object.entries(req.body);
-    for (const [key, value] of entries) {
-      await pool.query(
-        'INSERT INTO system_settings (setting_key, setting_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)',
+      const entries = Object.entries(req.body);
+      for (const [key, value] of entries) {
+        await pool.query(
+        'INSERT INTO system_settings (setting_key, setting_value) VALUES (?, ?) ON CONFLICT (setting_key) DO UPDATE SET setting_value = EXCLUDED.setting_value',
         [key, String(value)]
       );
     }
@@ -1857,51 +1873,12 @@ app.use((error, _req, res, next) => {
 
 // =================================================================
 // SKEMA DATABASE AUTO-MIGRATION
-// Memastikan kolom payment_methods & kolom pelunasan DP tersedia
+// Migrasi dijalankan oleh server/database/migrate.js untuk PostgreSQL.
 // =================================================================
 async function ensureDatabaseSchema() {
-  try {
-    // 1. users: payment_methods
-    const [userCols] = await pool.query(
-      "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'users' AND COLUMN_NAME = 'payment_methods'"
-    );
-    if (userCols.length === 0) {
-      await pool.query("ALTER TABLE users ADD COLUMN `payment_methods` LONGTEXT DEFAULT NULL");
-      console.log('  [DB Migration] Kolom payment_methods berhasil ditambahkan ke tabel users.');
-    }
-
-    // 2. orders: kolom order_code, DP, remaining payment proof & verification
-    const orderColumnDefs = [
-      { name: 'order_code', def: 'VARCHAR(50) DEFAULT NULL' },
-      { name: 'buyer_company', def: 'VARCHAR(150) DEFAULT NULL' },
-      { name: 'dp_percentage', def: 'DECIMAL(5,2) DEFAULT 30.00' },
-      { name: 'remaining_amount', def: 'DECIMAL(14,2) DEFAULT 0.00' },
-      { name: 'handling_fee', def: 'DECIMAL(14,2) DEFAULT 10000.00' },
-      { name: 'escrow_status', def: "VARCHAR(50) DEFAULT 'dp_secured'" },
-      { name: 'pickup_date', def: 'VARCHAR(50) DEFAULT NULL' },
-      { name: 'notes', def: 'TEXT DEFAULT NULL' },
-      { name: 'shipping_method', def: "VARCHAR(100) DEFAULT 'Armada Mandiri Pembeli'" },
-      { name: 'remaining_payment_status', def: "VARCHAR(50) DEFAULT 'unpaid'" },
-      { name: 'remaining_payment_proof', def: 'LONGTEXT DEFAULT NULL' },
-      { name: 'remaining_payment_notes', def: 'TEXT DEFAULT NULL' },
-      { name: 'remaining_payment_submitted_at', def: 'VARCHAR(50) DEFAULT NULL' },
-      { name: 'remaining_payment_verified_at', def: 'VARCHAR(50) DEFAULT NULL' },
-      { name: 'remaining_payment_verified_by', def: 'VARCHAR(100) DEFAULT NULL' }
-    ];
-
-    for (const col of orderColumnDefs) {
-      const [cols] = await pool.query(
-        "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'orders' AND COLUMN_NAME = ?",
-        [col.name]
-      );
-      if (cols.length === 0) {
-        await pool.query(`ALTER TABLE orders ADD COLUMN \`${col.name}\` ${col.def}`);
-        console.log(`  [DB Migration] Kolom ${col.name} berhasil ditambahkan ke tabel orders.`);
-      }
-    }
-  } catch (err) {
-    console.warn('[DB Migration Notice]', err.message);
-  }
+  // Kept as a compatibility hook for callers outside server.js. The actual
+  // idempotent migration is run immediately below via runMigrations().
+  return true;
 }
 
 // =================================================================
@@ -1915,7 +1892,6 @@ const server = app.listen(PORT, async () => {
   console.log('=====================================================');
   const connected = await testConnection();
   if (connected) {
-    await ensureDatabaseSchema();
     await runMigrations().catch(err => console.warn('[Migration Auto-run Warning]', err.message));
   }
 });
@@ -1925,7 +1901,7 @@ process.on('SIGTERM', async () => {
   console.log('\n[Shutdown] Menerima sinyal SIGTERM. Menutup server HTTP dan pool database...');
   server.close(async () => {
     await pool.end();
-    console.log('[Shutdown] Server dan koneksi MySQL ditutup bersih.');
+    console.log('[Shutdown] Server dan koneksi PostgreSQL ditutup bersih.');
     process.exit(0);
   });
 });
@@ -1934,7 +1910,7 @@ process.on('SIGINT', async () => {
   console.log('\n[Shutdown] Menerima sinyal SIGINT (Ctrl+C). Menutup koneksi database...');
   server.close(async () => {
     await pool.end();
-    console.log('[Shutdown] Server dan koneksi MySQL ditutup bersih.');
+    console.log('[Shutdown] Server dan koneksi PostgreSQL ditutup bersih.');
     process.exit(0);
   });
 });
