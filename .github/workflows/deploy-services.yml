@@ -65,11 +65,11 @@ jobs:
 
       - name: Generate public runtime configuration
         env:
-          BACKEND_API_URL: ${{ vars.BACKEND_API_URL }}
-          SUPABASE_URL: ${{ vars.SUPABASE_URL }}
-          SUPABASE_PUBLISHABLE_KEY: ${{ vars.SUPABASE_PUBLISHABLE_KEY }}
-          CLOUDINARY_CLOUD_NAME: ${{ vars.CLOUDINARY_CLOUD_NAME }}
-          CLOUDINARY_UPLOAD_PRESET: ${{ vars.CLOUDINARY_UPLOAD_PRESET }}
+          BACKEND_API_URL: ${{ vars.BACKEND_API_URL || secrets.BACKEND_API_URL }}
+          SUPABASE_URL: ${{ vars.SUPABASE_URL || secrets.SUPABASE_URL }}
+          SUPABASE_PUBLISHABLE_KEY: ${{ vars.SUPABASE_PUBLISHABLE_KEY || secrets.SUPABASE_PUBLISHABLE_KEY }}
+          CLOUDINARY_CLOUD_NAME: ${{ vars.CLOUDINARY_CLOUD_NAME || secrets.CLOUDINARY_CLOUD_NAME }}
+          CLOUDINARY_UPLOAD_PRESET: ${{ vars.CLOUDINARY_UPLOAD_PRESET || secrets.CLOUDINARY_UPLOAD_PRESET }}
         run: |
           node <<'NODE'
           const fs = require('fs');
@@ -158,6 +158,8 @@ jobs:
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
         run: |
           test -n "$SUPABASE_DB_URL"
+          node -e "const u = new URL(process.env.SUPABASE_DB_URL); if (!['postgres:', 'postgresql:'].includes(u.protocol) || u.hostname.includes('PROJECT_REF') || u.password.includes('PASSWORD')) process.exit(1)" \
+            || { echo 'SUPABASE_DB_URL harus berupa URL PostgreSQL lengkap tanpa placeholder atau tanda kutip.'; exit 1; }
           supabase db push --db-url "$SUPABASE_DB_URL"
 
   seed-supabase:
