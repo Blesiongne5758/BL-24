@@ -1,119 +1,122 @@
 // SPDX-License-Identifier: MIT
 /**
- * Database Migration & Performance Indexing Runner
- * Memastikan seluruh skema tabel, kolom penting, dan indeks performa
- * terpasang secara konsisten di database MySQL.
+ * PostgreSQL/Supabase schema migration runner.
+ * Base tables and seed data live in database/supabase_schema.sql.
+ * This runner only applies additive compatibility changes required by the API.
  */
 
-const { pool, withTransaction } = require('../db');
+const { pool } = require('../db');
+
+async function hasColumn(tableName, columnName) {
+  const [rows] = await pool.query(
+    `SELECT 1
+       FROM information_schema.columns
+      WHERE table_schema = current_schema()
+        AND table_name = $1
+        AND column_name = $2
+      LIMIT 1`,
+    [tableName, columnName]
+  );
+  return rows.length > 0;
+}
+
+async function hasIndex(indexName) {
+  const [rows] = await pool.query(
+    `SELECT 1
+       FROM pg_indexes
+      WHERE schemaname = current_schema()
+        AND indexname = $1
+      LIMIT 1`,
+    [indexName]
+  );
+  return rows.length > 0;
+}
 
 async function runMigrations() {
-  console.log('[Migration] Memeriksa skema database dan indeks optimasi...');
+  console.log('[Migration] Memeriksa skema PostgreSQL/Supabase dan indeks optimasi...');
 
-  // 1. Buat Tabel audit_logs jika belum ada
   await pool.query(`
     CREATE TABLE IF NOT EXISTS audit_logs (
-      id INT AUTO_INCREMENT PRIMARY KEY,
+      id BIGSERIAL PRIMARY KEY,
       user_id VARCHAR(64) DEFAULT NULL,
       action VARCHAR(100) NOT NULL,
       target_type VARCHAR(50) DEFAULT NULL,
       target_id VARCHAR(64) DEFAULT NULL,
       ip_address VARCHAR(45) DEFAULT NULL,
       user_agent VARCHAR(255) DEFAULT NULL,
-      details JSON DEFAULT NULL,
-      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      INDEX idx_audit_user (user_id),
-      INDEX idx_audit_action (action),
-      INDEX idx_audit_created (created_at)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+      details JSONB DEFAULT NULL,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )
   `);
 
-  // 2. Daftar kolom yang harus dipastikan ada di tabel users
   const userColumns = [
-    { name: 'payment_methods', def: 'LONGTEXT DEFAULT NULL' },
-    { name: 'verification_type', def: 'VARCHAR(30) DEFAULT NULL' },
-    { name: 'ktp_number', def: 'VARCHAR(50) DEFAULT NULL' },
-    { name: 'npwp_number', def: 'VARCHAR(50) DEFAULT NULL' },
-    { name: 'verification_doc_url', def: 'TEXT DEFAULT NULL' },
-    { name: 'verified_badge', def: 'VARCHAR(100) DEFAULT NULL' },
-    { name: 'verified_at', def: 'VARCHAR(50) DEFAULT NULL' }
+    { name: 'payment_methods', definition: 'TEXT DEFAULT NULL' },
+    { name: 'verification_type', definition: 'VARCHAR(30) DEFAULT NULL' },
+    { name: 'ktp_number', definition: 'VARCHAR(50) DEFAULT NULL' },
+    { name: 'npwp_number', definition: 'VARCHAR(50) DEFAULT NULL' },
+    { name: 'verification_doc_url', definition: 'TEXT DEFAULT NULL' },
+    { name: 'verified_badge', definition: 'VARCHAR(100) DEFAULT NULL' },
+    { name: 'verified_at', definition: 'VARCHAR(50) DEFAULT NULL' }
   ];
 
-  for (const col of userColumns) {
-    const [chk] = await pool.query(
-      `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS 
-       WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'users' AND COLUMN_NAME = ?`,
-      [col.name]
-    );
-    if (chk.length === 0) {
-      await pool.query(`ALTER TABLE users ADD COLUMN ${col.name} ${col.def}`);
-      console.log(`[Migration] Menambahkan kolom '${col.name}' ke tabel users.`);
+  for (const column of userColumns) {
+    if (!(await hasColumn('users', column.name))) {
+      await pool.query(`ALTER TABLE "users" ADD COLUMN "${column.name}" ${column.definition}`);
+      console.log(`[Migration] Menambahkan kolom users.${column.name}.`);
     }
   }
 
-  // 3. Daftar kolom yang harus dipastikan ada di tabel orders
   const orderColumns = [
-    { name: 'remaining_payment_status', def: 'VARCHAR(50) DEFAULT "unpaid"' },
-    { name: 'remaining_payment_proof', def: 'TEXT DEFAULT NULL' },
-    { name: 'remaining_payment_submitted_at', def: 'VARCHAR(50) DEFAULT NULL' },
-    { name: 'remaining_payment_verified_at', def: 'VARCHAR(50) DEFAULT NULL' },
-    { name: 'remaining_payment_verified_by', def: 'VARCHAR(100) DEFAULT NULL' },
-    { name: 'remaining_payment_ref', def: 'VARCHAR(100) DEFAULT NULL' },
-    { name: 'remaining_payment_bank', def: 'VARCHAR(100) DEFAULT NULL' },
-    { name: 'co2_reduction_kg', def: 'DECIMAL(10, 2) DEFAULT 0.00' }
+    { name: 'remaining_payment_status', definition: "VARCHAR(50) NOT NULL DEFAULT 'unpaid'" },
+    { name: 'remaining_payment_proof', definition: 'TEXT DEFAULT NULL' },
+    { name: 'remaining_payment_notes', definition: 'TEXT DEFAULT NULL' },
+    { name: 'remaining_payment_submitted_at', definition: 'VARCHAR(50) DEFAULT NULL' },
+    { name: 'remaining_payment_verified_at', definition: 'VARCHAR(50) DEFAULT NULL' },
+    { name: 'remaining_payment_verified_by', definition: 'VARCHAR(100) DEFAULT NULL' },
+    { name: 'remaining_payment_ref', definition: 'VARCHAR(100) DEFAULT NULL' },
+    { name: 'remaining_payment_bank', definition: 'VARCHAR(100) DEFAULT NULL' },
+    { name: 'co2_reduction_kg', definition: 'DECIMAL(10, 2) DEFAULT 0.00' }
   ];
 
-  for (const col of orderColumns) {
-    const [chk] = await pool.query(
-      `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS 
-       WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'orders' AND COLUMN_NAME = ?`,
-      [col.name]
-    );
-    if (chk.length === 0) {
-      await pool.query(`ALTER TABLE orders ADD COLUMN ${col.name} ${col.def}`);
-      console.log(`[Migration] Menambahkan kolom '${col.name}' ke tabel orders.`);
+  for (const column of orderColumns) {
+    if (!(await hasColumn('orders', column.name))) {
+      await pool.query(`ALTER TABLE "orders" ADD COLUMN "${column.name}" ${column.definition}`);
+      console.log(`[Migration] Menambahkan kolom orders.${column.name}.`);
     }
   }
 
-  // 4. Pasang Indeks Kinerja Tambahan jika belum ada
   const indexes = [
-    { table: 'products', name: 'idx_perf_products_status', def: '(status, created_at DESC)' },
-    { table: 'products', name: 'idx_perf_products_seller', def: '(seller_id)' },
-    { table: 'products', name: 'idx_perf_products_category', def: '(category_id)' },
-    { table: 'orders', name: 'idx_perf_orders_buyer', def: '(buyer_id, created_at DESC)' },
-    { table: 'orders', name: 'idx_perf_orders_seller', def: '(seller_id, created_at DESC)' },
-    { table: 'orders', name: 'idx_perf_orders_status', def: '(status)' },
-    { table: 'chats', name: 'idx_perf_chats_product', def: '(product_id, created_at)' }
+    ['idx_audit_user', 'audit_logs', '(user_id)'],
+    ['idx_audit_action', 'audit_logs', '(action)'],
+    ['idx_audit_created', 'audit_logs', '(created_at)'],
+    ['idx_perf_products_status', 'products', '(status, created_at DESC)'],
+    ['idx_perf_products_seller', 'products', '(seller_id)'],
+    ['idx_perf_products_category', 'products', '(category_id)'],
+    ['idx_perf_orders_buyer', 'orders', '(buyer_id, created_at DESC)'],
+    ['idx_perf_orders_seller', 'orders', '(seller_id, created_at DESC)'],
+    ['idx_perf_orders_status', 'orders', '(status)'],
+    ['idx_perf_chats_product', 'chat_rooms', '(product_id, created_at)']
   ];
 
-  for (const idx of indexes) {
-    try {
-      const [chk] = await pool.query(
-        `SELECT INDEX_NAME FROM INFORMATION_SCHEMA.STATISTICS 
-         WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND INDEX_NAME = ?`,
-        [idx.table, idx.name]
-      );
-      if (chk.length === 0) {
-        await pool.query(`ALTER TABLE ${idx.table} ADD INDEX ${idx.name} ${idx.def}`);
-        console.log(`[Migration] Indeks performa '${idx.name}' berhasil dibuat pada tabel '${idx.table}'.`);
-      }
-    } catch (_) {
-      // Abaikan jika tabel belum ada atau indeks sudah ada
+  for (const [indexName, tableName, expression] of indexes) {
+    if (!(await hasIndex(indexName))) {
+      await pool.query(`CREATE INDEX "${indexName}" ON "${tableName}" ${expression}`);
+      console.log(`[Migration] Membuat indeks ${indexName}.`);
     }
   }
 
-  console.log('[Migration] Migrasi dan indeks optimasi selesai.');
+  console.log('[Migration] Migrasi PostgreSQL/Supabase selesai.');
 }
 
 if (require.main === module) {
   runMigrations()
+    .then(() => pool.end())
     .then(() => process.exit(0))
-    .catch(err => {
-      console.error('[Migration Error]', err);
+    .catch(async error => {
+      console.error('[Migration Error]', error);
+      await pool.end();
       process.exit(1);
     });
 }
 
-module.exports = {
-  runMigrations
-};
+module.exports = { runMigrations };

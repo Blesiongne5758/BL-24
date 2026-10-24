@@ -1,65 +1,76 @@
 // SPDX-License-Identifier: MIT
 /**
- * Database Restore Engine (Bursa Limbah / Circulink)
- * Memulihkan database MySQL dari berkas dump SQL cadangan.
+ * PostgreSQL/Supabase restore engine.
+ * Restores plain SQL files produced by server/scripts/backup.js using psql.
  */
 
 const fs = require('fs');
 const path = require('path');
-const { pool } = require('../db');
+const { execFile } = require('child_process');
+const { promisify } = require('util');
+const { dbConfig, pool } = require('../db');
 
-/**
- * Pulihkan database dari file dump SQL
- * @param {string} sqlFilePath Path berkas SQL
- */
+const execFileAsync = promisify(execFile);
+
+function postgresRestoreArgs(sqlFilePath) {
+  const args = ['--set', 'ON_ERROR_STOP=1', '--file', sqlFilePath];
+  if (dbConfig.connectionString) {
+    args.push(dbConfig.connectionString);
+  } else {
+    args.push(
+      '--host', dbConfig.host,
+      '--port', String(dbConfig.port),
+      '--username', dbConfig.user,
+      '--dbname', dbConfig.database
+    );
+  }
+  return args;
+}
+
+function postgresCommandEnv() {
+  const env = { ...process.env };
+  if (!dbConfig.connectionString && [REDACTED]) env.PGPASSWORD = [REDACTED];
+  return env;
+}
+
 async function restoreDatabase(sqlFilePath) {
-  if (!fs.existsSync(sqlFilePath)) {
-    throw new Error(`Berkas cadangan tidak ditemukan: ${sqlFilePath}`);
+  if (!fs.existsSync(sqlFilePath)) throw new Error(`Berkas cadangan tidak ditemukan: ${sqlFilePath}`);
+  const stats = fs.statSync(sqlFilePath);
+  if (!stats.isFile() || !sqlFilePath.toLowerCase().endsWith('.sql')) {
+    throw new Error('Restore hanya menerima berkas dump PostgreSQL plain SQL dengan ekstensi .sql.');
   }
 
-  const sqlContent = fs.readFileSync(sqlFilePath, 'utf8');
-  const connection = await pool.getConnection();
-
   try {
-    await connection.query('SET FOREIGN_KEY_CHECKS=0');
-
-    // Pisahkan statement SQL
-    const statements = sqlContent
-      .split(/;\r?\n/)
-      .map(s => s.trim())
-      .filter(s => s.length > 0 && !s.startsWith('--'));
-
-    console.log(`[Restore] Mengeksekusi ${statements.length} perintah SQL...`);
-    for (const stmt of statements) {
-      if (stmt.length > 0) {
-        await connection.query(stmt);
-      }
+    await execFileAsync('psql', postgresRestoreArgs(sqlFilePath), {
+      env: postgresCommandEnv(),
+      maxBuffer: 1024 * 1024 * 10
+    });
+    return { success: true, file: sqlFilePath };
+  } catch (error) {
+    if (error.code === 'ENOENT') {
+      throw new Error('psql tidak tersedia pada host backend. Instal PostgreSQL client tools sebelum mengaktifkan restore.');
     }
-
-    await connection.query('SET FOREIGN_KEY_CHECKS=1');
-    return { success: true, statementsExecuted: statements.length };
-  } finally {
-    connection.release();
+    throw new Error(`psql restore gagal: ${error.stderr || error.message}`.trim());
   }
 }
 
 if (require.main === module) {
   const fileArg = process.argv[2];
   if (!fileArg) {
-    console.error('Penggunaan: node server/scripts/restore.js <path_to_backup.sql>');
+    console.error('Penggunaan: node server/scripts/restore.js <path_to_postgresql_dump.sql>');
     process.exit(1);
   }
   restoreDatabase(path.resolve(fileArg))
-    .then(res => {
-      console.log(`✅ Database berhasil dipulihkan (${res.statementsExecuted} statements dieksekusi).`);
+    .then(async res => {
+      console.log(`Database PostgreSQL berhasil dipulihkan dari ${res.file}.`);
+      await pool.end();
       process.exit(0);
     })
-    .catch(err => {
-      console.error('❌ Gagal memulihkan database:', err.message);
+    .catch(async err => {
+      console.error('Gagal memulihkan database PostgreSQL:', err.message);
+      await pool.end();
       process.exit(1);
     });
 }
 
-module.exports = {
-  restoreDatabase
-};
+module.exports = { restoreDatabase };
