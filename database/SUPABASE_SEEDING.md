@@ -38,6 +38,20 @@ unset [REDACTED] [REDACTED] [REDACTED] SUPABASE_DB_URL
 
 Password harus minimal 12 karakter. Script berhenti jika `ALLOW_DEMO_SEED=true` belum diberikan. Pada `NODE_ENV=production`, script juga berhenti kecuali `ALLOW_DEMO_SEED_IN_PRODUCTION=true` diatur secara eksplisit. Default yang aman adalah menjalankan seed ini hanya pada database staging.
 
+## Menjalankan melalui GitHub Actions
+
+Workflow `.github/workflows/deploy-services.yml` menyediakan job `seed-supabase` yang hanya aktif melalui `workflow_dispatch` dengan input `seed_demo=true`. Push biasa ke `main` atau branch hardening tidak menjalankan seed, sehingga deployment aplikasi tidak mengubah password atau data staging secara tidak sengaja.
+
+Tambahkan tiga GitHub Actions Secrets pada environment `staging`:
+
+```text
+[REDACTED]
+[REDACTED]
+[REDACTED]
+```
+
+`SUPABASE_DB_URL` yang sudah dipakai job migration juga wajib tersedia. Dari tab **Actions**, pilih workflow deployment, klik **Run workflow**, pilih environment `staging`, lalu aktifkan **Jalankan seed demo/staging Supabase setelah migration?**. Job akan menjalankan migration terlebih dahulu, kemudian seed dengan `NODE_ENV=staging` dan `ALLOW_DEMO_SEED=true`.
+
 ## Perilaku aman
 
 Script menggunakan transaksi PostgreSQL. Jika satu bagian gagal, seluruh perubahan di-rollback. Upsert memakai primary key yang sudah ditentukan sehingga menjalankan script ulang tidak menggandakan data. Password hanya diproses menjadi bcrypt hash dan tidak pernah dicetak ke log.

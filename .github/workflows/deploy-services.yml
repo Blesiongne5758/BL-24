@@ -6,6 +6,12 @@ on:
       - main
       - security-hardening-2026-10-23
   workflow_dispatch:
+    inputs:
+      seed_demo:
+        description: 'Jalankan seed demo/staging Supabase setelah migration?'
+        required: true
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -152,6 +158,46 @@ jobs:
         run: |
           test -n "$SUPABASE_DB_URL"
           supabase db push --db-url "$SUPABASE_DB_URL"
+
+  seed-supabase:
+    name: Seed initial Supabase staging data
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.seed_demo == true }}
+    needs:
+      - validate
+      - migrate-supabase
+    runs-on: ubuntu-latest
+    environment: staging
+    timeout-minutes: 10
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: server/package-lock.json
+
+      - name: Install backend dependencies
+        working-directory: server
+        run: npm ci --ignore-scripts
+
+      - name: Run guarded Supabase seed
+        working-directory: server
+        env:
+          NODE_ENV: staging
+          ALLOW_DEMO_SEED: 'true'
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          [REDACTED]: ${{ secrets.[REDACTED] }}
+          [REDACTED]: ${{ secrets.[REDACTED] }}
+          [REDACTED]: ${{ secrets.[REDACTED] }}
+        run: |
+          test -n "$SUPABASE_DB_URL"
+          test -n "$[REDACTED]"
+          test -n "$[REDACTED]"
+          test -n "$[REDACTED]"
+          npm run seed:supabase
 
   cloudinary-runtime-config:
     name: Validate Cloudinary runtime configuration
