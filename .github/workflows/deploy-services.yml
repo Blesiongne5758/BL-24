@@ -150,6 +150,7 @@ jobs:
       - name: Prepare initial migration bridge
         run: |
           supabase init
+          mkdir -p supabase/migrations
           cp database/supabase_schema.sql supabase/migrations/20261024123000_initial_schema.sql
 
       - name: Push migrations to Supabase
