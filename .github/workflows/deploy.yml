@@ -1,14 +1,19 @@
-﻿name: Deploy BursaLimbah to AWS EC2
+﻿name: Legacy Deploy BursaLimbah to AWS EC2
 
 on:
-  push:
-    branches:
-      - main
   workflow_dispatch:
+    inputs:
+      confirm_legacy_ec2:
+        description: 'Ketik deploy-legacy-ec2 untuk menjalankan deployment AWS lama'
+        required: true
+        type: choice
+        options:
+          - deploy-legacy-ec2
 
 jobs:
   deploy:
     name: Deploy to EC2
+    if: github.event.inputs.confirm_legacy_ec2 == 'deploy-legacy-ec2'
     runs-on: ubuntu-latest
 
     steps:

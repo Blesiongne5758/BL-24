@@ -1,0 +1,171 @@
+name: Deploy Frontend InfinityFree and Supabase
+
+on:
+  push:
+    branches:
+      - main
+      - security-hardening-2026-10-23
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-services-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    name: Validate frontend and backend
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: server/package-lock.json
+
+      - name: Install backend dependencies
+        working-directory: server
+        run: npm ci --ignore-scripts
+
+      - name: Check JavaScript syntax
+        run: |
+          node --check server/server.js
+          node --check server/db.js
+          node --check server/database/migrate.js
+          node --check server/scripts/backup.js
+          node --check server/scripts/restore.js
+          node --check js/store.js
+          node --check js/storageClient.js
+          node --check js/supabaseClient.js
+
+      - name: Audit production dependencies
+        working-directory: server
+        run: npm audit --omit=dev --audit-level=high
+
+  deploy-infinityfree:
+    name: Deploy static frontend to InfinityFree
+    needs: validate
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Generate public runtime configuration
+        env:
+          BACKEND_API_URL: ${{ vars.BACKEND_API_URL }}
+          SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+          SUPABASE_PUBLISHABLE_KEY: ${{ vars.SUPABASE_PUBLISHABLE_KEY }}
+          CLOUDINARY_CLOUD_NAME: ${{ vars.CLOUDINARY_CLOUD_NAME }}
+          CLOUDINARY_UPLOAD_PRESET: ${{ vars.CLOUDINARY_UPLOAD_PRESET }}
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+          const required = {
+            BACKEND_API_URL: process.env.BACKEND_API_URL,
+            SUPABASE_URL: process.env.SUPABASE_URL,
+            SUPABASE_PUBLISHABLE_KEY: process.env.SUPABASE_PUBLISHABLE_KEY,
+            CLOUDINARY_CLOUD_NAME: process.env.CLOUDINARY_CLOUD_NAME,
+            CLOUDINARY_UPLOAD_PRESET: process.env.CLOUDINARY_UPLOAD_PRESET
+          };
+          for (const [name, value] of Object.entries(required)) {
+            if (!value || value.includes('REPLACE_WITH') || value.includes('example.com')) {
+              throw new Error(`Missing or placeholder GitHub Variable: ${name}`);
+            }
+          }
+          const config = {
+            apiBaseUrl: required.BACKEND_API_URL.replace(/\/$/, ''),
+            supabase: {
+              url: required.SUPABASE_URL,
+              anonKey: required.SUPABASE_PUBLISHABLE_KEY
+            },
+            cloudinary: {
+              cloudName: required.CLOUDINARY_CLOUD_NAME,
+              uploadPreset: required.CLOUDINARY_UPLOAD_PRESET,
+              folder: 'bursalimbah'
+            }
+          };
+          fs.writeFileSync('config.js', `window.BURSA_LIMBAH_CONFIG = ${JSON.stringify(config)};\n`, { mode: 0o600 });
+          NODE
+
+      - name: Verify public bundle contains no server secrets
+        run: |
+          ! grep -Eqi 'service[_-]?role|secret[_-]?key|api[_-]?secret|SUPABASE_DB_URL|DATABASE_URL|JWT_SECRET|DB_PASSWORD' config.js
+
+      - name: Deploy frontend via FTP
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.INFINITYFREE_FTP_SERVER }}
+          username: ${{ secrets.INFINITYFREE_FTP_USERNAME }}
+          password: ${{ secrets.INFINITYFREE_FTP_PASSWORD }}
+          protocol: ftp
+          port: 21
+          local-dir: ./
+          server-dir: /htdocs/
+          dangerous-clean-slate: false
+          log-level: standard
+          exclude: |
+            **/.git*/**
+            **/.github/**
+            **/node_modules/**
+            **/server/**
+            **/database/**
+            **/supabase/**
+            **/api/**
+            **/*.md
+            **/*.sql
+            **/*.ps1
+            **/*.bat
+            **/Dockerfile
+            **/docker-compose.yml
+            **/config.example.js
+            **/package*.json
+
+  migrate-supabase:
+    name: Apply Supabase PostgreSQL migration
+    needs: validate
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Prepare initial migration bridge
+        run: |
+          supabase init
+          cp database/supabase_schema.sql supabase/migrations/20261024123000_initial_schema.sql
+
+      - name: Push migrations to Supabase
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          test -n "$SUPABASE_DB_URL"
+          supabase db push --db-url "$SUPABASE_DB_URL"
+
+  cloudinary-runtime-config:
+    name: Validate Cloudinary runtime configuration
+    needs: validate
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - name: Validate public Cloudinary variables
+        env:
+          CLOUDINARY_CLOUD_NAME: ${{ vars.CLOUDINARY_CLOUD_NAME }}
+          CLOUDINARY_UPLOAD_PRESET: ${{ vars.CLOUDINARY_UPLOAD_PRESET }}
+        run: |
+          test -n "$CLOUDINARY_CLOUD_NAME"
+          test -n "$CLOUDINARY_UPLOAD_PRESET"
+          ! printf '%s\n' "$CLOUDINARY_CLOUD_NAME" "$CLOUDINARY_UPLOAD_PRESET" | grep -Eqi 'REPLACE_WITH|example'
+          echo "Cloudinary public upload configuration is present."
+          echo "Authenticated Cloudinary API secrets remain on the backend host and are not deployed to InfinityFree."

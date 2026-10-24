@@ -27,9 +27,11 @@
         }
       } catch (_) {}
 
-      // Fallback to window globals or localStorage or project default
-      cfg.url = cfg.url || window.SUPABASE_URL || localStorage.getItem('supabase_url') || 'https://vnajenbubmglwlsvteed.supabase.co';
-      cfg.anonKey = cfg.anonKey || window.SUPABASE_ANON_KEY || localStorage.getItem('supabase_anon_key') || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZuYWplbmJ1Ym1nbHdsc3Z0ZWVkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI2NDI0MjUsImV4cCI6MjEwODIxODQyNX0.Ft3UjkZa0nqkflx1gG1JaFCAfhFlIYY2Jy3xetLwDRE';
+      // Fallback to deploy-time public config or localStorage. Never place a
+      // service-role/secret key in this browser bundle.
+      const runtimeSupabase = (window.BURSA_LIMBAH_CONFIG && window.BURSA_LIMBAH_CONFIG.supabase) || {};
+      cfg.url = cfg.url || runtimeSupabase.url || window.SUPABASE_URL || localStorage.getItem('supabase_url') || '';
+      cfg.anonKey = cfg.anonKey || runtimeSupabase.anonKey || window.SUPABASE_ANON_KEY || localStorage.getItem('supabase_anon_key') || '';
       if (cfg.url && cfg.anonKey) cfg.enabled = true;
       return cfg;
     }
