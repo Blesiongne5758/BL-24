@@ -75,6 +75,10 @@
     }
 
     _detectApiBaseUrl() {
+      const runtimeApiUrl = typeof window !== 'undefined' && window.BURSA_LIMBAH_CONFIG
+        ? window.BURSA_LIMBAH_CONFIG.apiBaseUrl
+        : '';
+      if (runtimeApiUrl) return String(runtimeApiUrl).replace(/\/$/, '');
       if (typeof window !== 'undefined' && window.location) {
         if (window.location.hostname.includes('infinityfree') || window.location.hostname.includes('epizy') || window.location.port === '' || window.location.port === '80' || window.location.port === '443') {
           return '';
@@ -87,14 +91,15 @@
     }
 
     getCloudinaryConfig() {
+      const runtimeCloudinary = (window.BURSA_LIMBAH_CONFIG && window.BURSA_LIMBAH_CONFIG.cloudinary) || {};
       const storeConfig = (window.bursaLimbahStore && window.bursaLimbahStore.getSettings)
         ? (window.bursaLimbahStore.getSettings().cloudinaryConfig || {})
         : {};
       return {
         enabled: storeConfig.enabled !== false,
-        cloudName: storeConfig.cloudName || window.CLOUDINARY_CLOUD_NAME || 'v1pwadqp',
-        uploadPreset: storeConfig.uploadPreset || window.CLOUDINARY_UPLOAD_PRESET || 'circulink_preset',
-        folder: storeConfig.folder || 'circulink',
+        cloudName: storeConfig.cloudName || runtimeCloudinary.cloudName || window.CLOUDINARY_CLOUD_NAME || '',
+        uploadPreset: storeConfig.uploadPreset || runtimeCloudinary.uploadPreset || window.CLOUDINARY_UPLOAD_PRESET || '',
+        folder: storeConfig.folder || runtimeCloudinary.folder || 'circulink',
         apiKey: [REDACTED]
       };
     }

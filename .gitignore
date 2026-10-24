@@ -12,6 +12,7 @@ server/.env
 server/.env.*
 !server/.env.example
 !server/.env.staging.example
+config.js
 server/backups/*.sql
 server/backups/*.gz
 server/uploads/identity-documents/*

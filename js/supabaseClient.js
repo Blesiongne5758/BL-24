@@ -27,9 +27,11 @@
         }
       } catch (_) {}
 
-      // Fallback to window globals or localStorage or project default
-      cfg.url = cfg.url || window.SUPABASE_URL || localStorage.getItem('supabase_url') || 'https://vnajenbubmglwlsvteed.supabase.co';
-      [REDACTED] = [REDACTED] || window.SUPABASE_ANON_KEY || localStorage.getItem('supabase_anon_key') || '[REDACTED]';
+      // Fallback to deploy-time public config or localStorage. Never place a
+      // service-role/secret key in this browser bundle.
+      const runtimeSupabase = (window.BURSA_LIMBAH_CONFIG && window.BURSA_LIMBAH_CONFIG.supabase) || {};
+      cfg.url = cfg.url || runtimeSupabase.url || window.SUPABASE_URL || localStorage.getItem('supabase_url') || '';
+      [REDACTED] = [REDACTED] || runtimeSupabase.anonKey || window.SUPABASE_ANON_KEY || localStorage.getItem('supabase_anon_key') || '';
       if (cfg.url && [REDACTED]) cfg.enabled = true;
       return cfg;
     }

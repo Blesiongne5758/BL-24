@@ -583,18 +583,18 @@ const INITIAL_SETTINGS = {
   // Konfigurasi Cloudinary (Gambar & Multimedia)
   cloudinaryConfig: {
     enabled: true,
-    cloudName: "v1pwadqp",
-    uploadPreset: "circulink_preset",
+    cloudName: "",
+    uploadPreset: "",
     apiKey: [REDACTED]
     folder: "circulink",
     autoOptimize: true
   },
   // Konfigurasi Database Supabase (PostgreSQL & REST API)
   supabaseConfig: {
-    enabled: true,
-    url: "https://vnajenbubmglwlsvteed.supabase.co",
-    anonKey: "[REDACTED]",
-    syncEnabled: true
+    enabled: false,
+    url: "",
+    anonKey: "",
+    syncEnabled: false
   },
   // Struktur Biaya & Jasa Logistik
   dpEnabled: false, // Status DP saat ini: SET OFF (Nonaktif) sesuai instruksi

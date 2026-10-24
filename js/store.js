@@ -15,6 +15,10 @@ class BursaLimbahStore {
   }
 
   detectApiBaseUrl() {
+    const runtimeApiUrl = typeof window !== 'undefined' && window.BURSA_LIMBAH_CONFIG
+      ? window.BURSA_LIMBAH_CONFIG.apiBaseUrl
+      : '';
+    if (runtimeApiUrl) return String(runtimeApiUrl).replace(/\/$/, '');
     if (typeof window === 'undefined') return 'http://localhost:5000';
     if (window.location.port === '5000' || (window.location.protocol.startsWith('http') && window.location.pathname.includes('/bursalimbah'))) {
       return '';
