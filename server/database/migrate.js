@@ -53,6 +53,10 @@ async function runMigrations() {
 
   // 3. Daftar kolom yang harus dipastikan ada di tabel orders
   const orderColumns = [
+    { name: 'offer_id', def: 'VARCHAR(64) DEFAULT NULL' },
+    { name: 'quantity', def: 'DECIMAL(12,2) NOT NULL DEFAULT 1.00' },
+    { name: 'unit', def: "VARCHAR(20) NOT NULL DEFAULT 'Kg'" },
+    { name: 'unit_price', def: 'DECIMAL(14,2) NOT NULL DEFAULT 0.00' },
     { name: 'remaining_payment_status', def: 'VARCHAR(50) DEFAULT "unpaid"' },
     { name: 'remaining_payment_proof', def: 'TEXT DEFAULT NULL' },
     { name: 'remaining_payment_submitted_at', def: 'VARCHAR(50) DEFAULT NULL' },

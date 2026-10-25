@@ -1186,10 +1186,10 @@ app.post('/api/orders', async (req, res) => {
     const insertSql = `
       INSERT INTO orders (
         id, order_code, product_id, buyer_id, buyer_company, seller_id,
-        total_amount, dp_percentage, dp_amount, remaining_amount,
+        offer_id, quantity, unit, unit_price, total_amount, dp_percentage, dp_amount, remaining_amount,
         handling_fee, escrow_status, pickup_date, notes, shipping_method,
         co2_reduction_kg
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
 
     await pool.query(insertSql, [
@@ -1199,6 +1199,10 @@ app.post('/api/orders', async (req, res) => {
       data.buyerId,
       data.buyerCompany || data.buyerName || 'Perusahaan Pembeli',
       data.sellerId,
+      data.offerId || null,
+      quantity,
+      data.unit || 'Kg',
+      Number(data.unitPrice) || (quantity > 0 ? totalAmount / quantity : 0),
       escrowCalc.totalValue,
       escrowCalc.dpPercent,
       data.downPaymentAmount !== undefined ? Number(data.downPaymentAmount) : escrowCalc.dpAmount,

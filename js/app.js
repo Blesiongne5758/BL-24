@@ -2374,7 +2374,7 @@ class BursaLimbahApp {
               </div>
 
               <div class="absolute bottom-2 left-2 right-2 bg-slate-900/85 backdrop-blur-md px-2.5 py-1.5 rounded-xl text-[11px] text-white flex items-center justify-between">
-                <span class="truncate"><i class="fa-solid fa-location-dot text-emerald-400 mr-1"></i>Kota: ${this.getCity(p)}</span>
+                <span class="truncate"><i class="fa-solid fa-location-dot text-emerald-400 mr-1"></i>Kota: ${esc(this.getCity(p))}</span>
                 <span class="shrink-0 text-emerald-300 font-mono text-[10px]">3 Eviden OK</span>
               </div>
             </div>
@@ -2388,7 +2388,7 @@ class BursaLimbahApp {
                   <span>•</span>
                   <span class="font-semibold text-slate-700">${qtyDisplay}</span>
                   <span>•</span>
-                  <span class="text-emerald-700 font-semibold flex items-center"><i class="fa-solid fa-city mr-1 text-[10px]"></i>${this.getCity(p)}</span>
+                  <span class="text-emerald-700 font-semibold flex items-center"><i class="fa-solid fa-city mr-1 text-[10px]"></i>${esc(this.getCity(p))}</span>
                 </div>
               </div>
 
@@ -2433,7 +2433,7 @@ class BursaLimbahApp {
 
               <!-- Info Penjual & Kontak -->
               <div class="flex items-center justify-between text-xs text-slate-500 pt-1">
-                <span class="truncate"><i class="fa-solid fa-store mr-1 text-slate-400"></i>${esc(p.sellerName)} (${this.getCity(p)})</span>
+                <span class="truncate"><i class="fa-solid fa-store mr-1 text-slate-400"></i>${esc(p.sellerName)} (${esc(this.getCity(p))})</span>
                 <span class="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 shrink-0 font-medium">${esc(p.sellerType)}</span>
               </div>
             </div>
@@ -2570,7 +2570,7 @@ class BursaLimbahApp {
               <span class="font-bold text-slate-800">Kota & Lokasi:</span>
               ${access.canViewFullAddress 
                 ? `<span class="text-slate-900 font-semibold">${esc(p.address || this.getCity(p))}</span>` 
-                : `<span class="text-slate-900 font-bold bg-white px-2 py-0.5 rounded border border-slate-200 inline-flex items-center"><i class="fa-solid fa-city mr-1 text-emerald-600 text-[10px]"></i>${this.getCity(p)}</span> <span class="text-slate-400 text-[11px] ml-1">(Alamat detail jalan terkunci)</span>`
+                : `<span class="text-slate-900 font-bold bg-white px-2 py-0.5 rounded border border-slate-200 inline-flex items-center"><i class="fa-solid fa-city mr-1 text-emerald-600 text-[10px]"></i>${esc(this.getCity(p))}</span> <span class="text-slate-400 text-[11px] ml-1">(Alamat detail jalan terkunci)</span>`
               }
             </div>
             ${access.canViewGpsMap ? `
@@ -2640,7 +2640,7 @@ class BursaLimbahApp {
               </div>
               <div class="py-1.5 flex justify-between">
                 <span class="text-slate-500">6. Lokasi Gudang:</span>
-                <span class="font-semibold text-slate-800">${this.getCity(p)}</span>
+                <span class="font-semibold text-slate-800">${esc(this.getCity(p))}</span>
               </div>
               <div class="py-1.5 flex justify-between">
                 <span class="text-slate-500">7. Minimal Order (MOQ):</span>
@@ -2789,7 +2789,7 @@ class BursaLimbahApp {
       }).addTo(map);
 
       L.marker([lat, lng]).addTo(map)
-        .bindPopup(`<strong>${title}</strong><br>${origin}`)
+        .bindPopup(`<strong>${esc(title)}</strong><br>${esc(origin)}`)
         .openPopup();
 
       this.activeModalMap = map;
@@ -5053,8 +5053,8 @@ class BursaLimbahApp {
         <i class="fa-solid fa-circle-check text-2xl text-emerald-400 mt-0.5"></i>
         <div>
           <div class="font-extrabold text-sm text-emerald-200">VALIDASI BERHASIL — PRESENSI DICATAT</div>
-          <div class="mt-1 text-slate-100 font-semibold">${t.holderName} (${t.companyName || '-'})</div>
-          <div class="text-[11px] text-slate-300 font-mono mt-0.5">Tiket: ${t.ticketCode} • ${t.eventTitle} • Hadir: ${t.checkedInAt}</div>
+          <div class="mt-1 text-slate-100 font-semibold">${esc(t.holderName)} (${esc(t.companyName || '-')})</div>
+          <div class="text-[11px] text-slate-300 font-mono mt-0.5">Tiket: ${esc(t.ticketCode)} • ${esc(t.eventTitle)} • Hadir: ${esc(t.checkedInAt)}</div>
         </div>
       `;
       this.triggerConfetti();
@@ -5067,7 +5067,7 @@ class BursaLimbahApp {
         <i class="fa-solid fa-triangle-exclamation text-2xl text-amber-400 mt-0.5"></i>
         <div>
           <div class="font-extrabold text-sm text-amber-200">TIKET SUDAH DIGUNAKAN SEBELUMNYA</div>
-          <div class="mt-1 text-slate-100">${t.holderName} telah tercatat check-in pada: <strong>${t.checkedInAt}</strong>.</div>
+          <div class="mt-1 text-slate-100">${esc(t.holderName)} telah tercatat check-in pada: <strong>${esc(t.checkedInAt)}</strong>.</div>
         </div>
       `;
       this.showToast(res.message, 'warning');
@@ -5077,7 +5077,7 @@ class BursaLimbahApp {
         <i class="fa-solid fa-circle-xmark text-2xl text-rose-400 mt-0.5"></i>
         <div>
           <div class="font-extrabold text-sm text-rose-200">TIKET TIDAK DITEMUKAN</div>
-          <div class="mt-1 text-slate-100">Kode tiket <code>${code}</code> tidak terdaftar di sistem. Periksa kembali nomor tiket.</div>
+          <div class="mt-1 text-slate-100">Kode tiket <code>${esc(code)}</code> tidak terdaftar di sistem. Periksa kembali nomor tiket.</div>
         </div>
       `;
       this.showToast(res.message, 'error');
@@ -5271,12 +5271,12 @@ class BursaLimbahApp {
   }
 
   // ================= 9. TRANSAKSI CHECKOUT DP / REKENING BERSAMA =================
-  initiateCheckout(productId) {
+  initiateCheckout(productId, options = {}) {
     const p = this.store.getProductById(productId);
     if (!p) return;
 
     const buyer = this.store.getCurrentUser();
-    if (!buyer || !buyer.subscriptionActive) {
+    if (!buyer || buyer.role !== 'buyer' || !buyer.subscriptionActive) {
       this.showBuyerRegisterModal();
       this.showToast("Daftar dan aktifkan paket langganan terlebih dahulu untuk memesan limbah.", "warning");
       return;
@@ -5284,7 +5284,29 @@ class BursaLimbahApp {
 
     const isDp = this.store.isDpEnabled();
     const settings = this.store.getSettings();
-    const totalPrice = p.totalPrice;
+    const offerId = options.offerId || null;
+    const acceptedOffer = offerId
+      ? (this.store.state.offers || []).find(o => o.id === offerId)
+      : null;
+    if (offerId && (!acceptedOffer || String(acceptedOffer.buyerId) !== String(buyer.id) || String(acceptedOffer.productId) !== String(productId) || acceptedOffer.status !== 'accepted' || acceptedOffer.isConvertedToOrder)) {
+      this.showToast('Penawaran tidak valid atau sudah diproses.', 'error');
+      return;
+    }
+    if (p.status !== 'approved') {
+      this.showToast('Produk pasokan tidak lagi tersedia untuk dipesan.', 'error');
+      return;
+    }
+    const quantity = acceptedOffer
+      ? Number(acceptedOffer.quantity)
+      : ((Number(p.volume) > 0 ? Number(p.volume) : Number(p.weight)) || 1);
+    const unitPrice = acceptedOffer ? Number(acceptedOffer.offerPrice) : (Number(p.offerPrice) || 0);
+    const totalPrice = acceptedOffer
+      ? unitPrice * quantity
+      : (Number(p.totalPrice) || quantity * unitPrice);
+    if (!Number.isFinite(quantity) || quantity <= 0 || !Number.isFinite(unitPrice) || unitPrice <= 0 || !Number.isFinite(totalPrice) || totalPrice <= 0) {
+      this.showToast('Harga atau kuantitas transaksi tidak valid.', 'error');
+      return;
+    }
     const dpPercent = settings.downPaymentPercent || 30;
     const dpAmount = isDp ? Math.round(totalPrice * (dpPercent / 100)) : totalPrice;
     const handlingFee = this.store.getHandlingFeeForUser(buyer);
@@ -5293,6 +5315,10 @@ class BursaLimbahApp {
 
     const modal = [REDACTED]'modal-checkout');
     const container = [REDACTED]'modal-checkout-content');
+    if (!modal || !container) {
+      this.showToast('Modal checkout tidak tersedia.', 'error');
+      return;
+    }
     const defaultPickup = new Date(Date.now() + 3 * 86400000).toISOString().split('T')[0];
 
     container.innerHTML = `
@@ -5314,7 +5340,10 @@ class BursaLimbahApp {
             <p class="text-xs text-slate-500">${esc(p.sellerName)} • ${esc(p.containerType)}</p>
           </div>
           <div class="text-right">
-            <div class="text-xs text-slate-500">Total Nilai Limbah:</div>
+            <div class="text-[10px] text-slate-500">${acceptedOffer ? 'Harga kesepakatan' : 'Harga satuan'}:</div>
+            <div class="text-xs font-mono font-semibold text-slate-700">${this.formatRupiah(unitPrice)} / ${esc(p.unit || 'unit')}</div>
+            <div class="text-[10px] text-slate-500 mt-1">Volume: ${quantity.toLocaleString('id-ID')} ${esc(p.unit || '')}</div>
+            <div class="text-xs text-slate-500 mt-1">Total Nilai Limbah:</div>
             <div class="font-mono font-bold text-slate-900">${this.formatRupiah(totalPrice)}</div>
           </div>
         </div>
@@ -5366,7 +5395,7 @@ class BursaLimbahApp {
           <button type="button" onclick="app.closeModals()" class="px-5 py-2.5 rounded-xl border border-slate-300 text-slate-700 text-xs font-bold hover:bg-slate-50 transition">
             Batal
           </button>
-          <button onclick="app.confirmBooking('${p.id}')" class="px-6 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold shadow-md transition flex items-center space-x-1.5">
+          <button type="button" id="checkout-confirm-button" class="px-6 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold shadow-md transition flex items-center space-x-1.5">
             <i class="fa-solid fa-lock"></i>
             <span>${isDp ? 'Bayar DP & Kunci Pasokan' : 'Bayar & Kunci Pasokan'}</span>
           </button>
@@ -5374,11 +5403,14 @@ class BursaLimbahApp {
       </div>
     `;
 
+    const confirmButton = container.querySelector('#checkout-confirm-button');
+    if (confirmButton) confirmButton.addEventListener('click', () => this.confirmBooking(productId, offerId));
+
     modal.classList.remove('hidden');
     modal.classList.add('flex');
   }
 
-  confirmBooking(productId) {
+  confirmBooking(productId, offerId = null) {
     const pickupDate = [REDACTED]'checkout-pickup-date').value;
     const buyer = this.store.getCurrentUser();
 
@@ -5387,7 +5419,10 @@ class BursaLimbahApp {
         productId,
         buyerId: buyer.id,
         pickupDate,
-        notes: "Pemesanan berhasil via Rekening Bersama Escrow."
+        offerId,
+        notes: offerId
+          ? "Pemesanan dibuat berdasarkan penawaran harga yang disetujui melalui Rekening Bersama Escrow."
+          : "Pemesanan berhasil via Rekening Bersama Escrow."
       });
 
       this.closeModals();
@@ -5395,6 +5430,7 @@ class BursaLimbahApp {
       this.showToast(`Booking ${esc(order.bookingCode)} berhasil! Pasokan terkunci.`, 'success');
       this.renderBuyerMarketplace();
       this.renderBuyerOrders();
+      this.renderBuyerAcceptedOffers();
       this.updateOrderCountBadge();
     } catch (e) {
       this.showToast(e.message, 'error');
@@ -5655,7 +5691,7 @@ class BursaLimbahApp {
 
     container.innerHTML = offers.map(o => {
       const product = this.store.getProductById(o.productId);
-      const isAlreadyOrdered = o.isConvertedToOrder;
+      const isAlreadyOrdered = Boolean(o.isConvertedToOrder || (product && product.status === 'booked'));
       const discount = o.originalPrice ? Math.max(0, o.originalPrice - o.offerPrice) : 0;
       const totalDeal = o.offerPrice * (Number(o.quantity) || 1);
 
@@ -5711,44 +5747,25 @@ class BursaLimbahApp {
   }
 
   proceedToCheckoutFromOffer(offerId) {
+    const buyer = this.store.getCurrentUser();
     const offer = (this.store.state.offers || []).find(o => o.id === offerId);
-    if (!offer) return;
+    if (!buyer || buyer.role !== 'buyer') {
+      this.showLoginPage('buyer');
+      this.showToast('Masuk sebagai pembeli untuk melanjutkan checkout.', 'warning');
+      return;
+    }
+    if (!offer || String(offer.buyerId) !== String(buyer.id) || offer.status !== 'accepted' || offer.isConvertedToOrder) {
+      this.showToast('Penawaran tidak valid atau sudah diproses.', 'error');
+      this.renderBuyerAcceptedOffers();
+      return;
+    }
     const product = this.store.getProductById(offer.productId);
-    if (!product) {
+    if (!product || product.status !== 'approved') {
       this.showToast('Produk pasokan tidak lagi tersedia.', 'error');
       return;
     }
 
-    // Buat salinan sementara produk dengan offer price yang disepakati
-    const offerNegotiatedProduct = {
-      ...product,
-      offerPrice: offer.offerPrice,
-      negotiatedVolume: offer.quantity,
-      fromOfferId: offer.id
-    };
-
-    // Buka modal booking dengan harga deal
-    this.openBookingModalWithNegotiatedPrice(offerNegotiatedProduct);
-  }
-
-  openBookingModalWithNegotiatedPrice(product) {
-    this.selectedBookingProduct = product;
-    const modal = [REDACTED]'modal-booking');
-    if (!modal) return;
-
-    const el = id => [REDACTED]id);
-    if (el('bk-product-title')) el('bk-product-title').textContent = product.title;
-    if (el('bk-seller-name')) el('bk-seller-name').textContent = product.sellerName;
-    if (el('bk-unit-price')) el('bk-unit-price').textContent = this.formatRupiah(product.offerPrice) + ' / ' + product.unit + ' (Harga Kesepakatan Penawaran)';
-    if (el('bk-qty')) {
-      el('bk-qty').value = product.negotiatedVolume || product.minimumOrder || 1;
-      el('bk-qty').max = product.volume > 0 ? product.volume : product.weight;
-    }
-
-    this.updateBookingSummary();
-    modal.classList.remove('hidden');
-    modal.classList.add('flex');
-    this.showToast(`Harga deal penawaran Rp${product.offerPrice.toLocaleString('id-ID')} berhasil diterapkan.`, 'success');
+    this.initiateCheckout(product.id, { offerId: offer.id });
   }
 
   openBuyerReceiveModal(orderId) {
@@ -7508,7 +7525,7 @@ class BursaLimbahApp {
     }
 
     const label = [REDACTED]`up-foto-${slot}-label`);
-    if (label) label.innerHTML = '<i class="fa-solid fa-circle-check"></i> ' + file.name;
+    if (label) label.innerHTML = '<i class="fa-solid fa-circle-check"></i> ' + esc(file.name);
   }
 
   async handleUploadProduct(event) {
@@ -8362,7 +8379,7 @@ class BursaLimbahApp {
                 <span class="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-brand-600/90 backdrop-blur-sm text-white">${esc(p.categoryName)}</span>
               </div>
               <div class="absolute bottom-2 left-2 right-2 bg-slate-900/85 backdrop-blur-md px-2.5 py-1.5 rounded-xl text-[11px] text-white flex items-center justify-between">
-                <span class="truncate"><i class="fa-solid fa-location-dot text-emerald-400 mr-1"></i>Kota: ${this.getCity(p)}</span>
+                <span class="truncate"><i class="fa-solid fa-location-dot text-emerald-400 mr-1"></i>Kota: ${esc(this.getCity(p))}</span>
                 <span class="shrink-0 text-emerald-300 font-mono text-[10px]">3 Eviden OK</span>
               </div>
             </div>
@@ -8375,7 +8392,7 @@ class BursaLimbahApp {
                   <span>•</span>
                   <span class="font-semibold text-slate-700">${qtyDisplay}</span>
                   <span>•</span>
-                  <span class="text-emerald-700 font-semibold flex items-center"><i class="fa-solid fa-city mr-1 text-[10px]"></i>${this.getCity(p)}</span>
+                  <span class="text-emerald-700 font-semibold flex items-center"><i class="fa-solid fa-city mr-1 text-[10px]"></i>${esc(this.getCity(p))}</span>
                 </div>
 
                 <!-- 10 Atribut Wajib Listing Badges -->
@@ -8422,7 +8439,7 @@ class BursaLimbahApp {
               </div>
 
               <div class="flex items-center justify-between text-xs text-slate-500 pt-1">
-                <span class="truncate"><i class="fa-solid fa-store mr-1 text-slate-400"></i>${esc(p.sellerName)} (${this.getCity(p)})</span>
+                <span class="truncate"><i class="fa-solid fa-store mr-1 text-slate-400"></i>${esc(p.sellerName)} (${esc(this.getCity(p))})</span>
                 <span class="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 shrink-0 font-medium">${esc(p.sellerType)}</span>
               </div>
             </div>

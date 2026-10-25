@@ -1457,23 +1457,40 @@ class BursaLimbahStore {
     return { valid: true };
   }
 
-  createBooking({ productId, buyerId, pickupDate, notes, shippingMethod, shippingFee }) {
+  createBooking({ productId, buyerId, pickupDate, notes, shippingMethod, shippingFee, offerId = null }) {
     const product = this.getProductById(productId);
     if (!product) throw new Error("Produk limbah tidak ditemukan");
     if (product.status !== "approved") throw new Error("Produk limbah saat ini tidak tersedia untuk dibooking");
 
     const settings = this.getSettings();
     const buyer = this.state.users.find(u => u.id === buyerId) || this.getCurrentUser();
+    const acceptedOffer = offerId
+      ? (this.state.offers || []).find(o => String(o.id) === String(offerId))
+      : null;
+    if (offerId && (!buyer || buyer.role !== 'buyer' || !acceptedOffer || String(acceptedOffer.buyerId) !== String(buyer.id) || String(acceptedOffer.productId) !== String(productId) || acceptedOffer.status !== 'accepted' || acceptedOffer.isConvertedToOrder)) {
+      throw new Error('Penawaran tidak valid, belum disetujui, atau sudah diproses.');
+    }
 
-    const quantity = product.volume > 0 ? product.volume : product.weight;
+    const quantity = acceptedOffer
+      ? Number(acceptedOffer.quantity)
+      : ((Number(product.volume) > 0 ? Number(product.volume) : Number(product.weight)) || 1);
+    const unitPrice = acceptedOffer ? Number(acceptedOffer.offerPrice) : Number(product.offerPrice);
+    if (!Number.isFinite(quantity) || quantity <= 0 || !Number.isFinite(unitPrice) || unitPrice <= 0) {
+      throw new Error('Harga atau kuantitas booking tidak valid.');
+    }
+    const availableQuantity = Number(product.volume) > 0 ? Number(product.volume) : Number(product.weight);
+    if (acceptedOffer && Number.isFinite(availableQuantity) && availableQuantity > 0 && quantity > availableQuantity) {
+      throw new Error('Kuantitas penawaran melebihi pasokan yang tersedia.');
+    }
+    const validationProduct = acceptedOffer ? { ...product, offerPrice: unitPrice } : product;
 
     // Validasi Rules Transaksi Tiap Tiers
-    const ruleCheck = this.validateTierBookingRules(buyer, product, quantity);
+    const ruleCheck = this.validateTierBookingRules(buyer, validationProduct, quantity);
     if (!ruleCheck.valid) {
       throw new Error(ruleCheck.message);
     }
 
-    const totalPrice = product.totalPrice || (quantity * product.offerPrice);
+    const totalPrice = acceptedOffer ? quantity * unitPrice : (product.totalPrice || (quantity * unitPrice));
     const isDp = this.isDpEnabled();
     const dpPercent = settings.downPaymentPercent || 30;
     const downPaymentAmount = isDp ? Math.round(totalPrice * (dpPercent / 100)) : totalPrice;
@@ -1500,6 +1517,7 @@ class BursaLimbahStore {
       id: orderId,
       bookingCode,
       productId: product.id,
+      offerId: acceptedOffer ? acceptedOffer.id : null,
       productTitle: product.title,
       categoryName: product.categoryName,
       buyerId: buyer.id,
@@ -1508,7 +1526,7 @@ class BursaLimbahStore {
       sellerName: product.sellerName,
       quantity,
       unit: product.unit,
-      unitPrice: product.offerPrice,
+      unitPrice,
       totalPrice,
       downPaymentRate: isDp ? dpPercent : 0,
       downPaymentAmount: isDp ? downPaymentAmount : 0,
@@ -1531,6 +1549,11 @@ class BursaLimbahStore {
 
     product.status = "booked";
     product.bookedByOrderId = orderId;
+    if (acceptedOffer) {
+      acceptedOffer.isConvertedToOrder = true;
+      acceptedOffer.convertedOrderId = orderId;
+      acceptedOffer.convertedAt = now;
+    }
 
     this.state.orders.unshift(newOrder);
     this.createNotification(product.sellerId, 'info', 'Pesanan baru masuk', `${buyer.name} membuat pesanan ${product.title}.`, `/seller/orders/${orderId}`);
