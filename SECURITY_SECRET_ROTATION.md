@@ -63,4 +63,4 @@ Commit baru menghapus literal rahasia dari **versi file saat ini**, tetapi secre
 
 ## Seed akun demo
 
-Password akun demo yang tertanam di UI/SQL tidak lagi dapat dipakai untuk login: nilai lokal dihapus dan hash seed ditandai non-login. Buat akun baru melalui proses normal dan lakukan provisioning admin melalui jalur administratif yang terkontrol. File SQL bootstrap tidak lagi membuat akun database berpassword statis atau memberi grant luas; provision akun database aplikasi secara terpisah dengan privilege minimum.
+Seed UI/SQL yang berada di repository tidak lagi menerbitkan credential demo yang dapat dipakai: nilai lokal dihapus dan hash seed ditandai non-login. Perubahan repository ini **tidak** mengubah akun atau password hash pada database yang sudah terpasang; reset/nonaktifkan akun lama secara terpisah dan verifikasi hasilnya sebelum deployment dianggap aman. Buat akun baru melalui proses normal dan provision admin melalui jalur administratif terkontrol. File SQL bootstrap tidak lagi membuat akun database berpassword statis atau memberi grant luas; provision akun database aplikasi secara terpisah dengan privilege minimum.

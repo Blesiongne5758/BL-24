@@ -82,7 +82,7 @@ mysql -h "$DB_HOST" -u "$DB_ADMIN_USER" -p bursalimbahdb -e "SHOW TABLES;"
 
 ## Akun Demo
 
-Password akun demo bawaan telah dinonaktifkan. Buat akun melalui proses registrasi dan provision akun administrator melalui jalur terkontrol; jangan memakai ulang credential dari versi lama atau riwayat Git.
+Seed repository tidak lagi menerbitkan credential demo yang bisa dipakai. Perubahan ini tidak mengubah database yang sudah terpasang; reset atau nonaktifkan akun lama secara terpisah melalui prosedur admin sebelum deployment dianggap aman. Buat akun baru melalui proses registrasi dan provision administrator melalui jalur terkontrol.
 
 ---
 
