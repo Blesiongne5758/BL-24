@@ -642,144 +642,6 @@ class BursaLimbahApp {
     // Sembunyikan notifikasi error sebelumnya
     const alertBox = [REDACTED]'login-alert-box');
     if (alertBox) alertBox.classList.add('hidden');
-
-    this.renderQuickLoginAccounts();
-  }
-
-  renderQuickLoginAccounts() {
-    const container = [REDACTED]'login-quick-accounts-container');
-    if (!container) return;
-
-    const tab = this.currentLoginTab;
-
-    if (tab === 'buyer') {
-      container.innerHTML = `
-        <button type="button" onclick="app.quickLogin('pengadaan@hijaulestari.co.id', '[REDACTED]', 'buyer')" class="p-3 text-left rounded-xl border border-emerald-200 bg-emerald-50/70 hover:bg-emerald-100 hover:border-emerald-300 transition group">
-          <div class="flex items-center justify-between">
-            <span class="text-xs font-bold text-slate-900 group-hover:text-emerald-900">PT Hijau Lestari Biofuel</span>
-            <span class="text-[10px] px-1.5 py-0.5 rounded bg-emerald-200 text-emerald-800 font-bold">Tier Pro</span>
-          </div>
-          <div class="text-[11px] text-slate-500 font-mono mt-0.5">pengadaan@hijaulestari.co.id</div>
-        </button>
-
-        <button type="button" onclick="app.quickLogin('purchasing@daurnusantara.co.id', '[REDACTED]', 'buyer')" class="p-3 text-left rounded-xl border border-slate-200 bg-white hover:bg-slate-50 hover:border-slate-300 transition group">
-          <div class="flex items-center justify-between">
-            <span class="text-xs font-bold text-slate-900 group-hover:text-emerald-900">PT Daur Nusantara</span>
-            <span class="text-[10px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-900 font-bold">Tier Enterprise</span>
-          </div>
-          <div class="text-[11px] text-slate-500 font-mono mt-0.5">purchasing@daurnusantara.co.id</div>
-        </button>
-      `;
-    } else if (tab === 'seller') {
-      container.innerHTML = `
-        <button type="button" onclick="app.quickLogin('budi@sentrajelantah.id', '[REDACTED]', 'seller')" class="p-3 text-left rounded-xl border border-slate-300 bg-slate-50 hover:bg-slate-100 transition group">
-          <div class="flex items-center justify-between">
-            <span class="text-xs font-bold text-slate-900">Budi Santoso</span>
-            <span class="text-[10px] px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 font-bold">Pengepul Jelantah</span>
-          </div>
-          <div class="text-[11px] text-slate-500 font-mono mt-0.5">budi@sentrajelantah.id • Login</div>
-        </button>
-
-        <button type="button" onclick="app.quickLogin('dwigraha@rongsok.co.id', '[REDACTED]', 'seller')" class="p-3 text-left rounded-xl border border-slate-200 bg-white hover:bg-slate-50 transition group">
-          <div class="flex items-center justify-between">
-            <span class="text-xs font-bold text-slate-900">PT Dwi Graha</span>
-            <span class="text-[10px] px-1.5 py-0.5 rounded bg-blue-100 text-blue-800 font-bold">Pemasok Logam</span>
-          </div>
-          <div class="text-[11px] text-slate-500 font-mono mt-0.5">dwigraha@rongsok.co.id • Login</div>
-        </button>
-
-        <button type="button" onclick="app.quickRegisterNewSellerDemo()" class="p-3 text-left rounded-xl border border-dashed border-emerald-500 bg-emerald-50/80 hover:bg-emerald-100 transition group sm:col-span-2">
-          <div class="flex items-center justify-between">
-            <div class="flex items-center space-x-2">
-              <i class="fa-solid fa-user-plus text-emerald-600 text-xs"></i>
-              <span class="text-xs font-bold text-emerald-900">Simulasi Daftar Penjual Baru via Email</span>
-            </div>
-            <span class="text-[10px] px-2 py-0.5 rounded bg-emerald-200 text-emerald-800 font-bold">1-Klik Auto-Daftar</span>
-          </div>
-          <div class="text-[11px] text-slate-600 mt-0.5">Klik untuk membuat akun mitra penjual baru secara instan dengan email demo</div>
-        </button>
-      `;
-    } else if (tab === 'admin') {
-      container.innerHTML = `
-        <button type="button" onclick="app.quickLogin('admin@bursalimbah.com', 'admin', 'admin')" class="p-3.5 text-left rounded-xl border border-amber-300/80 bg-amber-50/80 hover:bg-amber-100/90 transition group flex items-center justify-between">
-          <div>
-            <div class="flex items-center space-x-1.5">
-              <i class="fa-solid fa-key text-amber-600 text-xs"></i>
-              <span class="text-xs font-bold text-slate-900 group-hover:text-amber-950">Pengelola Utama Bursa Limbah</span>
-            </div>
-            <div class="text-[11px] text-slate-500 font-mono mt-0.5">admin@bursalimbah.com • Sandi: admin</div>
-          </div>
-          <span class="text-[10px] px-2 py-0.5 rounded-full bg-slate-900 text-amber-300 font-bold">Akses Penuh</span>
-        </button>
-      `;
-    }
-  }
-
-  quickRegisterNewSellerDemo() {
-    const randId = Math.floor(100 + Math.random() * 900);
-    const demoEmail = `penjual.mitra${randId}@sentralimbah.id`;
-    const demoPass = '[REDACTED]';
-    const inputId = [REDACTED]'login-input-identifier');
-    const inputPass = [REDACTED]'login-input-password');
-    if (inputId) inputId.value = demoEmail;
-    if (inputPass) inputPass.value = demoPass;
-    this.quickLogin(demoEmail, demoPass, 'seller');
-  }
-
-  async quickLogin(identifier, password, role) {
-    const inputId = [REDACTED]'login-input-identifier');
-    const inputPass = [REDACTED]'login-input-password');
-    if (inputId) inputId.value = identifier;
-    if (inputPass) inputPass.value = password;
-
-    const res = await this.store.loginUserAsync(identifier, password, role);
-    if (res.success) {
-      this.triggerConfetti();
-      if (res.isNewAccount) {
-        if (res.role === 'seller') {
-          this.showToast(`🎉 Pendaftaran berhasil! Selamat datang Mitra Penjual baru (${res.user.email}).`, 'success');
-        } else {
-          this.showToast(`🎉 Pendaftaran berhasil! Akun Pembeli (${res.user.email}) aktif dengan Starter Tier Gratis.`, 'success');
-        }
-      } else {
-        this.showToast(`Berhasil masuk sebagai ${res.user.name}!`, 'success');
-      }
-      this.setRole(role, false);
-    } else {
-      this.showToast(res.message, 'error');
-    }
-  }
-
-  async handleLoginFormSubmit(event) {
-    event.preventDefault();
-    const identifier = [REDACTED]'login-input-identifier').value.trim();
-    const password = [REDACTED]'login-input-password').value;
-
-    const res = await this.store.loginUserAsync(identifier, password, this.currentLoginTab);
-
-    const alertBox = [REDACTED]'login-alert-box');
-    const alertMsg = [REDACTED]'login-alert-msg');
-
-    if (res.success) {
-      if (alertBox) alertBox.classList.add('hidden');
-      this.triggerConfetti();
-      if (res.isNewAccount) {
-        if (res.role === 'seller') {
-          this.showToast(`🎉 Pendaftaran berhasil! Selamat datang Mitra Penjual baru (${res.user.email}).`, 'success');
-        } else {
-          this.showToast(`🎉 Pendaftaran berhasil! Akun Pembeli (${res.user.email}) aktif dengan Starter Tier Gratis.`, 'success');
-        }
-      } else {
-        this.showToast(`Selamat datang kembali, ${res.user.name}!`, 'success');
-      }
-      this.setRole(res.role, false);
-    } else {
-      if (alertBox) {
-        alertBox.classList.remove('hidden');
-        if (alertMsg) alertMsg.textContent = res.message;
-      }
-      this.showToast(res.message, 'error');
-    }
   }
 
   togglePasswordVisibility(inputId, btn) {
@@ -793,7 +655,7 @@ class BursaLimbahApp {
   }
 
   showForgotPasswordInfo() {
-    alert("Bantuan Kata Sandi:\n\nSeluruh akun demo dapat diakses menggunakan kata sandi bawaan: [REDACTED].\n\nJika Anda membutuhkan pengaturan ulang akun produksi, silakan hubungi tim dukungan Bursa Limbah di kemitraan@bursalimbah.com.");
+    alert('Untuk mengatur ulang kata sandi, hubungi administrator melalui kanal resmi.');
   }
 
   showRegisterOptions() {
@@ -855,7 +717,11 @@ class BursaLimbahApp {
     const email = [REDACTED]'reg-seller-email').value.trim();
     const name = [REDACTED]'reg-seller-name').value.trim();
     const phone = [REDACTED]'reg-seller-phone').value.trim();
-    const password = [REDACTED]'reg-seller-password') ? [REDACTED]'reg-seller-password').value : '[REDACTED]';
+    const password = [REDACTED]'reg-seller-password')?.value || '';
+    if (!password) {
+      this.showToast('Kata sandi wajib diisi.', 'error');
+      return;
+    }
 
     const company = name; // Default nama usaha sama dengan nama pengguna
     const location = 'Indonesia';
@@ -2237,7 +2103,11 @@ class BursaLimbahApp {
     const email = [REDACTED]'reg-buyer-email').value.trim();
     const name = [REDACTED]'reg-buyer-name').value.trim();
     const phone = [REDACTED]'reg-buyer-phone').value.trim();
-    const password = [REDACTED]'reg-buyer-password') ? [REDACTED]'reg-buyer-password').value : '[REDACTED]';
+    const password = [REDACTED]'reg-buyer-password')?.value || '';
+    if (!password) {
+      this.showToast('Kata sandi wajib diisi.', 'error');
+      return;
+    }
 
     const company = name; // Default nama perusahaan sama dengan nama penanggung jawab
     const chosenTierId = 'tier_starter';
@@ -7684,7 +7554,6 @@ class BursaLimbahApp {
       'modal-upload',
       'modal-checkout',
       'modal-receipt',
-      'modal-google-auth',
       'modal-user-profile',
       'modal-mobile-quick-actions',
       'modal-mobile-dp-calculator',
@@ -7705,64 +7574,6 @@ class BursaLimbahApp {
       this.activeModalMap.remove();
       this.activeModalMap = null;
     }
-  }
-
-  // ================= LOGIN DENGAN GOOGLE =================
-  showGoogleLoginModal() {
-    const modal = [REDACTED]'modal-google-auth');
-    const role = this.currentLoginTab || 'buyer';
-    const roleLabel = role === 'seller' ? 'Mitra Penjual' : (role === 'admin' ? 'Pengelola' : 'Pembeli');
-    const subEl = [REDACTED]'google-modal-role-subtitle');
-    if (subEl) {
-      subEl.innerHTML = `Pilih akun Google Anda untuk masuk atau daftar sebagai <strong>${roleLabel}</strong>:`;
-    }
-    if (modal) {
-      modal.classList.remove('hidden');
-      modal.classList.add('flex');
-    }
-  }
-
-  closeGoogleLoginModal() {
-    const modal = [REDACTED]'modal-google-auth');
-    if (modal) {
-      modal.classList.add('hidden');
-      modal.classList.remove('flex');
-    }
-  }
-
-  async proceedGoogleLogin(email, name, avatar) {
-    this.closeGoogleLoginModal();
-    const role = this.currentLoginTab || 'buyer';
-    const res = await this.store.loginWithGoogleAsync({ email, name, avatar, role });
-
-    if (res.success) {
-      this.triggerConfetti();
-      this.updateNavUI();
-      if (res.role === 'buyer') {
-        this.setRole('buyer');
-      } else if (res.role === 'seller') {
-        this.setRole('seller');
-      }
-      if (res.isNewAccount) {
-        this.showToast(`🎉 Pendaftaran berhasil! Masuk dengan Google sebagai ${res.role === 'seller' ? 'Mitra Penjual' : 'Pembeli'} (${email}).`, 'success');
-      } else {
-        this.showToast(`🎉 Berhasil masuk dengan Google (${email})!`, 'success');
-      }
-    } else {
-      this.showToast('Gagal masuk dengan Google. Silakan coba lagi.', 'error');
-    }
-  }
-
-  async proceedCustomGoogleLogin() {
-    const input = [REDACTED]'custom-google-email');
-    const email = input ? input.value.trim().toLowerCase() : '';
-    if (!email || !email.includes('@')) {
-      this.showToast('Masukkan alamat email Google yang valid.', 'error');
-      return;
-    }
-    const namePart = email.split('@')[0].replace(/[^a-zA-Z0-9]/g, ' ');
-    const displayName = namePart.charAt(0).toUpperCase() + namePart.slice(1);
-    await this.proceedGoogleLogin(email, displayName, null);
   }
 
   // ================= MODAL PROFIL & VERIFIKASI IDENTITAS (KTP / NPWP OPSIONAL) =================

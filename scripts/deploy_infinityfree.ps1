@@ -2,10 +2,14 @@
 # CircuLink Deployment Script for InfinityFree via FTP
 # ==============================================================================
 
-$ftpHost = "ftpupload.net"
-$ftpUser = "if0_43240973"
-$ftpPass = "N0m4d3n0"
+$ftpHost = $env:BL24_FTP_HOST
+$ftpUser = $env:BL24_FTP_USERNAME
+$ftpPass = $env:BL24_FTP_PASSWORD
 $remoteRoot = "ftp://$ftpHost/htdocs"
+
+if ([string]::IsNullOrWhiteSpace($ftpHost) -or [string]::IsNullOrWhiteSpace($ftpUser) -or [string]::IsNullOrWhiteSpace($ftpPass)) {
+    throw 'Set BL24_FTP_HOST, BL24_FTP_USERNAME, and BL24_FTP_PASSWORD outside the repository.'
+}
 
 Write-Host "[DEPLOY] Starting CircuLink deployment to InfinityFree ($ftpHost)..." -ForegroundColor Cyan
 
@@ -17,6 +21,7 @@ function Upload-FtpFile {
     try {
         $uri = [System.Uri]$remoteUrl
         $req = [System.Net.FtpWebRequest]::Create($uri)
+        $req.EnableSsl = $true
         $req.Credentials = New-Object System.Net.NetworkCredential($ftpUser, $ftpPass)
         $req.Method = [System.Net.WebRequestMethods+Ftp]::UploadFile
         $req.UseBinary = $true
@@ -45,6 +50,7 @@ function Create-FtpDirectory {
     try {
         $uri = [System.Uri]$remoteDirUrl
         $req = [System.Net.FtpWebRequest]::Create($uri)
+        $req.EnableSsl = $true
         $req.Credentials = New-Object System.Net.NetworkCredential($ftpUser, $ftpPass)
         $req.Method = [System.Net.WebRequestMethods+Ftp]::MakeDirectory
         $req.UsePassive = $true
@@ -64,6 +70,7 @@ function Remove-FtpFile {
     try {
         $uri = [System.Uri]$remoteFileUrl
         $req = [System.Net.FtpWebRequest]::Create($uri)
+        $req.EnableSsl = $true
         $req.Credentials = New-Object System.Net.NetworkCredential($ftpUser, $ftpPass)
         $req.Method = [System.Net.WebRequestMethods+Ftp]::DeleteFile
         $req.UsePassive = $true

@@ -59,9 +59,9 @@ bursalimbah/
 - Menggunakan `mysql2/promise` dengan *connection pool* yang efisien.
 - Parameter penting di `.env`:
   ```env
-  DB_HOST=108.136.70.118
+  DB_HOST=<database-host-dari-secret-manager>
   DB_PORT=3306
-  DB_USER=admin
+  DB_USER=<akun-aplikasi-berhak-minimum>
   DB_PASSWORD=[REDACTED]
   [REDACTED]
   DB_CONNECTION_LIMIT=15

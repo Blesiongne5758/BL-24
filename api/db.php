@@ -14,11 +14,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit;
 }
 
-$host = getenv('DB_HOST') ?: '108.136.70.118';
+$host = getenv('DB_HOST') ?: '';
 $port = getenv('DB_PORT') ?: '3306';
-$dbname = getenv('DB_NAME') ?: 'bursalimbahdb';
-$username = getenv('DB_USER') ?: 'admin';
-$password = getenv('DB_PASSWORD') ?: '[REDACTED]';
+$dbname = getenv('DB_NAME') ?: '';
+$username = getenv('DB_USER') ?: '';
+$password = getenv('DB_PASSWORD') ?: '';
+
+if ($host === '' || $dbname === '' || $username === '' || $password === '') {
+    http_response_code(500);
+    echo json_encode(['success' => false, 'message' => 'Konfigurasi database belum lengkap.']);
+    exit;
+}
 
 try {
     $dsn = "mysql:host={$host};port={$port};dbname={$dbname};charset=utf8mb4";

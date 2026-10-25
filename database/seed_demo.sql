@@ -1,15 +1,12 @@
 -- ====================================================================
 -- BURSA LIMBAH — DATA DEMO (seed_demo.sql)
 -- Berisi: 1 Admin, 2 Penjual, 2 Pembeli, 5 Produk, 1 Event, Notifikasi
--- Password semua akun demo: [REDACTED]
--- Hash bcrypt untuk "[REDACTED]": $2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lh...
 -- ====================================================================
 
 USE `bursalimbahdb`;
 
--- Password hash untuk "[REDACTED]" (bcrypt rounds=10)
 -- Gunakan ini untuk semua akun demo
-SET @pass_hash = '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWu';
+SET @pass_hash = '!DISABLED_DEMO_ACCOUNT!';
 
 -- ====================================================================
 -- SEED: USERS (1 Admin, 2 Penjual, 2 Pembeli)
@@ -27,7 +24,7 @@ INSERT INTO `users` (
 ('user_admin_001',
  'admin', 'Admin Bursa Limbah', 'PT Bursa Limbah Indonesia',
  'admin@bursalimbah.id', '+62 811-0000-0001',
- '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWu', 'local',
+ '!DISABLED_DEMO_ACCOUNT!', 'local',
  'tier_enterprise', 1, '2027-12-31',
  1, 'verified', 'npwp',
  '[REDACTED]7890[REDACTED]', '12.345.678.9-000.000', 'Admin Platform', '1 Jan 2026',
@@ -38,7 +35,7 @@ INSERT INTO `users` (
 ('user_seller_001',
  'seller', 'Budi Santoso', 'CV Jaya Logam Mandiri',
  'budi.seller@demo.id', '+62 812-1111-2222',
- '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWu', 'local',
+ '!DISABLED_DEMO_ACCOUNT!', 'local',
  'tier_pro', 1, DATE_ADD(CURDATE(), INTERVAL 3 MONTH),
  1, 'verified', 'ktp',
  '32710[REDACTED]70001', NULL, 'Mitra Terverifikasi (KTP)', '15 Sep 2026',
@@ -49,7 +46,7 @@ INSERT INTO `users` (
 ('user_seller_002',
  'seller', 'Siti Rahayu', 'UD Sumber Plastik Jaya',
  'siti.seller@demo.id', '+62 813-2222-3333',
- '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWu', 'local',
+ '!DISABLED_DEMO_ACCOUNT!', 'local',
  'tier_basic', 1, DATE_ADD(CURDATE(), INTERVAL 1 MONTH),
  0, 'unverified', NULL,
  NULL, NULL, 'Pemasok Baru', NULL,
@@ -60,7 +57,7 @@ INSERT INTO `users` (
 ('user_buyer_001',
  'buyer', 'PT Hijau Lestari', 'PT Hijau Lestari Nusantara',
  'hijau.buyer@demo.id', '+62 821-3333-4444',
- '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWu', 'local',
+ '!DISABLED_DEMO_ACCOUNT!', 'local',
  'tier_pro', 1, DATE_ADD(CURDATE(), INTERVAL 2 MONTH),
  1, 'verified', 'npwp',
  '3175010000012345', '98.765.432.1-001.000', 'Pembeli Terverifikasi', '10 Agu 2026',
@@ -71,7 +68,7 @@ INSERT INTO `users` (
 ('user_buyer_002',
  'buyer', 'Ahmad Yusuf', 'UD Yusuf Recycle',
  'ahmad.buyer@demo.id', '+62 857-4444-5555',
- '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWu', 'local',
+ '!DISABLED_DEMO_ACCOUNT!', 'local',
  'tier_starter', 1, DATE_ADD(CURDATE(), INTERVAL 1 MONTH),
  0, 'unverified', NULL,
  NULL, NULL, 'Pembeli Terdaftar', NULL,

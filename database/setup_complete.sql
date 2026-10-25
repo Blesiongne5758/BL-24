@@ -2,20 +2,19 @@
 -- BURSA LIMBAH — SETUP DATABASE LENGKAP (MySQL 8.4 LTS)
 -- Sinkron 100% dengan server/server.js & server/db.js
 -- Jalankan script ini sebagai root MySQL untuk setup awal
--- Target DB: bursalimbahdb | User: admin | Host: 108.136.70.118
+-- Target DB: bursalimbahdb; provision akun aplikasi secara terpisah dengan privilege minimum.
 -- ====================================================================
 
--- 1. Buat database dan user
+-- 1. Buat database
 CREATE DATABASE IF NOT EXISTS `bursalimbahdb`
   DEFAULT CHARACTER SET utf8mb4
   DEFAULT COLLATE utf8mb4_unicode_ci;
 
-CREATE USER IF NOT EXISTS 'admin'@'%' IDENTIFIED BY '[REDACTED]';
-ALTER USER 'admin'@'%' IDENTIFIED BY '[REDACTED]';
-GRANT ALL PRIVILEGES ON `bursalimbahdb`.* TO 'admin'@'%';
 FLUSH PRIVILEGES;
 
 USE `bursalimbahdb`;
+
+-- Provision a dedicated least-privilege DB account securely outside this SQL file.
 
 -- ====================================================================
 -- TABEL 1: users

@@ -11,12 +11,18 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 $input = json_decode(file_get_contents('php://input'), true) ?? $_POST;
 
 $identifier = trim($input['identifier'] ?? '');
-$password = $input['password'] ?? '[REDACTED]';
+$password = $input['password'] ?? '';
 $expectedRole = $input['role'] ?? null;
 
 if (empty($identifier)) {
     http_response_code(400);
     echo json_encode(['success' => false, 'message' => 'Harap masukkan email atau nomor WhatsApp.']);
+    exit;
+}
+
+if (!is_string($password) || $password === '') {
+    http_response_code(400);
+    echo json_encode(['success' => false, 'message' => 'Kata sandi wajib diisi.']);
     exit;
 }
 
@@ -40,8 +46,8 @@ try {
     // 2. Jika user tidak ditemukan -> auto register jika format email valid
     if (!$user) {
         if (strpos($cleanId, '@') !== false && strpos($cleanId, '.') !== false) {
-            $roleToAssign = $expectedRole ?: 'buyer';
-            $passwordHash = password_hash($password ?: '[REDACTED]', PASSWORD_BCRYPT);
+            $roleToAssign = in_array($expectedRole, ['buyer', 'seller'], true) ? $expectedRole : 'buyer';
+            $passwordHash = password_hash($password, PASSWORD_BCRYPT);
             $newId = 'user_' . $roleToAssign . '_' . round(microtime(true) * 1000);
             $emailPrefix = ucwords(preg_replace('/[^a-zA-Z0-9]/', ' ', explode('@', $cleanId)[0]));
             $newName = $roleToAssign === 'seller' ? "{$emailPrefix} (Mitra Penjual)" : "{$emailPrefix} (Pembeli)";
@@ -96,21 +102,15 @@ try {
         exit;
     }
 
-    // 4. Verifikasi password
-    $passwordMatch = false;
-    $storedHash = $user['password_hash'] ?? '';
-
-    if (strpos($storedHash, '$2') === 0) {
-        $passwordMatch = password_verify($password, $storedHash);
-    } else {
-        $passwordMatch = ($storedHash === $password) || ($password === '[REDACTED]');
-    }
+    // Hanya hash password modern yang valid diterima; akun legacy/demo harus reset password.
+    $storedHash = (string)($user['password_hash'] ?? '');
+    $passwordMatch = $storedHash !== '' && password_verify($password, $storedHash);
 
     if (!$passwordMatch) {
         http_response_code(401);
         echo json_encode([
             'success' => false,
-            'message' => 'Kata sandi yang Anda masukkan salah. Kata sandi bawaan demo: [REDACTED].'
+            'message' => 'Kata sandi yang Anda masukkan salah.'
         ]);
         exit;
     }

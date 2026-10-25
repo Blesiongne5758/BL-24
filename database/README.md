@@ -6,11 +6,11 @@ Database MySQL untuk platform Bursa Limbah. Berisi 20 tabel lengkap untuk mengel
 
 | Setting | Nilai |
 |---------|-------|
-| Host | `108.136.70.118` |
+| Host | Atur melalui `DB_HOST` pada environment deployment |
 | Port | `3306` |
 | Database | `bursalimbahdb` |
-| User | `admin` |
-| Password | `[REDACTED]` |
+| User | Akun aplikasi khusus dengan privilege minimum |
+| Password | Simpan di secret manager; jangan tulis di repository |
 
 > Konfigurasi tersimpan di `server/.env`
 
@@ -21,7 +21,7 @@ Database MySQL untuk platform Bursa Limbah. Berisi 20 tabel lengkap untuk mengel
 ### Langkah 1: Jalankan Setup Awal (sebagai root MySQL)
 
 ```bash
-mysql -h 108.136.70.118 -u root -p < database/setup_complete.sql
+mysql -h "$DB_HOST" -u "$DB_ADMIN_USER" -p < database/setup_complete.sql
 ```
 
 Atau jika menggunakan MySQL lokal:
@@ -32,13 +32,13 @@ mysql -u root -p < database/setup_complete.sql
 ### Langkah 2: Tambahkan Data Demo (opsional)
 
 ```bash
-mysql -h 108.136.70.118 -u admin -p bursalimbahdb < database/seed_demo.sql
+mysql -h "$DB_HOST" -u "$DB_ADMIN_USER" -p bursalimbahdb < database/seed_demo.sql
 ```
 
 ### Langkah 3: Verifikasi
 
 ```bash
-mysql -h 108.136.70.118 -u admin -p bursalimbahdb -e "SHOW TABLES;"
+mysql -h "$DB_HOST" -u "$DB_ADMIN_USER" -p bursalimbahdb -e "SHOW TABLES;"
 ```
 
 ---
@@ -82,13 +82,7 @@ mysql -h 108.136.70.118 -u admin -p bursalimbahdb -e "SHOW TABLES;"
 
 ## Akun Demo
 
-| Role | Email | Password |
-|------|-------|----------|
-| Admin | `admin@bursalimbah.id` | `[REDACTED]` |
-| Penjual 1 | `budi.seller@demo.id` | `[REDACTED]` |
-| Penjual 2 | `siti.seller@demo.id` | `[REDACTED]` |
-| Pembeli 1 | `hijau.buyer@demo.id` | `[REDACTED]` |
-| Pembeli 2 | `ahmad.buyer@demo.id` | `[REDACTED]` |
+Password akun demo bawaan telah dinonaktifkan. Buat akun melalui proses registrasi dan provision akun administrator melalui jalur terkontrol; jangan memakai ulang credential dari versi lama atau riwayat Git.
 
 ---
 

@@ -48,8 +48,6 @@ CREATE TABLE IF NOT EXISTS `users` (
 
 -- -------------------------------------------------------
 -- Data Awal (Seed Data) untuk Akun Demo Bawaan
--- Catatan: Password default seluruh akun demo: [REDACTED]
--- Hash bcrypt di bawah merepresentasikan string '[REDACTED]'
 -- -------------------------------------------------------
 INSERT INTO `users` (
   `id`, `name`, `email`, `phone`, `company`, `role`, `password_hash`, `auth_provider`,
@@ -64,7 +62,7 @@ INSERT INTO `users` (
   '+62 811-2345-678',
   'PT Hijau Lestari Biofuel',
   'buyer',
-  '$2a$10$wN9aCshc8f5VvF1W2xK8iOs005oXq8/gZ3.9gq8W226W5vR5wQJv.',
+  '!DISABLED_DEMO_ACCOUNT!',
   'local',
   'tier_pro',
   1,
@@ -85,7 +83,7 @@ INSERT INTO `users` (
   '+62 812-9876-543',
   'PT Daur Nusantara Tbk',
   'buyer',
-  '$2a$10$wN9aCshc8f5VvF1W2xK8iOs005oXq8/gZ3.9gq8W226W5vR5wQJv.',
+  '!DISABLED_DEMO_ACCOUNT!',
   'local',
   'tier_enterprise',
   1,
@@ -106,7 +104,7 @@ INSERT INTO `users` (
   '+62 813-1122-3344',
   'UD Daur Mandiri',
   'buyer',
-  '$2a$10$wN9aCshc8f5VvF1W2xK8iOs005oXq8/gZ3.9gq8W226W5vR5wQJv.',
+  '!DISABLED_DEMO_ACCOUNT!',
   'local',
   'tier_starter',
   1,
@@ -127,7 +125,7 @@ INSERT INTO `users` (
   '+62 813-8899-0011',
   'Sentra Jelantah Berkah',
   'seller',
-  '$2a$10$wN9aCshc8f5VvF1W2xK8iOs005oXq8/gZ3.9gq8W226W5vR5wQJv.',
+  '!DISABLED_DEMO_ACCOUNT!',
   'local',
   'tier_starter',
   1,
@@ -148,7 +146,7 @@ INSERT INTO `users` (
   '+62 821-4455-6677',
   'PT Dwi Graha Logam',
   'seller',
-  '$2a$10$wN9aCshc8f5VvF1W2xK8iOs005oXq8/gZ3.9gq8W226W5vR5wQJv.',
+  '!DISABLED_DEMO_ACCOUNT!',
   'local',
   'tier_starter',
   1,
@@ -169,7 +167,7 @@ INSERT INTO `users` (
   '+62 811-9988-7766',
   'Pusat Operasional Bursa Limbah Indonesia',
   'admin',
-  '$2a$10$wN9aCshc8f5VvF1W2xK8iOs005oXq8/gZ3.9gq8W226W5vR5wQJv.',
+  '!DISABLED_DEMO_ACCOUNT!',
   'local',
   'tier_enterprise',
   1,

@@ -3,19 +3,18 @@
 -- Sesuai cetak biru struktur_db.md: 18 Tabel Lengkap, 3-Tier, DP 30%, 
 -- 10 Atribut Wajib Listing, Master 16 Kategori (Utama, B2B, B3)
 -- Target Database: bursalimbahdb
--- Target User: admin@% (Password: [REDACTED])
+-- Provision user aplikasi secara terpisah dengan secret unik dan privilege minimum.
 -- ====================================================================
 
 CREATE DATABASE IF NOT EXISTS `bursalimbahdb`
   DEFAULT CHARACTER SET utf8mb4
   DEFAULT COLLATE utf8mb4_unicode_ci;
 
-CREATE USER IF NOT EXISTS 'admin'@'%' IDENTIFIED BY '[REDACTED]';
-ALTER USER 'admin'@'%' IDENTIFIED BY '[REDACTED]';
-GRANT ALL PRIVILEGES ON `bursalimbahdb`.* TO 'admin'@'%';
 FLUSH PRIVILEGES;
 
 USE `bursalimbahdb`;
+
+-- Provision a dedicated least-privilege DB account securely outside this SQL file.
 
 -- 1. TABEL: users
 CREATE TABLE IF NOT EXISTS `users` (

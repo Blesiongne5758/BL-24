@@ -440,7 +440,7 @@ app.post('/api/auth/register', async (req, res) => {
     }
 
     // 2. Hash password menggunakan bcrypt
-    const rawPass = [REDACTED] '[REDACTED]';
+    const rawPass = password;
     const passwordHash = await bcrypt.hash(rawPass, 10);
 
     // 3. Tentukan default nilai
@@ -523,6 +523,10 @@ app.post('/api/auth/login', async (req, res) => {
       return res.status(400).json({ success: false, message: 'Harap masukkan email atau nomor WhatsApp.' });
     }
 
+    if (typeof password !== 'string' || password.length === 0) {
+      return res.status(400).json({ success: false, message: 'Kata sandi wajib diisi.' });
+    }
+
     const cleanId = identifier.trim().toLowerCase();
     const cleanDigits = cleanId.replace(/[^0-9]/g, '');
 
@@ -539,8 +543,8 @@ app.post('/api/auth/login', async (req, res) => {
     // Auto-register jika belum ada akun
     if (users.length === 0) {
       if (cleanId.includes('@') && cleanId.includes('.')) {
-        const roleToAssign = expectedRole || 'buyer';
-        const rawPass = [REDACTED] '[REDACTED]';
+        const roleToAssign = expectedRole === 'seller' ? 'seller' : 'buyer';
+        const rawPass = password;
         const passwordHash = await bcrypt.hash(rawPass, 10);
         const newId = `user_${roleToAssign}_${Date.now()}`;
         const emailPrefix = cleanId.split('@')[0].replace(/[^a-zA-Z0-9]/g, ' ');
@@ -609,24 +613,21 @@ app.post('/api/auth/login', async (req, res) => {
       });
     }
 
-    // Password verification
+    // Hanya hash bcrypt yang valid diterima; tidak ada fallback demo/plaintext.
     let passwordMatch = false;
-    const isDemoMode = process.env.DEMO_MODE !== 'false';
-
-    if (userRecord.password_hash) {
-      if (userRecord.password_hash.startsWith('$2')) {
+    const storedHash = String(userRecord.password_hash || '');
+    if (/^\$2[aby]\$/.test(storedHash)) {
+      try {
         passwordMatch = [REDACTED]
-      } else if (isDemoMode) {
+      } catch {
         passwordMatch = [REDACTED]
       }
-    } else if (isDemoMode) {
-      passwordMatch = [REDACTED]
     }
 
     if (!passwordMatch) {
       return res.status(401).json({
         success: false,
-        message: isDemoMode ? 'Kata sandi salah. Kata sandi default akun demo: [REDACTED].' : 'Kredensial login tidak cocok.'
+        message: 'Email/nomor atau kata sandi tidak sesuai.'
       });
     }
 
@@ -651,66 +652,13 @@ app.post('/api/auth/login', async (req, res) => {
   }
 });
 
-// =================================================================
-// 4. GOOGLE OAUTH
-// =================================================================
-app.post('/api/auth/google', async (req, res) => {
-  try {
-    const { email, name, avatar, role = 'buyer' } = req.body;
-    if (!email || !email.includes('@')) {
-      return res.status(400).json({ success: false, message: 'Email Google tidak valid.' });
-    }
-
-    const cleanEmail = email.trim().toLowerCase();
-    const [existing] = await pool.query('SELECT * FROM users WHERE LOWER(email) = ?', [cleanEmail]);
-
-    if (existing.length > 0) {
-      const user = mapUserFromDb(existing[0]);
-      const token = generateAccessToken(user);
-      const refreshToken = generateRefreshToken(user);
-      await logAudit(user.id, 'google_login', 'user', user.id, {}, req);
-      return res.json({ success: true, user, role: user.role, token, refreshToken, isNewAccount: false });
-    }
-
-    const newId = `user_${role}_${Date.now()}`;
-    const displayName = name || cleanEmail.split('@')[0];
-    const dummyPhone = `+62 812-${Math.floor(10000000 + Math.random() * 90000000)}`;
-    const company = role === 'seller' ? `CV ${displayName} Sentra` : `PT ${displayName} Daur Ulang`;
-    const passwordHash = await bcrypt.hash('google_oauth_' + Date.now(), 10);
-
-    const nextMonth = new Date();
-    nextMonth.setMonth(nextMonth.getMonth() + 1);
-    const subExpiry = nextMonth.toISOString().split('T')[0];
-
-    const insertQuery = `
-      INSERT INTO users (
-        id, name, email, phone, company, role, password_hash, auth_provider,
-        subscription_tier, subscription_active, subscription_expiry,
-        identity_verified, verification_status, verified_badge,
-        bank_account, location, balance, avatar
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, 'google', 'tier_starter', 1, ?, 0, 'unverified', ?, '-', 'Indonesia', 0.00, ?)
-    `;
-
-    await pool.query(insertQuery, [
-      newId, displayName, cleanEmail, dummyPhone, company, role, passwordHash,
-      subExpiry, role === 'seller' ? 'Mitra Google' : 'Pembeli Google', avatar || null
-    ]);
-
-    const [newRows] = await pool.query('SELECT * FROM users WHERE id = ?', [newId]);
-    const newUser = mapUserFromDb(newRows[0]);
-    const token = generateAccessToken(newUser);
-    const refreshToken = generateRefreshToken(newUser);
-
-    await logAudit(newUser.id, 'google_register', 'user', newUser.id, { role }, req);
-
-    return res.status(201).json({ success: true, user: newUser, role: newUser.role, token, refreshToken, isNewAccount: true });
-  } catch (error) {
-    console.error('[Google Auth Error]', error);
-    return res.status(500).json({ success: false, message: error.message });
-  }
+// Google authentication has been disabled.
+app.post('/api/auth/google', (req, res) => {
+  return res.status(410).json({ success: false, message: 'Login Google telah dinonaktifkan.' });
 });
 
 // =================================================================
+// 4B. PROFILE SESI// =================================================================
 // 4B. PROFILE SESI (GET /api/auth/me) & REFRESH TOKEN
 // =================================================================
 app.get('/api/auth/me', authenticate, async (req, res) => {

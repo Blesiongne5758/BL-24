@@ -11,8 +11,9 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 $input = json_decode(file_get_contents('php://input'), true) ?? $_POST;
 
 $email = trim(strtolower($input['email'] ?? ''));
-$password = $input['password'] ?? '[REDACTED]';
-$role = $input['role'] ?? 'buyer';
+$password = $input['password'] ?? '';
+$requestedRole = $input['role'] ?? 'buyer';
+$role = in_array($requestedRole, ['buyer', 'seller'], true) ? $requestedRole : 'buyer';
 $name = trim($input['name'] ?? '');
 $company = trim($input['company'] ?? '');
 $phone = trim($input['phone'] ?? '');
@@ -23,6 +24,12 @@ $tierId = trim($input['tierId'] ?? 'tier_starter');
 if (empty($email) || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
     http_response_code(400);
     echo json_encode(['success' => false, 'message' => 'Alamat email tidak valid.']);
+    exit;
+}
+
+if (!is_string($password) || $password === '') {
+    http_response_code(400);
+    echo json_encode(['success' => false, 'message' => 'Kata sandi wajib diisi.']);
     exit;
 }
 

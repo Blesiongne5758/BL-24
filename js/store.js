@@ -464,6 +464,9 @@ class BursaLimbahStore {
   }
 
   loginUser(identifier, password, expectedRole = null) {
+    if (typeof password !== 'string' || password.length === 0) {
+      return { success: false, message: 'Kata sandi wajib diisi.' };
+    }
     const cleanId = (identifier || "").trim().toLowerCase();
     const cleanDigits = cleanId.replace(/[^0-9]/g, "");
 
@@ -476,7 +479,7 @@ class BursaLimbahStore {
     if (!user) {
       // Jika pengguna memasukkan format email yang valid, sediakan akses login instan sesuai tab peran (pembeli/penjual)
       if (cleanId.includes("@") && cleanId.includes(".")) {
-        const role = expectedRole || "buyer";
+        const role = expectedRole === 'seller' ? 'seller' : 'buyer';
         const emailName = cleanId.split("@")[0].replace(/[^a-zA-Z0-9]/g, " ").trim();
         const displayName = emailName.charAt(0).toUpperCase() + emailName.slice(1);
 
@@ -522,8 +525,8 @@ class BursaLimbahStore {
     }
 
     // Periksa password
-    const userPass = user.[REDACTED] "[REDACTED]";
-    if (password && password !== userPass) {
+    const userPass = user.[REDACTED] '';
+    if (![REDACTED] password !== userPass) {
       return {
         success: false,
         message: "Kata sandi yang Anda masukkan salah. Silakan coba lagi atau gunakan tombol Akun Demo."
@@ -670,108 +673,6 @@ class BursaLimbahStore {
 
     const newUser = this.registerBuyer(buyerData);
     return { success: true, user: newUser, isNewAccount: true, source: 'local' };
-  }
-
-  async loginWithGoogleAsync({ email, name, avatar, role = 'buyer' }) {
-    try {
-      const res = await fetch(`${this.apiBaseUrl}/api/auth/google`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, name, avatar, role })
-      });
-      const data = await res.json();
-      if (res.ok && data.success) {
-        const user = data.user;
-        const existingIdx = this.state.users.findIndex(u => u.id === user.id || (u.email && u.email.toLowerCase() === user.email.toLowerCase()));
-        if (existingIdx !== -1) {
-          this.state.users[existingIdx] = { ...this.state.users[existingIdx], ...user };
-        } else {
-          this.state.users.push(user);
-        }
-        if (user.role === 'buyer') {
-          this.state.activeUserId = user.id;
-          this.state.authenticatedBuyerId = user.id;
-          this.state.currentRole = 'buyer';
-        } else if (user.role === 'seller') {
-          this.state.sellerUserId = user.id;
-          this.state.authenticatedSellerId = user.id;
-          this.state.currentRole = 'seller';
-        } else if (user.role === 'admin') {
-          this.state.adminUserId = user.id;
-          this.state.currentRole = 'admin';
-        }
-        this.save();
-        return {
-          success: true,
-          user,
-          role: user.role,
-          isNewAccount: Boolean(data.isNewAccount),
-          source: 'mysql'
-        };
-      }
-    } catch (err) {
-      console.warn('[Store] Backend MySQL offline untuk Google Auth, fallback lokal');
-    }
-
-    const localRes = this.loginWithGoogle({ email, name, avatar, role });
-    localRes.source = 'local';
-    return localRes;
-  }
-
-  loginWithGoogle({ email, name, avatar, role = 'buyer' }) {
-    const cleanEmail = (email || '').trim().toLowerCase();
-    let user = this.state.users.find(u => u.email && u.email.toLowerCase() === cleanEmail);
-
-    let isNew = false;
-    if (!user) {
-      isNew = true;
-      const displayName = name || (cleanEmail.split('@')[0].replace(/[^a-zA-Z0-9]/g, ' '));
-      if (role === 'seller') {
-        user = this.registerSeller({
-          name: `${displayName} (Mitra Penjual)`,
-          email: cleanEmail,
-          phone: "+62 812-" + Math.floor(10000000 + Math.random() * 90000000),
-          company: `CV ${displayName} Sentra`,
-          password: [REDACTED]
-        });
-      } else {
-        user = this.registerBuyer({
-          name: `${displayName} (Pembeli)`,
-          email: cleanEmail,
-          phone: "+62 812-" + Math.floor(10000000 + Math.random() * 90000000),
-          company: `PT ${displayName} Daur Ulang`,
-          tierId: "tier_starter",
-          password: [REDACTED]
-        });
-      }
-    }
-
-    // Tandai akun Google
-    user.authProvider = 'google';
-    user.emailVerified = true;
-    if (avatar) user.avatar = avatar;
-
-    // Aktifkan sesi pengguna
-    if (user.role === 'buyer') {
-      this.state.activeUserId = user.id;
-      this.state.authenticatedBuyerId = user.id;
-      this.state.currentRole = 'buyer';
-    } else if (user.role === 'seller') {
-      this.state.sellerUserId = user.id;
-      this.state.authenticatedSellerId = user.id;
-      this.state.currentRole = 'seller';
-    } else if (user.role === 'admin') {
-      this.state.adminUserId = user.id;
-      this.state.currentRole = 'admin';
-    }
-
-    this.save();
-    return {
-      success: true,
-      user,
-      role: user.role,
-      isNewAccount: isNew
-    };
   }
 
   updateUserProfile(userId, data = {}) {

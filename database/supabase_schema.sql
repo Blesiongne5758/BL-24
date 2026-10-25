@@ -228,7 +228,6 @@ INSERT INTO public.categories (id, name, icon, unit, min_price, max_price) VALUE
 ON CONFLICT (id) DO NOTHING;
 
 -- -------------------------------------------------------
--- SEED DATA: Akun Pengguna Bawaan (Default Password: [REDACTED])
 -- -------------------------------------------------------
 INSERT INTO public.users (id, name, email, phone, company, role, auth_provider, subscription_tier, subscription_active, identity_verified, verification_status, verified_badge, location) VALUES
 ('user_buyer_1', 'Budi Santoso (Purchasing)', 'pengadaan@hijaulestari.co.id', '+62 811-2345-678', 'PT Hijau Lestari Biofuel', 'buyer', 'local', 'tier_pro', TRUE, TRUE, 'verified', 'Mitra Terverifikasi (KTP/NPWP)', 'Kawasan Industri Cikarang, Jawa Barat'),

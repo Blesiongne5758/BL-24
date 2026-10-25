@@ -28,15 +28,15 @@ Aplikasi ini mendukung mode **client-side mandiri** (*standalone demo*) maupun *
    ```bash
    mysql -u root -p < database/setup_complete.sql
    ```
-3. Konfigurasi kredensial pada `server/.env` (gunakan `server/.env.example` sebagai referensi):
+3. Buat `server/.env` yang diabaikan Git; isi secret kuat dari secret manager dan gunakan akun database aplikasi khusus berhak minimum (jangan gunakan root):
    ```env
    PORT=5000
    DB_HOST=localhost
    DB_PORT=3306
-   DB_USER=root
+   DB_USER=bl24_app
    DB_PASSWORD=
    [REDACTED]
-   JWT_SECRET=[REDACTED]
+   JWT_SECRET=
    ```
 4. Jalankan backend service:
    ```bash
@@ -47,6 +47,8 @@ Aplikasi ini mendukung mode **client-side mandiri** (*standalone demo*) maupun *
 5. Akses platform pada `http://localhost:5000` (terhubung penuh dengan REST API dan MySQL).
 
 ### C. Menjalankan via Docker Compose (Produksi Siap Pakai)
+Buat file root `.env` yang diabaikan Git dengan `MYSQL_ROOT_PASSWORD`, `DB_PASSWORD`, dan `JWT_SECRET` yang kuat sebelum Compose dijalankan. Jangan gunakan nilai dari contoh/riwayat lama; rahasia baru harus disimpan di secret manager atau file lokal berizin ketat.
+
 ```bash
 docker-compose up -d --build
 ```

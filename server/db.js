@@ -9,12 +9,18 @@ const mysql = require('mysql2/promise');
 const path  = require('path');
 require('dotenv').config({ path: path.join(__dirname, '.env') });
 
+const requiredDbEnv = ['DB_HOST', 'DB_USER', 'DB_PASSWORD', 'DB_NAME'];
+const missingDbEnv = requiredDbEnv.filter((key) => !process.env[key]);
+if (missingDbEnv.length) {
+  throw new Error(`Missing required database environment variables: ${missingDbEnv.join(', ')}`);
+}
+
 const dbConfig = {
-  host:             process.env.DB_HOST     || 'localhost',
+  host:             process.env.DB_HOST,
   port:             parseInt(process.env.DB_PORT, 10) || 3306,
-  user:             process.env.DB_USER     || 'root',
+  user:             process.env.DB_USER,
   password:         [REDACTED]
-  database:         process.env.DB_NAME     || 'bursalimbahdb',
+  database:         process.env.DB_NAME,
   waitForConnections: true,
   connectionLimit:  parseInt(process.env.DB_CONNECTION_LIMIT, 10) || 15,
   queueLimit:       0,

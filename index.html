@@ -269,24 +269,7 @@
             <div id="login-alert-msg" class="leading-relaxed">Email atau kata sandi tidak sesuai.</div>
           </div>
 
-          <!-- Tombol Masuk dengan Google -->
-          <div class="space-y-3">
-            <button type="button" onclick="app.showGoogleLoginModal()" class="w-full py-3 px-4 rounded-xl border border-slate-300 hover:border-slate-400 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs shadow-xs hover:shadow transition flex items-center justify-center space-x-2.5 active:scale-98">
-              <svg class="w-4 h-4" viewBox="0 0 24 24">
-                <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z"/>
-                <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.33 24 12 24z"/>
-                <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.16 0 9.97 0 12s.45 3.84 1.25 5.42l4.03-3.15z"/>
-                <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/>
-              </svg>
-              <span>Lanjutkan dengan Google</span>
-            </button>
-
-            <div class="relative flex items-center justify-center my-3">
-              <div class="border-t border-slate-200 w-full"></div>
-              <span class="bg-white px-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider relative z-10">atau masuk dengan email</span>
-            </div>
-          </div>
-
+          <!-- Formulir Input -->
           <!-- Formulir Input -->
           <form id="form-login-account" onsubmit="app.handleLoginFormSubmit(event)" class="space-y-4">
             <div>
@@ -307,13 +290,10 @@
               </div>
               <div class="relative">
                 <i class="fa-solid fa-lock absolute left-3.5 top-3.5 text-slate-400 text-sm"></i>
-                <input type="password" id="login-input-password" required value="[REDACTED]" placeholder="Masukkan kata sandi" class="w-full bg-slate-50 border border-slate-300 rounded-xl pl-10 pr-10 py-2.5 text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none">
+                <input type="password" id="login-input-password" required placeholder="Masukkan kata sandi" class="w-full bg-slate-50 border border-slate-300 rounded-xl pl-10 pr-10 py-2.5 text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none">
                 <button type="button" onclick="app.togglePasswordVisibility('login-input-password', this)" class="absolute right-3.5 top-3 text-slate-400 hover:text-slate-600 text-sm p-0.5">
                   <i class="fa-solid fa-eye"></i>
                 </button>
-              </div>
-              <div class="flex items-center justify-between text-[11px] text-slate-400 mt-1">
-                <span>Kata sandi bawaan akun demo: <code class="bg-slate-100 px-1.5 py-0.5 rounded text-slate-700 font-mono font-semibold">[REDACTED]</code></span>
               </div>
             </div>
 
@@ -360,21 +340,6 @@
                 <i class="fa-solid fa-wallet text-emerald-400 text-xs mb-1 block"></i>
                 <span class="text-[10px] text-slate-300 font-semibold block leading-tight">Pencairan Cepat</span>
               </div>
-            </div>
-          </div>
-
-          <!-- Pilihan Cepat Akun Demo (1-Klik) -->
-          <div class="pt-4 border-t border-slate-100 space-y-3">
-            <div class="flex items-center justify-between">
-              <span class="text-[11px] font-bold uppercase text-slate-500 tracking-wider flex items-center">
-                <i class="fa-solid fa-bolt text-amber-500 mr-1.5"></i>
-                Akses Cepat Akun Demo (1-Klik):
-              </span>
-              <span class="text-[10px] text-slate-400">Pilih & Langsung Masuk</span>
-            </div>
-
-            <div id="login-quick-accounts-container" class="grid sm:grid-cols-2 gap-2.5">
-              <!-- Diisi dinamis oleh app.renderQuickLoginAccounts() -->
             </div>
           </div>
 
@@ -3527,7 +3492,7 @@
                     </div>
                     <div>
                       <label class="block text-xs font-bold text-slate-700">Supabase Anon / Public Key *</label>
-                      <input id="setting-supabase-anon-key" type="password" value="[REDACTED]" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." class="mt-1 w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-xs font-mono">
+                      <input id="setting-supabase-anon-key" type="password" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." class="mt-1 w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-xs font-mono">
                     </div>
                   </div>
 
@@ -3963,7 +3928,7 @@
           <label class="block text-xs font-bold uppercase text-slate-700 mb-1">Kata Sandi (Password) *</label>
           <div class="relative">
             <i class="fa-solid fa-lock absolute left-3.5 top-3 text-slate-400 text-sm"></i>
-            <input type="password" id="reg-buyer-password" required value="[REDACTED]" placeholder="Minimal 6 karakter" class="w-full bg-slate-50 border border-slate-300 rounded-xl pl-10 pr-3.5 py-2.5 text-xs focus:ring-2 focus:ring-brand-500 focus:outline-none font-medium">
+            <input type="password" id="reg-buyer-password" required placeholder="Minimal 6 karakter" class="w-full bg-slate-50 border border-slate-300 rounded-xl pl-10 pr-3.5 py-2.5 text-xs focus:ring-2 focus:ring-brand-500 focus:outline-none font-medium">
           </div>
           <p class="text-[10px] text-slate-400 mt-1">Digunakan untuk login kembali ke portal pembeli Anda.</p>
         </div>
@@ -4042,7 +4007,7 @@
           <label class="block text-xs font-bold uppercase text-slate-700 mb-1">Kata Sandi (Password) *</label>
           <div class="relative">
             <i class="fa-solid fa-lock absolute left-3.5 top-3 text-slate-400 text-sm"></i>
-            <input type="password" id="reg-seller-password" required value="[REDACTED]" placeholder="Minimal 6 karakter" class="w-full bg-slate-50 border border-slate-300 rounded-xl pl-10 pr-3.5 py-2.5 text-xs focus:ring-2 focus:ring-brand-500 focus:outline-none font-medium">
+            <input type="password" id="reg-seller-password" required placeholder="Minimal 6 karakter" class="w-full bg-slate-50 border border-slate-300 rounded-xl pl-10 pr-3.5 py-2.5 text-xs focus:ring-2 focus:ring-brand-500 focus:outline-none font-medium">
           </div>
           <p class="text-[10px] text-slate-400 mt-1">Digunakan untuk login kembali ke dashboard penjual Anda.</p>
         </div>
@@ -4140,67 +4105,6 @@
     <div class="bg-white rounded-3xl max-w-xl w-full p-8 shadow-2xl border border-slate-200 space-y-6" id="printable-receipt">
       <div id="receipt-modal-content">
         <!-- Diisi otomatis oleh JavaScript -->
-      </div>
-    </div>
-  </div>
-
-  <!-- ================= MODAL 6: LOGIN / OAUTH GOOGLE ================= -->
-  <div id="modal-google-auth" class="fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-sm hidden items-center justify-center p-4 overflow-y-auto">
-    <div class="bg-white rounded-3xl max-w-md w-full p-6 sm:p-8 shadow-2xl border border-slate-200 space-y-5">
-      <!-- Google Branding Header -->
-      <div class="flex items-center justify-between border-b border-slate-100 pb-4">
-        <div class="flex items-center space-x-3">
-          <svg class="w-6 h-6" viewBox="0 0 24 24">
-            <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z"/>
-            <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.33 24 12 24z"/>
-            <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.16 0 9.97 0 12s.45 3.84 1.25 5.42l4.03-3.15z"/>
-            <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/>
-          </svg>
-          <span class="font-bold text-slate-800 text-sm">Masuk dengan Google</span>
-        </div>
-        <button type="button" onclick="app.closeGoogleLoginModal()" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg">
-          <i class="fa-solid fa-xmark text-lg"></i>
-        </button>
-      </div>
-
-      <div id="google-modal-role-subtitle" class="text-xs text-slate-600">
-        Pilih akun Google Anda untuk masuk ke <strong>Bursa Limbah</strong>:
-      </div>
-
-      <!-- Pilihan Akun Google Demo -->
-      <div class="space-y-2">
-        <button type="button" onclick="app.proceedGoogleLogin('budi.santoso@gmail.com', 'Budi Santoso', 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80')" class="w-full p-3 rounded-2xl border border-slate-200 hover:border-emerald-500 hover:bg-emerald-50/40 text-left transition flex items-center space-x-3 group">
-          <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80" alt="Budi" class="w-10 h-10 rounded-full object-cover border border-slate-200 shrink-0">
-          <div class="flex-1 min-w-0">
-            <div class="text-xs font-bold text-slate-900 group-hover:text-emerald-800">Budi Santoso</div>
-            <div class="text-[11px] text-slate-500 truncate">budi.santoso@gmail.com</div>
-          </div>
-          <i class="fa-solid fa-chevron-right text-xs text-slate-400 group-hover:text-emerald-600"></i>
-        </button>
-
-        <button type="button" onclick="app.proceedGoogleLogin('siti.aminah@gmail.com', 'Siti Aminah', 'https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&w=120&q=80')" class="w-full p-3 rounded-2xl border border-slate-200 hover:border-emerald-500 hover:bg-emerald-50/40 text-left transition flex items-center space-x-3 group">
-          <img src="https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&w=120&q=80" alt="Siti" class="w-10 h-10 rounded-full object-cover border border-slate-200 shrink-0">
-          <div class="flex-1 min-w-0">
-            <div class="text-xs font-bold text-slate-900 group-hover:text-emerald-800">Siti Aminah (PT Daur Hijau)</div>
-            <div class="text-[11px] text-slate-500 truncate">siti.aminah@gmail.com</div>
-          </div>
-          <i class="fa-solid fa-chevron-right text-xs text-slate-400 group-hover:text-emerald-600"></i>
-        </button>
-      </div>
-
-      <!-- Atau Masukkan Akun Google Kustom -->
-      <div class="pt-3 border-t border-slate-100 space-y-2">
-        <label class="block text-[11px] font-bold uppercase text-slate-600">Atau Gunakan Email Google Lain:</label>
-        <div class="flex gap-2">
-          <input type="email" id="custom-google-email" placeholder="nama@gmail.com" class="flex-1 bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-brand-500 focus:outline-none">
-          <button type="button" onclick="app.proceedCustomGoogleLogin()" class="px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition shrink-0">
-            Lanjut
-          </button>
-        </div>
-      </div>
-
-      <div class="text-[10px] text-slate-400 text-center leading-relaxed">
-        Dengan melanjutkan, Google memverifikasi identitas Anda untuk akses aman ke ekosistem Bursa Limbah.
       </div>
     </div>
   </div>
