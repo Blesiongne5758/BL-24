@@ -6534,6 +6534,87 @@ class BursaLimbahApp {
     this.renderSellerOffers();
   }
 
+  renderSellerOffers() {
+    const container = [REDACTED]'seller-offers-container');
+    if (!container) return;
+
+    const seller = this.store.getCurrentUser();
+    if (!seller || seller.role !== 'seller') {
+      container.innerHTML = '<div class="py-8 text-center text-xs text-slate-400">Sesi penjual tidak ditemukan.</div>';
+      return;
+    }
+
+    const pendingOffers = this.store
+      .getOffersForSeller(seller.id)
+      .filter(offer => offer.status === 'pending');
+
+    if (pendingOffers.length === 0) {
+      container.innerHTML = '<div class="py-8 text-center text-xs text-slate-400">Belum ada penawaran yang menunggu keputusan.</div>';
+      return;
+    }
+
+    container.innerHTML = `
+      <table class="w-full text-left text-xs">
+        <thead class="bg-slate-50 text-slate-500 uppercase text-[10px] border-b border-slate-200">
+          <tr>
+            <th class="p-3">Tanggal</th>
+            <th class="p-3">Pembeli</th>
+            <th class="p-3">Komoditas</th>
+            <th class="p-3">Harga Penawaran</th>
+            <th class="p-3">Kuantitas</th>
+            <th class="p-3">Catatan</th>
+            <th class="p-3 text-right">Keputusan</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100">
+          ${pendingOffers.map(offer => `
+            <tr class="hover:bg-slate-50/70 transition">
+              <td class="p-3 font-mono text-slate-500">${this._escHtml((offer.createdAt || '').substring(0, 10))}</td>
+              <td class="p-3 font-semibold text-slate-900">${this._escHtml(offer.buyerName)}</td>
+              <td class="p-3 font-semibold text-slate-800">
+                <div>${this._escHtml(offer.productTitle)}</div>
+                <div class="text-[10px] font-mono text-slate-400">${this._escHtml(offer.productCode || '')}</div>
+              </td>
+              <td class="p-3 font-mono font-bold text-emerald-700">${this.formatRupiah(offer.offerPrice)} / ${this._escHtml(offer.unit)}</td>
+              <td class="p-3 font-mono">${Number(offer.quantity || 1).toLocaleString('id-ID')} ${this._escHtml(offer.unit)}</td>
+              <td class="p-3 text-slate-500">${this._escHtml(offer.note || '-')}</td>
+              <td class="p-3 text-right whitespace-nowrap">
+                <button type="button" data-offer-id="${this._escHtml(offer.id)}" data-offer-decision="accepted" class="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold transition">Terima</button>
+                <button type="button" data-offer-id="${this._escHtml(offer.id)}" data-offer-decision="rejected" class="ml-1 px-3 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-700 text-white font-bold transition">Tolak</button>
+              </td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    `;
+
+    container.querySelectorAll('[data-offer-decision]').forEach(button => {
+      button.addEventListener('click', () => {
+        this.respondToSellerOffer(button.dataset.offerId, button.dataset.offerDecision);
+      });
+    });
+  }
+
+  respondToSellerOffer(offerId, decision) {
+    const seller = this.store.getCurrentUser();
+    if (!seller || seller.role !== 'seller') {
+      this.showToast('Aksi ini hanya tersedia untuk penjual.', 'error');
+      return;
+    }
+    if (!['accepted', 'rejected'].includes(decision)) return;
+
+    const actionLabel = decision === 'accepted' ? 'menerima' : 'menolak';
+    if (!window.confirm(`Yakin ingin ${actionLabel} penawaran ini?`)) return;
+
+    try {
+      this.store.respondToOffer(offerId, seller.id, decision);
+      this.renderSellerDashboard();
+      this.showToast(decision === 'accepted' ? 'Penawaran diterima.' : 'Penawaran ditolak.', 'success');
+    } catch (error) {
+      this.showToast(error.message || 'Penawaran gagal diproses.', 'error');
+    }
+  }
+
   printSellerOffersReport() {
     const seller = this.store.getCurrentUser();
     if (!seller) return;
