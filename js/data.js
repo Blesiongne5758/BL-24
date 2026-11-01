@@ -562,23 +562,8 @@ const INITIAL_SETTINGS = {
     marketTicker: true,         // Ticker harga pasar acuan
     userRegistration: true,     // Buka / tutup pendaftaran akun baru
     logisticsService: true,     // Layanan pengiriman & logistik armada
-    cryptoWallet: true          // Dompet Kripto & Pembayaran Blockchain Web3
   },
   // Konfigurasi Blockchain & Dompet Kripto Bursa Limbah
-  cryptoConfig: {
-    enabled: true,
-    networkName: "Polygon PoS (Matic Mainnet)",
-    networkRpc: "https://polygon-rpc.com",
-    chainId: 137,
-    currencySymbol: "CLNK",
-    tokenName: "Circulink Utility Token",
-    tokenContractAddress: "0x71C25e79140C9404B6732B2586eFf1dF3993CLNK",
-    escrowContractAddress: "0x3A28F50B9402De069F78465C58a18357aF38ESCROW",
-    rewardPer100Kg: 10,         // 10 CLNK reward per 100 Kg limbah terverifikasi
-    tokenRateIdr: 1500,         // Kurs: 1 CLNK = Rp 1.500
-    gasSponsorEnabled: true,    // Bebas gas fee (disponsori relayer platform)
-    airdropPoolBalance: 2500000 // 2.500.000 CLNK Pool Reward Daur Ulang
-  },
   // Konfigurasi Cloudinary (Gambar & Multimedia)
   cloudinaryConfig: {
     enabled: true,

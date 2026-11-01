@@ -164,21 +164,6 @@ CREATE TABLE IF NOT EXISTS public.system_settings (
 );
 
 -- -------------------------------------------------------
--- 8. Table: crypto_wallets
--- -------------------------------------------------------
-CREATE TABLE IF NOT EXISTS public.crypto_wallets (
-  user_id TEXT PRIMARY KEY REFERENCES public.users(id) ON DELETE CASCADE,
-  address TEXT UNIQUE NOT NULL,
-  network TEXT NOT NULL DEFAULT 'Polygon PoS (Matic Mainnet)',
-  balance_clnk NUMERIC(18, 4) NOT NULL DEFAULT 0.0000,
-  balance_usdt NUMERIC(18, 4) NOT NULL DEFAULT 0.0000,
-  balance_matic NUMERIC(18, 4) NOT NULL DEFAULT 0.0000,
-  unclaimed_clnk NUMERIC(18, 4) NOT NULL DEFAULT 0.0000,
-  tx_history JSONB DEFAULT '[]'::jsonb,
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
-
--- -------------------------------------------------------
 -- ROW LEVEL SECURITY (RLS) POLICIES
 -- Hardened Security Policies: Protect Sensitive User & System Data
 -- -------------------------------------------------------
@@ -189,7 +174,6 @@ ALTER TABLE public.orders ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.offers ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.events ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.system_settings ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.crypto_wallets ENABLE ROW LEVEL SECURITY;
 
 -- 1. Read Policies (Public Read for Marketplace Catalogs)
 CREATE POLICY "Public Read Categories" ON public.categories FOR SELECT USING (true);
@@ -203,9 +187,6 @@ CREATE POLICY "Restricted Read Users" ON public.users FOR SELECT USING (
 );
 CREATE POLICY "Restricted Read Orders" ON public.orders FOR SELECT USING (true);
 CREATE POLICY "Restricted Read Offers" ON public.offers FOR SELECT USING (true);
-CREATE POLICY "Restricted Read Wallets" ON public.crypto_wallets FOR SELECT USING (
-  auth.role() = 'authenticated' OR auth.role() = 'service_role'
-);
 
 -- 3. Write Policies (Controlled Insert & Update, Prevent Arbitrary Deletions)
 CREATE POLICY "Allow Insert Products" ON public.products FOR INSERT WITH CHECK (true);

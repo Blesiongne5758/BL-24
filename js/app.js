@@ -79,7 +79,6 @@ class BursaLimbahApp {
     this.updateChatUnreadBadge();
     this.updateNavUI();
     this.applyFeatureFlags();
-    this.updateCryptoNavBadge();
   }
 
   // ================= FUNGSI BANTU & FORMATTER =================
@@ -381,7 +380,6 @@ class BursaLimbahApp {
 
   // ================= NAVIGASI & HEADER DOKUMEN =================
   updateNavUI() {
-    this.updateCryptoNavBadge();
     const navContainer = document.getElementById('nav-action-container');
     if (!navContainer) return;
 
@@ -3801,10 +3799,6 @@ class BursaLimbahApp {
       const tickerChk = document.getElementById('setting-ticker-enabled');
       if (tickerChk) tickerChk.checked = checked;
     }
-    if (key === 'cryptoWallet') {
-      const cryptoChk = document.getElementById('setting-crypto-enabled');
-      if (cryptoChk) cryptoChk.checked = checked;
-    }
     this.applyFeatureFlags();
     this.showToast(`Fitur '${key}' berhasil ${checked ? 'diaktifkan' : 'dinonaktifkan'}.`, 'info');
   }
@@ -3813,7 +3807,7 @@ class BursaLimbahApp {
     const featureKeys = [
       'marketplace', 'productUpload', 'escrowDp', 'offersNegotiation',
       'chatSystem', 'buyerSubscription', 'eventsModule', 'supportTickets',
-      'marketTicker', 'userRegistration', 'logisticsService', 'cryptoWallet'
+      'marketTicker', 'userRegistration', 'logisticsService'
     ];
     featureKeys.forEach(k => {
       if (this.store.setFeature) this.store.setFeature(k, !!enableAll);
@@ -3824,260 +3818,11 @@ class BursaLimbahApp {
   }
 
   applyFeatureFlags() {
-    const isCrypto = this.store.isFeatureEnabled ? this.store.isFeatureEnabled('cryptoWallet') : true;
     const isTicker = this.store.isFeatureEnabled ? this.store.isFeatureEnabled('marketTicker') : true;
-
-    // Tombol dompet kripto di header navbar
-    const btnCrypto = document.getElementById('btn-header-crypto-wallet');
-    if (btnCrypto) {
-      btnCrypto.classList.toggle('hidden', !isCrypto);
-    }
-    this.updateCryptoNavBadge();
-
     // Bar ticker harga pasar terkini
     const tickerBar = document.getElementById('price-ticker-bar');
     if (tickerBar) {
       tickerBar.classList.toggle('hidden', !isTicker);
-    }
-  }
-
-  // ================= 7D. DOMPET KRIPTO WEB3 & DISTRIBUSI TOKEN =================
-  showCryptoWalletModal() {
-    const modal = document.getElementById('modal-crypto-wallet');
-    if (!modal) return;
-    const user = this.store.getCurrentUser();
-    if (!user) {
-      this.showLoginModal();
-      this.showToast('Silakan masuk akun terlebih dahulu untuk mengakses dompet kripto.', 'warning');
-      return;
-    }
-
-    const wallet = this.store.getCryptoWallet ? this.store.getCryptoWallet(user.id) : null;
-    const config = this.store.getCryptoConfig ? this.store.getCryptoConfig() : {};
-    const rate = config.tokenRateIdr || config.exchangeRateIdr || 1500;
-
-    if (wallet) {
-      const addrEl = document.getElementById('crypto-wallet-address');
-      const clnkEl = document.getElementById('crypto-balance-clnk');
-      const clnkIdrEl = document.getElementById('crypto-balance-clnk-idr');
-      const usdtEl = document.getElementById('crypto-balance-usdt');
-      const maticEl = document.getElementById('crypto-balance-matic');
-      const pendingEl = document.getElementById('crypto-reward-pending-clnk');
-      const reasonEl = document.getElementById('crypto-reward-reason');
-      const netBadge = document.getElementById('crypto-network-badge');
-
-      const clnkBal = wallet.balances?.CLNK ?? wallet.balanceClnk ?? 0;
-      const usdtBal = wallet.balances?.USDT ?? wallet.balanceUsdt ?? 0;
-      const maticBal = wallet.balances?.MATIC ?? wallet.balanceMatic ?? 0.25;
-      const unclaimed = wallet.unclaimedRewards?.CLNK ?? wallet.pendingRewards ?? 0;
-      const unclaimedReason = wallet.unclaimedRewards?.reason ?? wallet.pendingRewardsReason ?? 'Reward pasokan limbah terverifikasi';
-
-      if (addrEl) addrEl.textContent = wallet.address || '0x...';
-      if (clnkEl) clnkEl.textContent = Number(clnkBal).toLocaleString('id-ID');
-      if (clnkIdrEl) clnkIdrEl.textContent = `(â‰ˆ ${this.formatRupiah(clnkBal * rate)})`;
-      if (usdtEl) usdtEl.textContent = `${Number(usdtBal).toFixed(2)} USDT`;
-      if (maticEl) maticEl.textContent = `${Number(maticBal).toFixed(2)} MATIC`;
-      if (pendingEl) pendingEl.textContent = `+${unclaimed}`;
-      if (reasonEl) reasonEl.textContent = unclaimedReason;
-      if (netBadge) netBadge.textContent = config.networkName || config.network || 'Polygon PoS';
-
-      this.renderCryptoTxHistory(wallet.txHistory || wallet.history || []);
-    }
-
-    this.switchCryptoWalletTab('balance');
-    modal.classList.remove('hidden');
-    modal.classList.add('flex');
-  }
-
-  closeCryptoWalletModal() {
-    const modal = document.getElementById('modal-crypto-wallet');
-    if (modal) {
-      modal.classList.add('hidden');
-      modal.classList.remove('flex');
-    }
-  }
-
-  switchCryptoWalletTab(tab) {
-    const tabs = ['balance', 'send', 'history'];
-    tabs.forEach(t => {
-      const btn = document.getElementById(`crypto-tab-btn-${t}`);
-      const content = document.getElementById(`crypto-tab-content-${t}`);
-      if (btn) {
-        if (t === tab) {
-          btn.className = 'pb-2.5 px-3 text-xs font-bold border-b-2 border-amber-500 text-amber-900 transition flex items-center gap-1.5';
-        } else {
-          btn.className = 'pb-2.5 px-3 text-xs font-bold border-b-2 border-transparent text-slate-500 hover:text-slate-800 transition flex items-center gap-1.5';
-        }
-      }
-      if (content) {
-        content.classList.toggle('hidden', t !== tab);
-      }
-    });
-  }
-
-  copyCryptoAddress() {
-    const addr = document.getElementById('crypto-wallet-address')?.textContent?.trim();
-    if (!addr) return;
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(addr).then(() => {
-        this.showToast('Alamat dompet Web3 berhasil disalin ke clipboard!', 'success');
-      }).catch(() => {
-        this.showToast(`Alamat dompet: ${addr}`, 'info');
-      });
-    } else {
-      this.showToast(`Alamat dompet: ${addr}`, 'info');
-    }
-  }
-
-  claimCryptoReward() {
-    const user = this.store.getCurrentUser();
-    if (!user) return;
-    const res = this.store.claimRecyclingRewards(user.id);
-    if (!res || !res.success) {
-      this.showToast(res?.message || 'Tidak ada reward yang dapat diklaim saat ini.', 'warning');
-      return;
-    }
-    this.triggerConfetti();
-    this.showToast(`Selamat! Berhasil mengklaim +${res.claimed} CLNK reward daur ulang ke dompet!`, 'success');
-    this.showCryptoWalletModal();
-    this.updateCryptoNavBadge();
-  }
-
-  setMaxSendAmount() {
-    const symbol = document.getElementById('crypto-send-token-symbol')?.value || 'CLNK';
-    const user = this.store.getCurrentUser();
-    const wallet = user && this.store.getCryptoWallet ? this.store.getCryptoWallet(user.id) : null;
-    const amountInput = document.getElementById('crypto-send-amount');
-    if (!wallet || !amountInput) return;
-    const bal = wallet.balances ? wallet.balances[symbol] : (symbol === 'CLNK' ? wallet.balanceClnk : wallet.balanceUsdt);
-    amountInput.value = bal || 0;
-  }
-
-  handleSendCryptoToken(event) {
-    event.preventDefault();
-    const user = this.store.getCurrentUser();
-    if (!user) return;
-    const symbol = document.getElementById('crypto-send-token-symbol')?.value || 'CLNK';
-    const toAddress = document.getElementById('crypto-send-to-address')?.value?.trim();
-    const amount = Number(document.getElementById('crypto-send-amount')?.value);
-
-    if (!toAddress || !toAddress.startsWith('0x') || toAddress.length < 10) {
-      this.showToast('Format alamat tujuan tidak valid (harus diawali 0x).', 'error');
-      return;
-    }
-    if (isNaN(amount) || amount <= 0) {
-      this.showToast('Jumlah token yang dikirim harus lebih dari 0.', 'error');
-      return;
-    }
-
-    const res = this.store.transferCrypto(user.id, toAddress, amount, symbol);
-    if (!res || !res.success) {
-      this.showToast(res?.message || 'Transfer token gagal.', 'error');
-      return;
-    }
-
-    this.showToast(`Pengiriman ${amount} ${symbol} berhasil! TxHash: ${res.txHash.slice(0, 10)}...`, 'success');
-    document.getElementById('crypto-send-form')?.reset();
-    this.showCryptoWalletModal();
-    this.switchCryptoWalletTab('history');
-    this.updateCryptoNavBadge();
-  }
-
-  renderCryptoTxHistory(history) {
-    const container = document.getElementById('crypto-tx-history-list');
-    if (!container) return;
-    if (!history || history.length === 0) {
-      container.innerHTML = `
-        <div class="py-8 text-center text-slate-400 text-xs">
-          <i class="fa-solid fa-clock-rotate-left text-2xl mb-1 text-slate-300"></i>
-          <p>Belum ada riwayat transaksi on-chain tercatat.</p>
-        </div>
-      `;
-      return;
-    }
-
-    container.innerHTML = history.slice().reverse().map(tx => {
-      const isPositive = ['reward_claim', 'airdrop_welcome', 'airdrop_distribution', 'receive', 'REWARD_CLAIM', 'AIRDROP', 'RECEIVE'].includes(tx.type);
-      const title = tx.title || tx.type || 'Transaksi On-Chain';
-      return `
-        <div class="p-3 bg-slate-50 hover:bg-slate-100 rounded-xl border border-slate-200 transition text-xs space-y-1">
-          <div class="flex items-center justify-between">
-            <span class="font-bold text-slate-800 flex items-center gap-1.5">
-              <i class="fa-solid ${isPositive ? 'fa-arrow-down text-emerald-600' : 'fa-arrow-up text-amber-600'}"></i>
-              ${esc(title)}
-            </span>
-            <span class="font-mono font-bold ${isPositive ? 'text-emerald-700' : 'text-slate-900'}">
-              ${isPositive ? '+' : '-'}${Number(tx.amount).toLocaleString('id-ID')} ${esc(tx.symbol || 'CLNK')}
-            </span>
-          </div>
-          <div class="flex items-center justify-between text-[10px] text-slate-400 font-mono pt-0.5">
-            <span class="truncate max-w-[200px]" title="${esc(tx.txHash)}">Tx: ${esc(tx.txHash ? tx.txHash.slice(0, 10) + '...' + tx.txHash.slice(-6) : '-')}</span>
-            <span>${new Date(tx.timestamp || Date.now()).toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'short' })}</span>
-          </div>
-        </div>
-      `;
-    }).join('');
-  }
-
-  showAdminAirdropModal() {
-    const modal = document.getElementById('modal-admin-airdrop');
-    if (modal) {
-      modal.classList.remove('hidden');
-      modal.classList.add('flex');
-    }
-  }
-
-  closeAdminAirdropModal() {
-    const modal = document.getElementById('modal-admin-airdrop');
-    if (modal) {
-      modal.classList.add('hidden');
-      modal.classList.remove('flex');
-    }
-  }
-
-  onAirdropTargetChange(val) {
-    const customGroup = document.getElementById('airdrop-custom-address-group');
-    if (customGroup) {
-      customGroup.classList.toggle('hidden', val !== 'custom');
-    }
-  }
-
-  handleExecuteAdminAirdrop(event) {
-    event.preventDefault();
-    const target = document.getElementById('airdrop-target')?.value || 'all_users';
-    const customAddr = document.getElementById('airdrop-custom-address')?.value?.trim();
-    const amount = Number(document.getElementById('airdrop-amount')?.value);
-    const reason = document.getElementById('airdrop-reason')?.value?.trim() || 'Distribusi Airdrop Ekosistem';
-
-    const actualTarget = target === 'custom' ? customAddr : target;
-    if (target === 'custom' && (!customAddr || !customAddr.startsWith('0x'))) {
-      this.showToast('Masukkan alamat dompet kustom yang valid (diawali 0x).', 'error');
-      return;
-    }
-
-    const res = this.store.adminDistributeAirdrop(actualTarget, amount, reason);
-    if (!res || !res.success) {
-      this.showToast(res?.message || 'Distribusi airdrop gagal.', 'error');
-      return;
-    }
-
-    this.closeAdminAirdropModal();
-    this.populateAdminSettings();
-    this.triggerConfetti();
-    this.showToast(`Sukses mendistribusikan airdrop ${amount} CLNK kepada ${res.count || 1} penerima! Sisa pool: ${Number(res.remainingPool || 0).toLocaleString('id-ID')} CLNK.`, 'success');
-    this.updateCryptoNavBadge();
-  }
-
-  updateCryptoNavBadge() {
-    const isCrypto = this.store.isFeatureEnabled ? this.store.isFeatureEnabled('cryptoWallet') : true;
-    const btn = document.getElementById('btn-header-crypto-wallet');
-    const badge = document.getElementById('nav-crypto-balance-badge');
-    if (btn) btn.classList.toggle('hidden', !isCrypto);
-    if (badge && isCrypto) {
-      const user = this.store.getCurrentUser();
-      const wallet = user && this.store.getCryptoWallet ? this.store.getCryptoWallet(user.id) : null;
-      const bal = wallet ? (wallet.balances?.CLNK ?? wallet.balanceClnk ?? 0) : 0;
-      badge.textContent = `${Number(bal).toLocaleString('id-ID')} CLNK`;
     }
   }
 
