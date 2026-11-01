@@ -2,9 +2,26 @@
 # CircuLink Deployment Script for InfinityFree via FTP
 # ==============================================================================
 
-$ftpHost = "ftpupload.net"
-$ftpUser = "if0_43240973"
-$ftpPass = "N0m4d3n0"
+# 1. Muat kredensial lokal jika ada (berkas ini diabaikan oleh .gitignore)
+$localCredsFile = Join-Path $PSScriptRoot "deploy_infinityfree.local.ps1"
+if (Test-Path $localCredsFile) {
+    . $localCredsFile
+}
+
+# 2. Ambil dari Environment Variables jika belum diatur
+if (-not $ftpHost) { $ftpHost = $env:INFINITYFREE_FTP_HOST }
+if (-not $ftpUser) { $ftpUser = $env:INFINITYFREE_FTP_USER }
+if (-not $ftpPass) { $ftpPass = $env:INFINITYFREE_FTP_PASS }
+
+# 3. Validasi Kredensial
+if (-not $ftpHost -or -not $ftpUser -or -not $ftpPass) {
+    Write-Host "[ERROR] Kredensial FTP InfinityFree belum disetel!" -ForegroundColor Red
+    Write-Host "Silakan setel melalui:" -ForegroundColor Yellow
+    Write-Host "  1. Berkas 'scripts/deploy_infinityfree.local.ps1' (direkomendasikan, terabaikan dari Git)"
+    Write-Host "  2. Environment Variables: `$env:INFINITYFREE_FTP_HOST, `$env:INFINITYFREE_FTP_USER, `$env:INFINITYFREE_FTP_PASS"
+    exit 1
+}
+
 $remoteRoot = "ftp://$ftpHost/htdocs"
 
 Write-Host "[DEPLOY] Starting CircuLink deployment to InfinityFree ($ftpHost)..." -ForegroundColor Cyan
@@ -98,4 +115,4 @@ foreach ($dir in $directories) {
     }
 }
 
-Write-Host "`n[DEPLOY SUCCESS] CircuLink deployment to InfinityFree completed successfully!" -ForegroundColor Cyan
+Write-Host "[DEPLOY DONE] Deployment ke InfinityFree selesai!" -ForegroundColor Green

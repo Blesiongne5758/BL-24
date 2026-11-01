@@ -276,7 +276,7 @@ class BursaLimbahApp {
 
         if (roleIcon) roleIcon.innerHTML = '<i class="fa-solid fa-crown text-amber-300"></i>';
         if (roleTitle) roleTitle.textContent = `Akun Pembeli: ${esc(user.name)}`;
-        if (roleDesc) roleDesc.textContent = `Paket: ${esc(tier.name)} (${limitText}) • Alamat: ${tier.allowAddress === 'full' ? 'Lengkap' : 'Kota'} • GPS: ${tier.allowGpsMap ? 'Aktif' : 'Terkunci'} • WA: ${tier.allowWhatsapp ? 'Aktif' : 'Chat Saja'}`;
+        if (roleDesc) roleDesc.textContent = `Paket: ${esc(tier.name)} (${limitText}) â€¢ Alamat: ${tier.allowAddress === 'full' ? 'Lengkap' : 'Kota'} â€¢ GPS: ${tier.allowGpsMap ? 'Aktif' : 'Terkunci'} â€¢ WA: ${tier.allowWhatsapp ? 'Aktif' : 'Chat Saja'}`;
         if (roleActions) {
           roleActions.innerHTML = `
             <button onclick="app.showUserProfileModal()" class="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-white font-semibold transition flex items-center space-x-1">
@@ -300,7 +300,7 @@ class BursaLimbahApp {
       } else if (role === 'seller' && user) {
         if (roleIcon) roleIcon.innerHTML = '<i class="fa-solid fa-store text-emerald-300"></i>';
         if (roleTitle) roleTitle.textContent = `Akun Penjual: ${esc(user.name)}`;
-        if (roleDesc) roleDesc.textContent = `Status: ${esc(user.verifiedBadge)} • Saldo Penjualan: ${this.formatRupiah(user.balance)}`;
+        if (roleDesc) roleDesc.textContent = `Status: ${esc(user.verifiedBadge)} â€¢ Saldo Penjualan: ${this.formatRupiah(user.balance)}`;
         if (roleActions) {
           roleActions.innerHTML = `
             <button onclick="app.showUserProfileModal()" class="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-white font-semibold transition flex items-center space-x-1">
@@ -322,7 +322,7 @@ class BursaLimbahApp {
         const sellerMeta = document.getElementById('seller-profile-meta');
         const sellerBadge = document.getElementById('seller-badge-pill');
         if (sellerName) sellerName.textContent = user.name;
-        if (sellerMeta) sellerMeta.textContent = `Email: ${esc(user.email || '-')} • Lokasi: ${esc(user.location || '-')} • Rekening: ${esc(user.bankAccount || '-')}`;
+        if (sellerMeta) sellerMeta.textContent = `Email: ${esc(user.email || '-')} â€¢ Lokasi: ${esc(user.location || '-')} â€¢ Rekening: ${esc(user.bankAccount || '-')}`;
         if (sellerBadge) sellerBadge.textContent = user.verifiedBadge || 'Pemasok Terverifikasi';
       } else if (role === 'admin') {
         if (roleIcon) roleIcon.innerHTML = '<i class="fa-solid fa-user-shield text-amber-300"></i>';
@@ -574,7 +574,7 @@ class BursaLimbahApp {
         prompt.innerHTML = `
           Belum memiliki akun Pembeli?
           <button type="button" onclick="app.showBuyerRegisterModal()" class="text-emerald-700 font-bold hover:underline ml-1">
-            Daftar & Berlangganan 3-Tier →
+            Daftar & Berlangganan 3-Tier â†’
           </button>
         `;
       }
@@ -600,12 +600,12 @@ class BursaLimbahApp {
         prompt.innerHTML = `
           <div class="space-y-1">
             <p class="text-xs text-slate-600">
-              💡 <strong>Email baru?</strong> Cukup ketik email & kata sandi di atas, akun Mitra Penjual akan <strong>otomatis dibuat</strong>.
+              ðŸ’¡ <strong>Email baru?</strong> Cukup ketik email & kata sandi di atas, akun Mitra Penjual akan <strong>otomatis dibuat</strong>.
             </p>
             <p class="text-[11px] text-slate-500">
               Ingin mendaftar lengkap dengan data NIB & rekening bank?
               <button type="button" onclick="app.showSellerRegisterModal()" class="text-emerald-700 font-bold hover:underline ml-1">
-                Buka Formulir Pemasok Lengkap →
+                Buka Formulir Pemasok Lengkap â†’
               </button>
             </p>
           </div>
@@ -648,82 +648,18 @@ class BursaLimbahApp {
 
   renderQuickLoginAccounts() {
     const container = document.getElementById('login-quick-accounts-container');
-    if (!container) return;
-
-    const tab = this.currentLoginTab;
-
-    if (tab === 'buyer') {
-      container.innerHTML = `
-        <button type="button" onclick="app.quickLogin('pengadaan@hijaulestari.co.id', '123456', 'buyer')" class="p-3 text-left rounded-xl border border-emerald-200 bg-emerald-50/70 hover:bg-emerald-100 hover:border-emerald-300 transition group">
-          <div class="flex items-center justify-between">
-            <span class="text-xs font-bold text-slate-900 group-hover:text-emerald-900">PT Hijau Lestari Biofuel</span>
-            <span class="text-[10px] px-1.5 py-0.5 rounded bg-emerald-200 text-emerald-800 font-bold">Tier Pro</span>
-          </div>
-          <div class="text-[11px] text-slate-500 font-mono mt-0.5">pengadaan@hijaulestari.co.id</div>
-        </button>
-
-        <button type="button" onclick="app.quickLogin('purchasing@daurnusantara.co.id', '123456', 'buyer')" class="p-3 text-left rounded-xl border border-slate-200 bg-white hover:bg-slate-50 hover:border-slate-300 transition group">
-          <div class="flex items-center justify-between">
-            <span class="text-xs font-bold text-slate-900 group-hover:text-emerald-900">PT Daur Nusantara</span>
-            <span class="text-[10px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-900 font-bold">Tier Enterprise</span>
-          </div>
-          <div class="text-[11px] text-slate-500 font-mono mt-0.5">purchasing@daurnusantara.co.id</div>
-        </button>
-      `;
-    } else if (tab === 'seller') {
-      container.innerHTML = `
-        <button type="button" onclick="app.quickLogin('budi@sentrajelantah.id', '123456', 'seller')" class="p-3 text-left rounded-xl border border-slate-300 bg-slate-50 hover:bg-slate-100 transition group">
-          <div class="flex items-center justify-between">
-            <span class="text-xs font-bold text-slate-900">Budi Santoso</span>
-            <span class="text-[10px] px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 font-bold">Pengepul Jelantah</span>
-          </div>
-          <div class="text-[11px] text-slate-500 font-mono mt-0.5">budi@sentrajelantah.id • Login</div>
-        </button>
-
-        <button type="button" onclick="app.quickLogin('dwigraha@rongsok.co.id', '123456', 'seller')" class="p-3 text-left rounded-xl border border-slate-200 bg-white hover:bg-slate-50 transition group">
-          <div class="flex items-center justify-between">
-            <span class="text-xs font-bold text-slate-900">PT Dwi Graha</span>
-            <span class="text-[10px] px-1.5 py-0.5 rounded bg-blue-100 text-blue-800 font-bold">Pemasok Logam</span>
-          </div>
-          <div class="text-[11px] text-slate-500 font-mono mt-0.5">dwigraha@rongsok.co.id • Login</div>
-        </button>
-
-        <button type="button" onclick="app.quickRegisterNewSellerDemo()" class="p-3 text-left rounded-xl border border-dashed border-emerald-500 bg-emerald-50/80 hover:bg-emerald-100 transition group sm:col-span-2">
-          <div class="flex items-center justify-between">
-            <div class="flex items-center space-x-2">
-              <i class="fa-solid fa-user-plus text-emerald-600 text-xs"></i>
-              <span class="text-xs font-bold text-emerald-900">Simulasi Daftar Penjual Baru via Email</span>
-            </div>
-            <span class="text-[10px] px-2 py-0.5 rounded bg-emerald-200 text-emerald-800 font-bold">1-Klik Auto-Daftar</span>
-          </div>
-          <div class="text-[11px] text-slate-600 mt-0.5">Klik untuk membuat akun mitra penjual baru secara instan dengan email demo</div>
-        </button>
-      `;
-    } else if (tab === 'admin') {
-      container.innerHTML = `
-        <button type="button" onclick="app.quickLogin('admin@bursalimbah.com', 'admin', 'admin')" class="p-3.5 text-left rounded-xl border border-amber-300/80 bg-amber-50/80 hover:bg-amber-100/90 transition group flex items-center justify-between">
-          <div>
-            <div class="flex items-center space-x-1.5">
-              <i class="fa-solid fa-key text-amber-600 text-xs"></i>
-              <span class="text-xs font-bold text-slate-900 group-hover:text-amber-950">Pengelola Utama Bursa Limbah</span>
-            </div>
-            <div class="text-[11px] text-slate-500 font-mono mt-0.5">admin@bursalimbah.com • Sandi: admin</div>
-          </div>
-          <span class="text-[10px] px-2 py-0.5 rounded-full bg-slate-900 text-amber-300 font-bold">Akses Penuh</span>
-        </button>
-      `;
+    if (container) {
+      container.innerHTML = '';
+      const parentSection = container.closest('.space-y-3') || container.parentElement;
+      if (parentSection) {
+        parentSection.classList.add('hidden');
+      }
     }
   }
 
   quickRegisterNewSellerDemo() {
-    const randId = Math.floor(100 + Math.random() * 900);
-    const demoEmail = `penjual.mitra${randId}@sentralimbah.id`;
-    const demoPass = '123456';
-    const inputId = document.getElementById('login-input-identifier');
-    const inputPass = document.getElementById('login-input-password');
-    if (inputId) inputId.value = demoEmail;
-    if (inputPass) inputPass.value = demoPass;
-    this.quickLogin(demoEmail, demoPass, 'seller');
+    // Fitur pendaftaran demo dinonaktifkan
+    this.showToast('Fitur pendaftaran cepat tidak tersedia.', 'info');
   }
 
   async quickLogin(identifier, password, role) {
@@ -737,9 +673,9 @@ class BursaLimbahApp {
       this.triggerConfetti();
       if (res.isNewAccount) {
         if (res.role === 'seller') {
-          this.showToast(`🎉 Pendaftaran berhasil! Selamat datang Mitra Penjual baru (${res.user.email}).`, 'success');
+          this.showToast(`ðŸŽ‰ Pendaftaran berhasil! Selamat datang Mitra Penjual baru (${res.user.email}).`, 'success');
         } else {
-          this.showToast(`🎉 Pendaftaran berhasil! Akun Pembeli (${res.user.email}) aktif dengan Starter Tier Gratis.`, 'success');
+          this.showToast(`ðŸŽ‰ Pendaftaran berhasil! Akun Pembeli (${res.user.email}) aktif dengan Starter Tier Gratis.`, 'success');
         }
       } else {
         this.showToast(`Berhasil masuk sebagai ${res.user.name}!`, 'success');
@@ -765,9 +701,9 @@ class BursaLimbahApp {
       this.triggerConfetti();
       if (res.isNewAccount) {
         if (res.role === 'seller') {
-          this.showToast(`🎉 Pendaftaran berhasil! Selamat datang Mitra Penjual baru (${res.user.email}).`, 'success');
+          this.showToast(`ðŸŽ‰ Pendaftaran berhasil! Selamat datang Mitra Penjual baru (${res.user.email}).`, 'success');
         } else {
-          this.showToast(`🎉 Pendaftaran berhasil! Akun Pembeli (${res.user.email}) aktif dengan Starter Tier Gratis.`, 'success');
+          this.showToast(`ðŸŽ‰ Pendaftaran berhasil! Akun Pembeli (${res.user.email}) aktif dengan Starter Tier Gratis.`, 'success');
         }
       } else {
         this.showToast(`Selamat datang kembali, ${res.user.name}!`, 'success');
@@ -793,7 +729,7 @@ class BursaLimbahApp {
   }
 
   showForgotPasswordInfo() {
-    alert("Bantuan Kata Sandi:\n\nSeluruh akun demo dapat diakses menggunakan kata sandi bawaan: 123456.\n\nJika Anda membutuhkan pengaturan ulang akun produksi, silakan hubungi tim dukungan Bursa Limbah di kemitraan@bursalimbah.com.");
+    alert("Bantuan Kata Sandi:\n\nJika Anda lupa kata sandi, silakan hubungi tim dukungan Bursa Limbah di kemitraan@bursalimbah.com untuk pengaturan ulang akun.");
   }
 
   showRegisterOptions() {
@@ -1046,7 +982,7 @@ class BursaLimbahApp {
   bnavGoToDashboard() {
     const role = this.store.getCurrentRole();
     if (role === 'buyer' || role === 'seller' || role === 'admin') {
-      // Sudah di dashboard yang benar — scroll ke atas
+      // Sudah di dashboard yang benar â€” scroll ke atas
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } else {
       this.showToast('Silakan masuk ke akun terlebih dahulu.', 'info');
@@ -1097,7 +1033,7 @@ class BursaLimbahApp {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
-  // Render tab Event — menampilkan daftar event dari store
+  // Render tab Event â€” menampilkan daftar event dari store
   renderTabEvent() {
     const grid = document.getElementById('tab-event-grid');
     if (!grid) return;
@@ -1117,7 +1053,7 @@ class BursaLimbahApp {
           </span>
           <div class="flex-1 min-w-0">
             <h3 class="text-sm font-extrabold text-slate-800 truncate">${esc(ev.title || ev.name)}</h3>
-            <span class="text-[10px] text-violet-700 font-semibold">${esc(ev.date || '')} ${ev.location ? '• ' + esc(ev.location) : ''}</span>
+            <span class="text-[10px] text-violet-700 font-semibold">${esc(ev.date || '')} ${ev.location ? 'â€¢ ' + esc(ev.location) : ''}</span>
           </div>
         </div>
         ${ev.description ? `<p class="text-xs text-slate-600 leading-relaxed">${esc(ev.description)}</p>` : ''}
@@ -1125,14 +1061,14 @@ class BursaLimbahApp {
           <span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${ev.status === 'Aktif' || ev.status === 'published' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'}">${ev.status === 'published' ? 'Dibuka' : (ev.status || 'Mendatang')}</span>
           <div class="flex items-center gap-1.5">
             ${ev.waLink ? `<a href="${ev.waLink}" target="_blank" class="text-[10px] font-bold text-emerald-700 flex items-center gap-1 hover:underline"><i class="fa-brands fa-whatsapp"></i> WA</a>` : ''}
-            <button onclick="app.openEventRegistration('${ev.id}')" class="px-2.5 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-[11px] font-bold transition shadow-xs flex items-center gap-1">Daftar Event →</button>
+            <button onclick="app.openEventRegistration('${ev.id}')" class="px-2.5 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-[11px] font-bold transition shadow-xs flex items-center gap-1">Daftar Event â†’</button>
           </div>
         </div>
       </div>
     `).join('');
   }
 
-  // Render tab Saya — login/profil/akun sesuai role
+  // Render tab Saya â€” login/profil/akun sesuai role
   renderTabSaya() {
     const container = document.getElementById('tab-saya-content');
     if (!container) return;
@@ -1301,11 +1237,11 @@ class BursaLimbahApp {
         </div>
         <div class="flex-1 min-w-0">
           <h4 class="text-sm font-bold text-slate-800 truncate">${esc(p.title)}</h4>
-          <p class="text-[10px] text-slate-500">${p.category || '-'} • ${esc(p.location || '-')}</p>
+          <p class="text-[10px] text-slate-500">${p.category || '-'} â€¢ ${esc(p.location || '-')}</p>
           <p class="text-xs font-bold text-emerald-700 mt-0.5">${this.formatRupiah(p.pricePerUnit || 0)}<span class="text-[10px] font-normal text-slate-500">/${p.unit || 'kg'}</span></p>
         </div>
         <span class="px-2 py-0.5 rounded-full text-[9px] font-bold ${p.verified ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'} flex-shrink-0 mt-1">
-          ${p.verified ? '✓ Terverifikasi' : 'Pending'}
+          ${p.verified ? 'âœ“ Terverifikasi' : 'Pending'}
         </span>
       </div>
     `).join('');
@@ -1595,7 +1531,7 @@ class BursaLimbahApp {
                 <i class="fa-solid fa-ticket ${evt.isFree ? 'text-emerald-500' : 'text-amber-500'}"></i>
                 <span>${evt.priceLabel}</span>
               </div>
-              <button onclick="app.openEventRegistration('${evt.id}')" class="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-[11px] font-bold transition shadow-sm">Minat / Daftar →</button>
+              <button onclick="app.openEventRegistration('${evt.id}')" class="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-[11px] font-bold transition shadow-sm">Minat / Daftar â†’</button>
             </div>
           </div>
         </article>
@@ -1752,7 +1688,7 @@ class BursaLimbahApp {
       const date = this.marketTickerUpdatedAt ? new Date(this.marketTickerUpdatedAt) : null;
       updated.textContent = date && !Number.isNaN(date.getTime())
         ? `Diperbarui ${date.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })} WIB`
-        : 'Memuat harga pasar…';
+        : 'Memuat harga pasarâ€¦';
     }
 
     if (!this.marketCurrencies) {
@@ -1872,7 +1808,7 @@ class BursaLimbahApp {
 
           <div class="p-4 pt-0">
             <div class="text-[11px] font-bold ${isB3 ? 'text-rose-600 group-hover:text-rose-700' : 'text-brand-600 group-hover:text-brand-700'} flex items-center justify-between border-t border-slate-100 pt-2.5">
-              <span>${isB3 ? '⚠️ Buka Bursa B3' : 'Buka Bursa Pembeli'}</span>
+              <span>${isB3 ? 'âš ï¸ Buka Bursa B3' : 'Buka Bursa Pembeli'}</span>
               <i class="fa-solid fa-arrow-right text-[10px] transform group-hover:translate-x-1 transition"></i>
             </div>
           </div>
@@ -1973,7 +1909,7 @@ class BursaLimbahApp {
                 <div class="flex items-center space-x-2 text-xs text-slate-500 mt-1">
                   <span><i class="fa-solid fa-scale-balanced mr-1 text-slate-400"></i>Volume:</span>
                   <span class="font-bold text-slate-800">${qtyText}</span>
-                  ${item.pickupSchedule ? `<span>• <i class="fa-solid fa-calendar-check mr-1 text-slate-400"></i>${item.pickupSchedule}</span>` : ''}
+                  ${item.pickupSchedule ? `<span>â€¢ <i class="fa-solid fa-calendar-check mr-1 text-slate-400"></i>${item.pickupSchedule}</span>` : ''}
                 </div>
 
                 <!-- 10 Atribut Wajib Listing Badges -->
@@ -2214,8 +2150,8 @@ class BursaLimbahApp {
 
           <div class="mt-2.5 pt-2 border-t border-slate-100 text-[10px] text-slate-600 space-y-1">
             <div class="font-semibold text-slate-800">Rentang: ${limitText}</div>
-            <div>Peta GPS: ${t.allowGpsMap ? '✅ Ya' : '🔒 Tidak'}</div>
-            <div>Nomor WA: ${t.allowWhatsapp ? '✅ Ya' : '🔒 Chat'}</div>
+            <div>Peta GPS: ${t.allowGpsMap ? 'âœ… Ya' : 'ðŸ”’ Tidak'}</div>
+            <div>Nomor WA: ${t.allowWhatsapp ? 'âœ… Ya' : 'ðŸ”’ Chat'}</div>
           </div>
         </div>
       `;
@@ -2328,7 +2264,7 @@ class BursaLimbahApp {
     if (tierBadge) tierBadge.textContent = tier.name;
     if (tierDesc) {
       const limitText = (!tier.maxPriceLimit || tier.maxPriceLimit === 0) ? 'Unlimited (Semua Nilai)' : `Maksimal ${this.formatRupiah(tier.maxPriceLimit)}`;
-      tierDesc.innerHTML = `Akses Harga: <strong>${limitText}</strong> • Alamat: ${tier.allowAddress === 'full' ? 'Lengkap' : 'Kota Saja'} • Peta GPS: ${tier.allowGpsMap ? 'Aktif' : 'Terkunci'} • Nomor WA: ${tier.allowWhatsapp ? 'Terbuka' : 'Gunakan Layar Chat'}.`;
+      tierDesc.innerHTML = `Akses Harga: <strong>${limitText}</strong> â€¢ Alamat: ${tier.allowAddress === 'full' ? 'Lengkap' : 'Kota Saja'} â€¢ Peta GPS: ${tier.allowGpsMap ? 'Aktif' : 'Terkunci'} â€¢ Nomor WA: ${tier.allowWhatsapp ? 'Terbuka' : 'Gunakan Layar Chat'}.`;
     }
 
     const products = this.store.getProducts({ status: 'approved' });
@@ -2361,7 +2297,7 @@ class BursaLimbahApp {
                     p.sourceType === 'source_medium_industry' ? 'bg-blue-600/90 text-white' :
                     'bg-amber-600/90 text-white'
                   }">
-                    ${p.sourceType === 'source_household' ? '🏠 Rumah Tangga' : p.sourceType === 'source_medium_industry' ? '🏢 Industri Menengah' : '🏭 Industri Besar'}
+                    ${p.sourceType === 'source_household' ? 'ðŸ  Rumah Tangga' : p.sourceType === 'source_medium_industry' ? 'ðŸ¢ Industri Menengah' : 'ðŸ­ Industri Besar'}
                   </span>
                 ` : ''}
               </div>
@@ -2385,9 +2321,9 @@ class BursaLimbahApp {
                 <h4 class="font-bold text-slate-900 text-sm leading-snug line-clamp-2">${esc(p.title)}</h4>
                 <div class="flex items-center space-x-2 text-xs text-slate-500 mt-1">
                   <span><i class="fa-solid fa-truck-ramp-box mr-1"></i>${esc(p.containerType)}</span>
-                  <span>•</span>
+                  <span>â€¢</span>
                   <span class="font-semibold text-slate-700">${qtyDisplay}</span>
-                  <span>•</span>
+                  <span>â€¢</span>
                   <span class="text-emerald-700 font-semibold flex items-center"><i class="fa-solid fa-city mr-1 text-[10px]"></i>${this.getCity(p)}</span>
                 </div>
               </div>
@@ -2502,7 +2438,7 @@ class BursaLimbahApp {
                 p.sourceType === 'source_medium_industry' ? 'bg-blue-100 text-blue-800 border border-blue-300' :
                 'bg-amber-100 text-amber-900 border border-amber-300'
               }">
-                ${p.sourceType === 'source_household' ? '🏠 Limbah Rumah Tangga' : p.sourceType === 'source_medium_industry' ? '🏢 Industri Menengah' : '🏭 Industri Besar'}
+                ${p.sourceType === 'source_household' ? 'ðŸ  Limbah Rumah Tangga' : p.sourceType === 'source_medium_industry' ? 'ðŸ¢ Industri Menengah' : 'ðŸ­ Industri Besar'}
               </span>
             ` : ''}
           </div>
@@ -2602,7 +2538,7 @@ class BursaLimbahApp {
                   p.sourceType === 'source_household' ? 'text-emerald-700' :
                   p.sourceType === 'source_medium_industry' ? 'text-blue-700' : 'text-amber-800'
                 }">
-                  ${p.sourceType === 'source_household' ? '🏠 Rumah Tangga / Perorangan' : p.sourceType === 'source_medium_industry' ? '🏢 Industri Menengah / UMKM' : '🏭 Industri Besar / Pabrik'}
+                  ${p.sourceType === 'source_household' ? 'ðŸ  Rumah Tangga / Perorangan' : p.sourceType === 'source_medium_industry' ? 'ðŸ¢ Industri Menengah / UMKM' : 'ðŸ­ Industri Besar / Pabrik'}
                 </span>
               </div>
               ` : ''}
@@ -2658,7 +2594,7 @@ class BursaLimbahApp {
                 <span class="text-slate-500">10. Regulasi KLHK:</span>
                 ${p.isB3 ? `
                   <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-100 text-rose-800 border border-rose-300">
-                    ⚠️ Limbah B3 (${esc(p.b3PermitNumber || 'Izin KLHK Valid')})
+                    âš ï¸ Limbah B3 (${esc(p.b3PermitNumber || 'Izin KLHK Valid')})
                   </span>
                 ` : `
                   <span class="px-2 py-0.5 rounded text-[10px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
@@ -2701,7 +2637,7 @@ class BursaLimbahApp {
               ` : `
                 <div class="mt-2 mb-3 space-y-1">
                   <div class="text-xs text-slate-400">Total Nilai Limbah:</div>
-                  <div class="text-xl font-bold text-amber-400 font-mono">🔒 Terproteksi</div>
+                  <div class="text-xl font-bold text-amber-400 font-mono">ðŸ”’ Terproteksi</div>
                   <p class="text-[11px] text-slate-400">
                     ${access.priceBlockReason === 'public' 
                       ? 'Daftar sebagai Pembeli untuk melihat harga.' 
@@ -2726,7 +2662,7 @@ class BursaLimbahApp {
                 </div>
               ` : `
                 <div class="text-[11px] text-slate-400 flex items-center justify-between bg-slate-800/80 p-2 rounded-xl">
-                  <span>🔒 08xx-****-**** (Khusus Enterprise)</span>
+                  <span>ðŸ”’ 08xx-****-**** (Khusus Enterprise)</span>
                   <button onclick="app.closeModals(); app.openChatWithSeller('${p.id}', '${p.sellerId}')" class="text-emerald-400 font-bold underline">
                     Gunakan Layar Chat
                   </button>
@@ -2883,7 +2819,7 @@ class BursaLimbahApp {
       const isBuyer = msg.senderRole === 'buyer';
       return `
         <div class="flex flex-col ${isBuyer ? 'items-end' : 'items-start'} space-y-1">
-          <div class="text-[10px] text-slate-400 px-1 font-medium">${esc(msg.senderName)} • ${msg.timestamp}</div>
+          <div class="text-[10px] text-slate-400 px-1 font-medium">${esc(msg.senderName)} â€¢ ${msg.timestamp}</div>
           <div class="max-w-[82%] p-3 rounded-2xl text-xs leading-relaxed ${
             isBuyer 
               ? 'bg-brand-600 text-white rounded-br-none shadow-sm' 
@@ -3060,7 +2996,7 @@ class BursaLimbahApp {
             <tr class="hover:bg-slate-50/70 transition">
               <td class="p-3">
                 <div class="font-bold text-slate-900">${r.userName}</div>
-                <div class="text-[11px] text-slate-500">${esc(r.company)} • ${esc(r.phone || r.email)}</div>
+                <div class="text-[11px] text-slate-500">${esc(r.company)} â€¢ ${esc(r.phone || r.email)}</div>
               </td>
               <td class="p-3">
                 <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-300">
@@ -3544,14 +3480,14 @@ class BursaLimbahApp {
               <td class="p-3 font-mono font-bold text-slate-700">${esc(p.code)}</td>
               <td class="p-3">
                 <div class="font-bold text-slate-900">${esc(p.title)}</div>
-                <div class="text-[11px] text-slate-500">${esc(p.categoryName)} • ${esc(p.origin)}</div>
+                <div class="text-[11px] text-slate-500">${esc(p.categoryName)} â€¢ ${esc(p.origin)}</div>
                 ${p.sourceType ? `
                   <span class="inline-block mt-0.5 text-[9px] font-bold px-1.5 py-0.2 rounded ${
                     p.sourceType === 'source_household' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
                     p.sourceType === 'source_medium_industry' ? 'bg-blue-50 text-blue-700 border border-blue-200' :
                     'bg-amber-50 text-amber-800 border border-amber-200'
                   }">
-                    ${p.sourceType === 'source_household' ? '🏠 Rumah Tangga' : p.sourceType === 'source_medium_industry' ? '🏢 Industri Menengah' : '🏭 Industri Besar'}
+                    ${p.sourceType === 'source_household' ? 'ðŸ  Rumah Tangga' : p.sourceType === 'source_medium_industry' ? 'ðŸ¢ Industri Menengah' : 'ðŸ­ Industri Besar'}
                   </span>
                 ` : ''}
               </td>
@@ -3938,7 +3874,7 @@ class BursaLimbahApp {
 
       if (addrEl) addrEl.textContent = wallet.address || '0x...';
       if (clnkEl) clnkEl.textContent = Number(clnkBal).toLocaleString('id-ID');
-      if (clnkIdrEl) clnkIdrEl.textContent = `(≈ ${this.formatRupiah(clnkBal * rate)})`;
+      if (clnkIdrEl) clnkIdrEl.textContent = `(â‰ˆ ${this.formatRupiah(clnkBal * rate)})`;
       if (usdtEl) usdtEl.textContent = `${Number(usdtBal).toFixed(2)} USDT`;
       if (maticEl) maticEl.textContent = `${Number(maticBal).toFixed(2)} MATIC`;
       if (pendingEl) pendingEl.textContent = `+${unclaimed}`;
@@ -4399,7 +4335,7 @@ class BursaLimbahApp {
     const btnUrlInput = document.getElementById('support-edit-btn-url');
 
     if (titleInput) titleInput.value = s.supportSectionTitle || 'Pusat Layanan Resmi';
-    if (hoursInput) hoursInput.value = s.supportOperationalHours || 'Senin – Jumat: 08.00 – 17.00 WIB';
+    if (hoursInput) hoursInput.value = s.supportOperationalHours || 'Senin â€“ Jumat: 08.00 â€“ 17.00 WIB';
     if (phoneInput) phoneInput.value = s.contactPhone || '+62 812-3456-7890';
     if (waInput) waInput.value = s.contactWaNumber || '6281234567890';
     if (waMsgInput) waMsgInput.value = s.contactWaMessage || 'Halo Admin Bursa Limbah, saya ingin konsultasi transaksi';
@@ -4563,7 +4499,7 @@ class BursaLimbahApp {
     const btnUrlInput = document.getElementById('support-edit-btn-url');
 
     if (titleInput) titleInput.value = 'Pusat Layanan Resmi';
-    if (hoursInput) hoursInput.value = 'Senin – Jumat: 08.00 – 17.00 WIB';
+    if (hoursInput) hoursInput.value = 'Senin â€“ Jumat: 08.00 â€“ 17.00 WIB';
     if (phoneInput) phoneInput.value = '+62 812-3456-7890';
     if (waInput) waInput.value = '6281234567890';
     if (waMsgInput) waMsgInput.value = 'Halo Admin Bursa Limbah, saya ingin konsultasi transaksi';
@@ -4777,7 +4713,7 @@ class BursaLimbahApp {
     const event = (this.store.getEventById && eventId) ? this.store.getEventById(eventId) : null;
     const eventTitle = event ? event.title : 'Workshop Pengelolaan & Monetisasi Minyak Jelantah (UCO)';
     const eventDate = event ? (event.date || `${event.day} ${event.monthYear}`) : '22 September 2026';
-    const eventTime = event ? (event.time || '09.00 – 15.00 WIB') : '09.00 – 15.00 WIB';
+    const eventTime = event ? (event.time || '09.00 â€“ 15.00 WIB') : '09.00 â€“ 15.00 WIB';
     const eventLocation = event ? (event.location || 'Balai Kartini, Jakarta') : 'Balai Kartini, Jakarta Selatan';
 
     // Type labels & badges
@@ -4946,7 +4882,7 @@ class BursaLimbahApp {
       eventId: eventId,
       eventTitle: ev ? ev.title : 'Agenda Event Bursa Limbah',
       eventDate: ev ? (ev.date || `${ev.day} ${ev.monthYear}`) : '2026',
-      eventTime: ev ? ev.time : '09.00 – 17.00 WIB',
+      eventTime: ev ? ev.time : '09.00 â€“ 17.00 WIB',
       eventLocation: ev ? ev.location : 'Lokasi Acara',
       ticketType: type,
       ticketTypeLabel: typeLabels[type] || 'Tiket Resmi',
@@ -4991,7 +4927,7 @@ class BursaLimbahApp {
     phone = phone.replace(/\D/g, '');
     if (phone.startsWith('0')) phone = '62' + phone.slice(1);
 
-    const message = `Halo ${name},\n\nBerikut adalah konfirmasi e-Tiket Resmi Bursa Limbah Anda:\n\n🎫 *${title}*\n• No. Tiket: *${code}*\n• Waktu: ${date} (${time})\n• Lokasi: ${loc}\n• Akses / Meja: ${gate}\n\nSilakan simpan tiket ini dan tunjukkan QR Code tiket saat tiba di lokasi untuk validasi masuk dan presensi kehadiran. Terima kasih!`;
+    const message = `Halo ${name},\n\nBerikut adalah konfirmasi e-Tiket Resmi Bursa Limbah Anda:\n\nðŸŽ« *${title}*\nâ€¢ No. Tiket: *${code}*\nâ€¢ Waktu: ${date} (${time})\nâ€¢ Lokasi: ${loc}\nâ€¢ Akses / Meja: ${gate}\n\nSilakan simpan tiket ini dan tunjukkan QR Code tiket saat tiba di lokasi untuk validasi masuk dan presensi kehadiran. Terima kasih!`;
 
     const waUrl = phone ? `https://wa.me/${phone}?text=${encodeURIComponent(message)}` : `https://wa.me/?text=${encodeURIComponent(message)}`;
     window.open(waUrl, '_blank');
@@ -5052,9 +4988,9 @@ class BursaLimbahApp {
       resultBox.innerHTML = `
         <i class="fa-solid fa-circle-check text-2xl text-emerald-400 mt-0.5"></i>
         <div>
-          <div class="font-extrabold text-sm text-emerald-200">VALIDASI BERHASIL — PRESENSI DICATAT</div>
+          <div class="font-extrabold text-sm text-emerald-200">VALIDASI BERHASIL â€” PRESENSI DICATAT</div>
           <div class="mt-1 text-slate-100 font-semibold">${t.holderName} (${t.companyName || '-'})</div>
-          <div class="text-[11px] text-slate-300 font-mono mt-0.5">Tiket: ${t.ticketCode} • ${t.eventTitle} • Hadir: ${t.checkedInAt}</div>
+          <div class="text-[11px] text-slate-300 font-mono mt-0.5">Tiket: ${t.ticketCode} â€¢ ${t.eventTitle} â€¢ Hadir: ${t.checkedInAt}</div>
         </div>
       `;
       this.triggerConfetti();
@@ -5311,7 +5247,7 @@ class BursaLimbahApp {
           <div>
             <span class="text-[10px] font-bold text-brand-700 uppercase font-mono">${esc(p.code)}</span>
             <h4 class="font-bold text-slate-900 text-sm">${esc(p.title)}</h4>
-            <p class="text-xs text-slate-500">${esc(p.sellerName)} • ${esc(p.containerType)}</p>
+            <p class="text-xs text-slate-500">${esc(p.sellerName)} â€¢ ${esc(p.containerType)}</p>
           </div>
           <div class="text-right">
             <div class="text-xs text-slate-500">Total Nilai Limbah:</div>
@@ -5592,7 +5528,7 @@ class BursaLimbahApp {
           <p class="mt-1 text-[11px] text-slate-500">Masukkan berat aktual yang diterima. Anda dapat melampirkan foto atau dokumen bukti timbangan sebelum scan QR.</p>
         </div>
         ${o.qrCompletionReady ? `
-          <div class="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-xs text-emerald-800"><i class="fa-solid fa-circle-check mr-1"></i> Data penerimaan tersimpan: <strong>${Number(o.actualReceivedWeight).toLocaleString('id-ID')} ${o.unit}</strong>${o.weighingProof ? ' • Bukti timbang terlampir' : ''}.</div>
+          <div class="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-xs text-emerald-800"><i class="fa-solid fa-circle-check mr-1"></i> Data penerimaan tersimpan: <strong>${Number(o.actualReceivedWeight).toLocaleString('id-ID')} ${o.unit}</strong>${o.weighingProof ? ' â€¢ Bukti timbang terlampir' : ''}.</div>
         ` : `
           <form onsubmit="app.submitReceivingEvidence(event, '${o.id}')" class="space-y-3">
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -5602,7 +5538,7 @@ class BursaLimbahApp {
             <button type="submit" class="rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-bold text-white transition hover:bg-emerald-700"><i class="fa-solid fa-cloud-arrow-up mr-1"></i>Simpan Data Penerimaan</button>
           </form>
         `}
-        <button ${o.qrCompletionReady ? '' : 'disabled'} onclick="app.scanOrderQr('${o.id}')" class="w-full rounded-xl px-4 py-2.5 text-xs font-bold transition ${o.qrCompletionReady ? 'bg-slate-900 text-white hover:bg-slate-800' : 'cursor-not-allowed bg-slate-200 text-slate-400'}"><i class="fa-solid fa-qrcode mr-1"></i>${o.qrCompletionReady ? 'Scan QR Code untuk Menyelesaikan Transaksi' : 'Scan QR Code terkunci — simpan data penerimaan terlebih dahulu'}</button>
+        <button ${o.qrCompletionReady ? '' : 'disabled'} onclick="app.scanOrderQr('${o.id}')" class="w-full rounded-xl px-4 py-2.5 text-xs font-bold transition ${o.qrCompletionReady ? 'bg-slate-900 text-white hover:bg-slate-800' : 'cursor-not-allowed bg-slate-200 text-slate-400'}"><i class="fa-solid fa-qrcode mr-1"></i>${o.qrCompletionReady ? 'Scan QR Code untuk Menyelesaikan Transaksi' : 'Scan QR Code terkunci â€” simpan data penerimaan terlebih dahulu'}</button>
       </div>
 
       <div class="flex justify-end space-x-2 pt-2">
@@ -6767,7 +6703,7 @@ class BursaLimbahApp {
             <i class="fa-solid fa-handshake text-indigo-600"></i>
           </div>
           <div class="text-2xl font-extrabold text-indigo-600 font-mono">${report.totalOrders} Order</div>
-          <div class="text-[11px] text-slate-500 mt-1">${report.completedCount} Sukses • ${report.activeCount} Berjalan</div>
+          <div class="text-[11px] text-slate-500 mt-1">${report.completedCount} Sukses â€¢ ${report.activeCount} Berjalan</div>
         </div>
 
         <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
@@ -7026,7 +6962,7 @@ class BursaLimbahApp {
 
         <!-- Footer -->
         <div style="margin-top: 32px; padding-top: 16px; border-top: 1px dashed #cbd5e1; display: flex; justify-content: space-between; font-size: 9px; color: #94a3b8;">
-          <div>Sistem Terintegrasi Bursa Limbah Indonesia • www.bursalimbah.id</div>
+          <div>Sistem Terintegrasi Bursa Limbah Indonesia â€¢ www.bursalimbah.id</div>
           <div>Dicetak secara otomatis melalui Pusat Kontrol Bursa Limbah</div>
         </div>
       </div>
@@ -7082,7 +7018,7 @@ class BursaLimbahApp {
                     p.sourceType === 'source_medium_industry' ? 'bg-blue-50 text-blue-700 border border-blue-200' :
                     'bg-amber-50 text-amber-800 border border-amber-200'
                   }">
-                    ${p.sourceType === 'source_household' ? '🏠 Rumah Tangga' : p.sourceType === 'source_medium_industry' ? '🏢 Industri Menengah' : '🏭 Industri Besar'}
+                    ${p.sourceType === 'source_household' ? 'ðŸ  Rumah Tangga' : p.sourceType === 'source_medium_industry' ? 'ðŸ¢ Industri Menengah' : 'ðŸ­ Industri Besar'}
                   </span>
                 ` : ''}
               </td>
@@ -7337,7 +7273,7 @@ class BursaLimbahApp {
     const proofInput = document.getElementById('receipt-weighing-proof');
     const submitButton = event.submitter;
     try {
-      if (submitButton) { submitButton.disabled = true; submitButton.textContent = 'Menyimpan…'; }
+      if (submitButton) { submitButton.disabled = true; submitButton.textContent = 'Menyimpanâ€¦'; }
       let proof = null;
       if (proofInput?.files?.[0]) proof = await this.store.uploadWeighingProof(proofInput.files[0]);
       this.store.recordReceivingEvidence(orderId, weightInput.value, proof);
@@ -7380,20 +7316,20 @@ class BursaLimbahApp {
     const confirm = document.getElementById('gps-location-confirm');
     if (!navigator.geolocation) return;
     if (status) {
-      status.textContent = 'Meminta izin dan mengambil titik GPS…';
+      status.textContent = 'Meminta izin dan mengambil titik GPSâ€¦';
       status.classList.remove('hidden');
     }
     if (confirm) {
       confirm.disabled = true;
       confirm.classList.add('opacity-60', 'cursor-not-allowed');
-      confirm.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i>Mengambil lokasi…';
+      confirm.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i>Mengambil lokasiâ€¦';
     }
     navigator.geolocation.getCurrentPosition(
       position => {
         const coords = document.getElementById('up-coords');
         if (coords) coords.value = `${position.coords.latitude.toFixed(6)}, ${position.coords.longitude.toFixed(6)}`;
         this.closeGpsLocationModal();
-        this.showToast(`Titik GPS berhasil diisi (akurasi ±${Math.round(position.coords.accuracy)} m).`, 'success');
+        this.showToast(`Titik GPS berhasil diisi (akurasi Â±${Math.round(position.coords.accuracy)} m).`, 'success');
       },
       error => {
         const messages = {
@@ -7609,19 +7545,9 @@ class BursaLimbahApp {
     }
   }
 
-  // ================= LOGIN DENGAN GOOGLE =================
+  // ================= LOGIN DENGAN GOOGLE (DINONAKTIFKAN) =================
   showGoogleLoginModal() {
-    const modal = document.getElementById('modal-google-auth');
-    const role = this.currentLoginTab || 'buyer';
-    const roleLabel = role === 'seller' ? 'Mitra Penjual' : (role === 'admin' ? 'Pengelola' : 'Pembeli');
-    const subEl = document.getElementById('google-modal-role-subtitle');
-    if (subEl) {
-      subEl.innerHTML = `Pilih akun Google Anda untuk masuk atau daftar sebagai <strong>${roleLabel}</strong>:`;
-    }
-    if (modal) {
-      modal.classList.remove('hidden');
-      modal.classList.add('flex');
-    }
+    this.showToast('Login dengan Google telah dinonaktifkan demi keamanan.', 'warning');
   }
 
   closeGoogleLoginModal() {
@@ -7632,39 +7558,12 @@ class BursaLimbahApp {
     }
   }
 
-  async proceedGoogleLogin(email, name, avatar) {
-    this.closeGoogleLoginModal();
-    const role = this.currentLoginTab || 'buyer';
-    const res = await this.store.loginWithGoogleAsync({ email, name, avatar, role });
-
-    if (res.success) {
-      this.triggerConfetti();
-      this.updateNavUI();
-      if (res.role === 'buyer') {
-        this.setRole('buyer');
-      } else if (res.role === 'seller') {
-        this.setRole('seller');
-      }
-      if (res.isNewAccount) {
-        this.showToast(`🎉 Pendaftaran berhasil! Masuk dengan Google sebagai ${res.role === 'seller' ? 'Mitra Penjual' : 'Pembeli'} (${email}).`, 'success');
-      } else {
-        this.showToast(`🎉 Berhasil masuk dengan Google (${email})!`, 'success');
-      }
-    } else {
-      this.showToast('Gagal masuk dengan Google. Silakan coba lagi.', 'error');
-    }
+  async proceedGoogleLogin() {
+    this.showToast('Login dengan Google telah dinonaktifkan demi keamanan.', 'warning');
   }
 
   async proceedCustomGoogleLogin() {
-    const input = document.getElementById('custom-google-email');
-    const email = input ? input.value.trim().toLowerCase() : '';
-    if (!email || !email.includes('@')) {
-      this.showToast('Masukkan alamat email Google yang valid.', 'error');
-      return;
-    }
-    const namePart = email.split('@')[0].replace(/[^a-zA-Z0-9]/g, ' ');
-    const displayName = namePart.charAt(0).toUpperCase() + namePart.slice(1);
-    await this.proceedGoogleLogin(email, displayName, null);
+    this.showToast('Login dengan Google telah dinonaktifkan demi keamanan.', 'warning');
   }
 
   // ================= MODAL PROFIL & VERIFIKASI IDENTITAS (KTP / NPWP OPSIONAL) =================
@@ -8092,8 +7991,8 @@ class BursaLimbahApp {
         // Tambahkan keterangan tier di tooltip title
         let tierLabel = '';
         if (gross < 100000) tierLabel = '(< Rp100rb)';
-        else if (gross < 1000000) tierLabel = '(Rp100rb–1jt)';
-        else if (gross < 10000000) tierLabel = '(Rp1jt–10jt)';
+        else if (gross < 1000000) tierLabel = '(Rp100rbâ€“1jt)';
+        else if (gross < 10000000) tierLabel = '(Rp1jtâ€“10jt)';
         else tierLabel = '(1% dari nilai)';
         feeEl.title = `Tier biaya: ${tierLabel}`;
       }
@@ -8174,13 +8073,13 @@ class BursaLimbahApp {
     const b3 = categories.filter(c => c.group === 'b3');
 
     const optgroupHtml = `
-      <optgroup label="📦 Kategori Utama (12)">
+      <optgroup label="ðŸ“¦ Kategori Utama (12)">
         ${utama.map(c => `<option value="${c.id}">${esc(c.name)}</option>`).join('')}
       </optgroup>
-      <optgroup label="🏭 Khusus Industri B2B (3)">
+      <optgroup label="ðŸ­ Khusus Industri B2B (3)">
         ${industri.map(c => `<option value="${c.id}">${esc(c.name)}</option>`).join('')}
       </optgroup>
-      <optgroup label="⚠️ Limbah B3 (Izin Khusus KLHK) (1)">
+      <optgroup label="âš ï¸ Limbah B3 (Izin Khusus KLHK) (1)">
         ${b3.map(c => `<option value="${c.id}">${esc(c.name)} [Wajib Izin KLHK]</option>`).join('')}
       </optgroup>
     `;
@@ -8224,7 +8123,7 @@ class BursaLimbahApp {
     if (pills) {
       pills.innerHTML = `<button onclick="app.filterByPill('all')" class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-brand-600 text-white">Semua (16)</button>` + categories.map(c => `
         <button onclick="app.filterByPill('${c.id}')" class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 ${c.isB3 ? 'border border-rose-300 text-rose-700' : ''}">
-          ${c.isB3 ? '⚠️ ' : ''}${esc(c.name)}
+          ${c.isB3 ? 'âš ï¸ ' : ''}${esc(c.name)}
         </button>
       `).join('');
     }
@@ -8291,9 +8190,9 @@ class BursaLimbahApp {
                 <h4 class="font-bold text-slate-900 text-sm leading-snug line-clamp-2">${esc(p.title)}</h4>
                 <div class="flex items-center space-x-2 text-xs text-slate-500 mt-1">
                   <span><i class="fa-solid fa-truck-ramp-box mr-1"></i>${esc(p.containerType)}</span>
-                  <span>•</span>
+                  <span>â€¢</span>
                   <span class="font-semibold text-slate-700">${qtyDisplay}</span>
-                  <span>•</span>
+                  <span>â€¢</span>
                   <span class="text-emerald-700 font-semibold flex items-center"><i class="fa-solid fa-city mr-1 text-[10px]"></i>${this.getCity(p)}</span>
                 </div>
 
@@ -8501,7 +8400,7 @@ class BursaLimbahApp {
         <div class="bg-violet-600 rounded-t-2xl px-6 py-4 flex items-center justify-between">
           <div>
             <h3 class="text-white font-bold text-base">Upload Bukti Pelunasan Sisa</h3>
-            <p class="text-violet-200 text-xs mt-0.5">Sistem DP — Bukti transfer sisa pembayaran</p>
+            <p class="text-violet-200 text-xs mt-0.5">Sistem DP â€” Bukti transfer sisa pembayaran</p>
           </div>
           <button onclick="app.closeRemainingPaymentProofModal()" class="text-white/70 hover:text-white text-xl">
             <i class="fa-solid fa-xmark"></i>

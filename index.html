@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>BURSA LIMBAH — Limbah Terverifikasi. Transaksi Terpercaya.</title>
+  <title>BURSA LIMBAH â€” Limbah Terverifikasi. Transaksi Terpercaya.</title>
   <meta name="description" content="Platform bursa perdagangan limbah berbasis ketertelusuran (traceability) yang mempertemukan penjual dan pembeli limbah dalam satu ekosistem digital terverifikasi.">
   
   <!-- Tailwind CSS CDN -->
@@ -47,7 +47,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
   <!-- Custom Stylesheet -->
-  <link rel="stylesheet" href="css/style.css?v=3">
+  <link rel="stylesheet" href="css/style.css?v=4">
 </head>
 <body class="bg-slate-50 text-slate-800 antialiased min-h-screen flex flex-col selection:bg-brand-500 selection:text-white">
 
@@ -129,7 +129,7 @@
       <div class="shrink-0 self-stretch flex items-center gap-2 px-3 sm:px-6 bg-slate-900 border-r border-slate-700 z-10">
         <span class="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></span>
         <span id="price-ticker-title" class="text-[10px] sm:text-xs font-bold uppercase tracking-wide text-emerald-300">Harga Pasar Terkini</span>
-        <span id="price-ticker-updated" class="hidden lg:inline text-[10px] text-slate-400">Memuat harga pasar…</span>
+        <span id="price-ticker-updated" class="hidden lg:inline text-[10px] text-slate-400">Memuat harga pasarâ€¦</span>
       </div>
       <div class="min-w-0 overflow-hidden py-1.5">
         <div id="price-ticker-strip" class="animate-ticker items-center gap-3 px-3 text-xs whitespace-nowrap"></div>
@@ -269,24 +269,6 @@
             <div id="login-alert-msg" class="leading-relaxed">Email atau kata sandi tidak sesuai.</div>
           </div>
 
-          <!-- Tombol Masuk dengan Google -->
-          <div class="space-y-3">
-            <button type="button" onclick="app.showGoogleLoginModal()" class="w-full py-3 px-4 rounded-xl border border-slate-300 hover:border-slate-400 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs shadow-xs hover:shadow transition flex items-center justify-center space-x-2.5 active:scale-98">
-              <svg class="w-4 h-4" viewBox="0 0 24 24">
-                <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z"/>
-                <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.33 24 12 24z"/>
-                <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.16 0 9.97 0 12s.45 3.84 1.25 5.42l4.03-3.15z"/>
-                <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/>
-              </svg>
-              <span>Lanjutkan dengan Google</span>
-            </button>
-
-            <div class="relative flex items-center justify-center my-3">
-              <div class="border-t border-slate-200 w-full"></div>
-              <span class="bg-white px-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider relative z-10">atau masuk dengan email</span>
-            </div>
-          </div>
-
           <!-- Formulir Input -->
           <form id="form-login-account" onsubmit="app.handleLoginFormSubmit(event)" class="space-y-4">
             <div>
@@ -296,7 +278,7 @@
               </label>
               <div class="relative">
                 <i class="fa-solid fa-envelope absolute left-3.5 top-3.5 text-slate-400 text-sm"></i>
-                <input type="text" id="login-input-identifier" required placeholder="pengadaan@hijaulestari.co.id" class="w-full bg-slate-50 border border-slate-300 rounded-xl pl-10 pr-4 py-2.5 text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none font-medium">
+                <input type="text" id="login-input-identifier" required placeholder="nama@perusahaan.com atau nomor WhatsApp" class="w-full bg-slate-50 border border-slate-300 rounded-xl pl-10 pr-4 py-2.5 text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none font-medium">
               </div>
             </div>
 
@@ -307,13 +289,10 @@
               </div>
               <div class="relative">
                 <i class="fa-solid fa-lock absolute left-3.5 top-3.5 text-slate-400 text-sm"></i>
-                <input type="password" id="login-input-password" required value="123456" placeholder="Masukkan kata sandi" class="w-full bg-slate-50 border border-slate-300 rounded-xl pl-10 pr-10 py-2.5 text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none">
+                <input type="password" id="login-input-password" required value="" placeholder="Masukkan kata sandi" class="w-full bg-slate-50 border border-slate-300 rounded-xl pl-10 pr-10 py-2.5 text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none">
                 <button type="button" onclick="app.togglePasswordVisibility('login-input-password', this)" class="absolute right-3.5 top-3 text-slate-400 hover:text-slate-600 text-sm p-0.5">
                   <i class="fa-solid fa-eye"></i>
                 </button>
-              </div>
-              <div class="flex items-center justify-between text-[11px] text-slate-400 mt-1">
-                <span>Kata sandi bawaan akun demo: <code class="bg-slate-100 px-1.5 py-0.5 rounded text-slate-700 font-mono font-semibold">123456</code></span>
               </div>
             </div>
 
@@ -363,27 +342,12 @@
             </div>
           </div>
 
-          <!-- Pilihan Cepat Akun Demo (1-Klik) -->
-          <div class="pt-4 border-t border-slate-100 space-y-3">
-            <div class="flex items-center justify-between">
-              <span class="text-[11px] font-bold uppercase text-slate-500 tracking-wider flex items-center">
-                <i class="fa-solid fa-bolt text-amber-500 mr-1.5"></i>
-                Akses Cepat Akun Demo (1-Klik):
-              </span>
-              <span class="text-[10px] text-slate-400">Pilih & Langsung Masuk</span>
-            </div>
-
-            <div id="login-quick-accounts-container" class="grid sm:grid-cols-2 gap-2.5">
-              <!-- Diisi dinamis oleh app.renderQuickLoginAccounts() -->
-            </div>
-          </div>
-
           <!-- Ajakan Pendaftaran Akun Baru -->
           <div class="pt-3 border-t border-slate-100 text-center">
             <p id="login-register-prompt" class="text-xs text-slate-600">
               Belum memiliki akun Pembeli?
               <button type="button" onclick="app.showBuyerRegisterModal()" class="text-emerald-700 font-bold hover:underline ml-1">
-                Daftar & Berlangganan 3-Tier →
+                Daftar & Berlangganan 3-Tier â†’
               </button>
             </p>
           </div>
@@ -416,7 +380,7 @@
           <button onclick="app.filterMobileByCat('cat_jelantah')" class="flex flex-col items-center shrink-0 tap-highlight group">
             <div class="w-12 h-12 rounded-full p-0.5 bg-gradient-to-tr from-amber-500 via-emerald-500 to-teal-400 story-ring-active shadow-xs">
               <div class="w-full h-full rounded-full bg-white flex items-center justify-center text-lg overflow-hidden">
-                🛢️
+                ðŸ›¢ï¸
               </div>
             </div>
             <span class="text-[10px] font-bold text-slate-800 mt-1 truncate max-w-[62px]">Jelantah</span>
@@ -427,7 +391,7 @@
           <button onclick="app.filterMobileByCat('cat_besi')" class="flex flex-col items-center shrink-0 tap-highlight group">
             <div class="w-12 h-12 rounded-full p-0.5 bg-gradient-to-tr from-blue-500 to-slate-700 shadow-xs">
               <div class="w-full h-full rounded-full bg-white flex items-center justify-center text-lg overflow-hidden">
-                🏗️
+                ðŸ—ï¸
               </div>
             </div>
             <span class="text-[10px] font-bold text-slate-800 mt-1 truncate max-w-[62px]">Besi Scrap</span>
@@ -438,7 +402,7 @@
           <button onclick="app.filterMobileByCat('cat_plastik')" class="flex flex-col items-center shrink-0 tap-highlight group">
             <div class="w-12 h-12 rounded-full p-0.5 bg-gradient-to-tr from-cyan-400 to-emerald-500 shadow-xs">
               <div class="w-full h-full rounded-full bg-white flex items-center justify-center text-lg overflow-hidden">
-                🍶
+                ðŸ¶
               </div>
             </div>
             <span class="text-[10px] font-bold text-slate-800 mt-1 truncate max-w-[62px]">Plastik PET</span>
@@ -449,7 +413,7 @@
           <button onclick="app.filterMobileByCat('cat_kardus')" class="flex flex-col items-center shrink-0 tap-highlight group">
             <div class="w-12 h-12 rounded-full p-0.5 bg-gradient-to-tr from-amber-600 to-orange-400 shadow-xs">
               <div class="w-full h-full rounded-full bg-white flex items-center justify-center text-lg overflow-hidden">
-                📦
+                ðŸ“¦
               </div>
             </div>
             <span class="text-[10px] font-bold text-slate-800 mt-1 truncate max-w-[62px]">Kardus OCC</span>
@@ -460,7 +424,7 @@
           <button onclick="app.navigateToSection('preloved')" class="flex flex-col items-center shrink-0 tap-highlight group">
             <div class="w-12 h-12 rounded-full p-0.5 bg-gradient-to-tr from-pink-500 to-rose-400 shadow-xs">
               <div class="w-full h-full rounded-full bg-white flex items-center justify-center text-lg overflow-hidden">
-                💖
+                ðŸ’–
               </div>
             </div>
             <span class="text-[10px] font-bold text-pink-700 mt-1 truncate max-w-[62px]">PreLoved</span>
@@ -471,7 +435,7 @@
           <button onclick="app.navigateToSection('event')" class="flex flex-col items-center shrink-0 tap-highlight group">
             <div class="w-12 h-12 rounded-full p-0.5 bg-gradient-to-tr from-indigo-500 to-purple-500 shadow-xs">
               <div class="w-full h-full rounded-full bg-white flex items-center justify-center text-lg overflow-hidden">
-                📅
+                ðŸ“…
               </div>
             </div>
             <span class="text-[10px] font-bold text-indigo-700 mt-1 truncate max-w-[62px]">Event</span>
@@ -482,7 +446,7 @@
           <button onclick="app.navigateToSection('kalkulator')" class="flex flex-col items-center shrink-0 tap-highlight group">
             <div class="w-12 h-12 rounded-full p-0.5 bg-gradient-to-tr from-emerald-600 to-teal-700 shadow-xs">
               <div class="w-full h-full rounded-full bg-white flex items-center justify-center text-lg overflow-hidden">
-                🧮
+                ðŸ§®
               </div>
             </div>
             <span class="text-[10px] font-bold text-emerald-800 mt-1 truncate max-w-[62px]">Kalkulator</span>
@@ -496,7 +460,7 @@
         <div class="flex items-center space-x-2 truncate min-w-0">
           <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 live-badge-dot shrink-0"></span>
           <span class="font-extrabold text-emerald-400 shrink-0 text-[10px] tracking-wider uppercase">LIVE:</span>
-          <span class="truncate text-[11px] text-slate-200 font-medium" id="mobile-live-pulse-text">14 Pemasok Online • ⚡ 3 Escrow Baru Diproses • 📈 Jelantah +4.5%</span>
+          <span class="truncate text-[11px] text-slate-200 font-medium" id="mobile-live-pulse-text">14 Pemasok Online â€¢ âš¡ 3 Escrow Baru Diproses â€¢ ðŸ“ˆ Jelantah +4.5%</span>
         </div>
         <button onclick="app.showMobileQuickActionSheet()" class="shrink-0 ml-2 px-2.5 py-1 rounded-xl bg-emerald-500/20 text-emerald-300 text-[10px] font-bold border border-emerald-500/40 active:scale-95 transition flex items-center space-x-1">
           <i class="fa-solid fa-bolt text-amber-400 text-[9px]"></i>
@@ -673,22 +637,22 @@
             <span>Semua</span>
           </button>
           <button onclick="app.filterMobileByCat('cat_jelantah')" class="mobile-chip-filter px-3 py-1.5 rounded-full text-xs font-semibold shrink-0 bg-slate-100 text-slate-700 hover:bg-emerald-50 hover:text-emerald-700 border border-slate-200 transition active:scale-95 flex items-center space-x-1.5">
-            <span>🛢️ Jelantah</span>
+            <span>ðŸ›¢ï¸ Jelantah</span>
           </button>
           <button onclick="app.filterMobileByCat('cat_besi')" class="mobile-chip-filter px-3 py-1.5 rounded-full text-xs font-semibold shrink-0 bg-slate-100 text-slate-700 hover:bg-emerald-50 hover:text-emerald-700 border border-slate-200 transition active:scale-95 flex items-center space-x-1.5">
-            <span>🏗️ Besi Scrap</span>
+            <span>ðŸ—ï¸ Besi Scrap</span>
           </button>
           <button onclick="app.filterMobileByCat('cat_plastik')" class="mobile-chip-filter px-3 py-1.5 rounded-full text-xs font-semibold shrink-0 bg-slate-100 text-slate-700 hover:bg-emerald-50 hover:text-emerald-700 border border-slate-200 transition active:scale-95 flex items-center space-x-1.5">
-            <span>🍶 Plastik PET</span>
+            <span>ðŸ¶ Plastik PET</span>
           </button>
           <button onclick="app.filterMobileByCat('cat_kardus')" class="mobile-chip-filter px-3 py-1.5 rounded-full text-xs font-semibold shrink-0 bg-slate-100 text-slate-700 hover:bg-emerald-50 hover:text-emerald-700 border border-slate-200 transition active:scale-95 flex items-center space-x-1.5">
-            <span>📦 Kardus OCC</span>
+            <span>ðŸ“¦ Kardus OCC</span>
           </button>
           <button onclick="app.filterMobileByCat('cat_oli')" class="mobile-chip-filter px-3 py-1.5 rounded-full text-xs font-semibold shrink-0 bg-slate-100 text-slate-700 hover:bg-emerald-50 hover:text-emerald-700 border border-slate-200 transition active:scale-95 flex items-center space-x-1.5">
-            <span>🛢️ Oli Bekas</span>
+            <span>ðŸ›¢ï¸ Oli Bekas</span>
           </button>
           <button onclick="app.filterMobileByCat('cat_tembaga')" class="mobile-chip-filter px-3 py-1.5 rounded-full text-xs font-semibold shrink-0 bg-slate-100 text-slate-700 hover:bg-emerald-50 hover:text-emerald-700 border border-slate-200 transition active:scale-95 flex items-center space-x-1.5">
-            <span>⚡ Tembaga</span>
+            <span>âš¡ Tembaga</span>
           </button>
           <button onclick="app.navigateToSection('preloved')" class="mobile-chip-filter px-3 py-1.5 rounded-full text-xs font-semibold shrink-0 bg-pink-50 text-pink-700 hover:bg-pink-100 border border-pink-200 transition active:scale-95 flex items-center space-x-1.5">
             <i class="fa-solid fa-heart text-pink-500 text-[10px]"></i>
@@ -803,7 +767,7 @@
             </button>
             <button id="cat-tab-b3" onclick="app.renderPublicCategories('b3')" class="px-4 py-2 rounded-xl text-xs font-bold transition bg-slate-100 text-rose-700 hover:bg-rose-100 flex items-center space-x-1.5 border border-rose-200">
               <i class="fa-solid fa-triangle-exclamation text-rose-600"></i>
-              <span>⚠️ Limbah B3 (Izin KLHK)</span>
+              <span>âš ï¸ Limbah B3 (Izin KLHK)</span>
             </button>
           </div>
 
@@ -931,7 +895,7 @@
               Event &amp; Agenda Bursa Limbah
             </h2>
             <p class="text-slate-500 mt-3 text-sm max-w-xl mx-auto">
-              Ikuti seminar, workshop, business matching, dan pameran limbah terkurasi — pertemukan penjual dan pembeli limbah di satu forum terverifikasi.
+              Ikuti seminar, workshop, business matching, dan pameran limbah terkurasi â€” pertemukan penjual dan pembeli limbah di satu forum terverifikasi.
             </p>
           </div>
 
@@ -1000,21 +964,21 @@
             <button type="button" onclick="app.selectSourceTier('source_household')"
               id="source-card-household"
               class="source-card group p-3 rounded-2xl border-2 border-slate-200 bg-white text-center transition-all duration-200 hover:shadow-lg hover:border-emerald-400 cursor-pointer active:scale-[0.97]">
-              <div class="text-3xl mb-1.5">🏠</div>
+              <div class="text-3xl mb-1.5">ðŸ </div>
               <div class="font-bold text-xs text-slate-800 group-hover:text-emerald-700">Rumah Tangga</div>
               <div class="text-[10px] text-slate-400 leading-tight mt-0.5">Perorangan / Bank Sampah / RT</div>
             </button>
             <button type="button" onclick="app.selectSourceTier('source_medium_industry')"
               id="source-card-medium"
               class="source-card group p-3 rounded-2xl border-2 border-slate-200 bg-white text-center transition-all duration-200 hover:shadow-lg hover:border-blue-400 cursor-pointer active:scale-[0.97]">
-              <div class="text-3xl mb-1.5">🏢</div>
+              <div class="text-3xl mb-1.5">ðŸ¢</div>
               <div class="font-bold text-xs text-slate-800 group-hover:text-blue-700">Industri Menengah</div>
               <div class="text-[10px] text-slate-400 leading-tight mt-0.5">UMKM / Bengkel / Percetakan</div>
             </button>
             <button type="button" onclick="app.selectSourceTier('source_large_industry')"
               id="source-card-large"
               class="source-card group p-3 rounded-2xl border-2 border-slate-200 bg-white text-center transition-all duration-200 hover:shadow-lg hover:border-amber-400 cursor-pointer active:scale-[0.97]">
-              <div class="text-3xl mb-1.5">🏭</div>
+              <div class="text-3xl mb-1.5">ðŸ­</div>
               <div class="font-bold text-xs text-slate-800 group-hover:text-amber-700">Industri Besar</div>
               <div class="text-[10px] text-slate-400 leading-tight mt-0.5">Pabrik / Kawasan Industri</div>
             </button>
@@ -1136,7 +1100,7 @@
             <input type="checkbox" id="up-is-b3" class="w-4 h-4 text-rose-600 rounded focus:ring-rose-500 border-slate-300" onchange="document.getElementById('up-b3-permit-box').classList.toggle('hidden', !this.checked)">
             <label for="up-is-b3" class="text-xs font-bold text-slate-800 cursor-pointer flex items-center gap-1">
               <i class="fa-solid fa-triangle-exclamation text-rose-600"></i>
-              <span>Limbah B3 (Bahan Berbahaya & Beracun) — Memerlukan Izin Khusus KLHK</span>
+              <span>Limbah B3 (Bahan Berbahaya & Beracun) â€” Memerlukan Izin Khusus KLHK</span>
             </label>
           </div>
           <div id="up-b3-permit-box" class="hidden pl-6">
@@ -1310,11 +1274,11 @@
                         <td class="px-3 py-1.5 text-right font-bold text-slate-800">Rp 2.500</td>
                       </tr>
                       <tr class="bg-white hover:bg-slate-50 transition">
-                        <td class="px-3 py-1.5 text-slate-600">Rp 100.000 – Rp 1.000.000</td>
+                        <td class="px-3 py-1.5 text-slate-600">Rp 100.000 â€“ Rp 1.000.000</td>
                         <td class="px-3 py-1.5 text-right font-bold text-slate-800">Rp 5.000</td>
                       </tr>
                       <tr class="bg-white hover:bg-slate-50 transition">
-                        <td class="px-3 py-1.5 text-slate-600">Rp 1.000.000 – Rp 10.000.000</td>
+                        <td class="px-3 py-1.5 text-slate-600">Rp 1.000.000 â€“ Rp 10.000.000</td>
                         <td class="px-3 py-1.5 text-right font-bold text-slate-800">Rp 10.000</td>
                       </tr>
                       <tr class="bg-amber-50 hover:bg-amber-100 transition">
@@ -1536,7 +1500,7 @@
               </div>
               <p class="text-xs text-slate-600 leading-relaxed">Daftar sebagai Pembeli untuk melihat harga lengkap, lokasi GPS, dan nomor WhatsApp penjual terverifikasi.</p>
               <button onclick="app.switchAppTab('sub')" class="mt-2 px-3 py-1 rounded-lg bg-amber-500 hover:bg-amber-600 text-white text-[10px] font-bold transition active:scale-95">
-                Lihat Paket Berlangganan →
+                Lihat Paket Berlangganan â†’
               </button>
             </div>
           </div>
@@ -1591,7 +1555,7 @@
               </span>
             </div>
             <p id="buyer-tier-limit-desc" class="text-xs text-slate-600 mt-1">
-              Akses Melihat Harga: <strong>Rentang Nilai s/d Rp50.000.000</strong> • Alamat Lengkap & Peta GPS Aktif • Fitur Layar Chat Siap Digunakan.
+              Akses Melihat Harga: <strong>Rentang Nilai s/d Rp50.000.000</strong> â€¢ Alamat Lengkap & Peta GPS Aktif â€¢ Fitur Layar Chat Siap Digunakan.
             </p>
           </div>
 
@@ -1820,7 +1784,7 @@
             </div>
             <h2 id="seller-profile-name" class="text-2xl sm:text-3xl font-extrabold text-white">Budi Santoso (Sentra Jelantah Sejahtera)</h2>
             <p id="seller-profile-meta" class="text-xs text-slate-300">
-              Email: budi@sentrajelantah.id • Lokasi: Pasar Minggu, Jakarta Selatan • Rekening: BCA 8271-992-102
+              Email: budi@sentrajelantah.id â€¢ Lokasi: Pasar Minggu, Jakarta Selatan â€¢ Rekening: BCA 8271-992-102
             </p>
           </div>
           <div class="flex items-center space-x-2.5 shrink-0">
@@ -2068,7 +2032,7 @@
               <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-400/20 text-amber-300 border border-amber-400/30">Otoritas Penuh</span>
             </div>
             <p class="text-xs text-slate-300 mt-0.5">
-              Login Aktif: <strong class="text-white">admin@bursalimbah.com</strong> • Hak Akses: Kurasi Pasokan, Audit Escrow DP, & Batas 3-Tier
+              Login Aktif: <strong class="text-white">admin@bursalimbah.com</strong> â€¢ Hak Akses: Kurasi Pasokan, Audit Escrow DP, & Batas 3-Tier
             </p>
           </div>
         </div>
@@ -2617,9 +2581,9 @@
                             <div class="flex items-center gap-2">
                               <i class="fa-solid fa-calendar-day text-violet-600 w-4 text-center"></i>
                               <span id="ticket-preview-date" class="font-bold text-slate-800">22 September 2026</span>
-                              <span class="text-slate-300">•</span>
+                              <span class="text-slate-300">â€¢</span>
                               <i class="fa-solid fa-clock text-violet-600 w-4 text-center"></i>
-                              <span id="ticket-preview-time" class="font-medium">09.00 – 15.00 WIB</span>
+                              <span id="ticket-preview-time" class="font-medium">09.00 â€“ 15.00 WIB</span>
                             </div>
                             <div class="flex items-start gap-2">
                               <i class="fa-solid fa-location-dot text-rose-500 w-4 text-center mt-0.5 shrink-0"></i>
@@ -3067,7 +3031,7 @@
                 <!-- Daftar Biaya Dinamis -->
                 <div id="admin-fees-list-container" class="space-y-2">
                   <!-- Di-render oleh renderAdminFeesList() -->
-                  <div class="text-center py-4 text-xs text-slate-400">Memuat data biaya…</div>
+                  <div class="text-center py-4 text-xs text-slate-400">Memuat data biayaâ€¦</div>
                 </div>
 
                 <!-- Simulasi Total Biaya -->
@@ -3077,7 +3041,7 @@
                     Simulasi Rincian Biaya (Contoh Transaksi Rp 10.000.000)
                   </div>
                   <div id="admin-fees-simulation" class="space-y-1 text-[11px]">
-                    <div class="text-slate-400 italic">—</div>
+                    <div class="text-slate-400 italic">â€”</div>
                   </div>
                   <div class="border-t border-violet-200 mt-2 pt-2 flex justify-between text-[11px] font-bold text-violet-900">
                     <span>Total Biaya Platform</span>
@@ -3354,7 +3318,7 @@
                 <div class="p-4 bg-white rounded-xl border border-slate-200 shadow-2xs space-y-3">
                   <div><label class="block text-xs font-bold uppercase text-slate-800">Syarat &amp; Ketentuan</label><p class="text-[11px] text-slate-500 mt-0.5">Ditampilkan wajib kepada pengguna baru sebelum formulir pembeli atau penjual dibuka.</p></div>
                   <div class="grid sm:grid-cols-3 gap-3"><label class="sm:col-span-2 text-[11px] font-semibold text-slate-600">Judul<input id="setting-terms-title" type="text" maxlength="120" class="mt-1 w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-xs"></label><label class="text-[11px] font-semibold text-slate-600">Versi<input id="setting-terms-version" type="text" maxlength="20" placeholder="1.0" class="mt-1 w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-xs font-mono"></label></div>
-                  <label class="block text-[11px] font-semibold text-slate-600">Isi Syarat dan Ketentuan<textarea id="setting-terms-content" rows="7" maxlength="10000" class="mt-1 w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-xs leading-relaxed" placeholder="Masukkan syarat dan ketentuan…"></textarea></label>
+                  <label class="block text-[11px] font-semibold text-slate-600">Isi Syarat dan Ketentuan<textarea id="setting-terms-content" rows="7" maxlength="10000" class="mt-1 w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-xs leading-relaxed" placeholder="Masukkan syarat dan ketentuanâ€¦"></textarea></label>
                 </div>
               </div>
 
@@ -3619,7 +3583,7 @@
 
               <label class="block">
                 <span class="text-xs font-bold text-slate-700">Keterangan / Deskripsi</span>
-                <textarea id="fee-modal-description" rows="2" maxlength="200" placeholder="Penjelasan singkat fungsi biaya ini…"
+                <textarea id="fee-modal-description" rows="2" maxlength="200" placeholder="Penjelasan singkat fungsi biaya iniâ€¦"
                   class="mt-1 w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"></textarea>
               </label>
 
@@ -3683,7 +3647,7 @@
                     </div>
                     <div>
                       <label class="block text-[11px] font-semibold text-slate-600 mb-1">Jam / Jadwal Operasional (Opsional)</label>
-                      <input type="text" id="support-edit-hours" maxlength="100" placeholder="Senin – Jumat: 08.00 – 17.00 WIB" oninput="app.updateSupportLivePreview()" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                      <input type="text" id="support-edit-hours" maxlength="100" placeholder="Senin â€“ Jumat: 08.00 â€“ 17.00 WIB" oninput="app.updateSupportLivePreview()" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500">
                     </div>
                   </div>
 
@@ -3908,7 +3872,7 @@
   <div id="modal-registration-terms" class="fixed inset-0 z-[60] bg-slate-950/75 backdrop-blur-sm hidden items-center justify-center p-4 overflow-y-auto" role="dialog" aria-modal="true" aria-labelledby="registration-terms-title">
     <div class="bg-white rounded-3xl max-w-2xl w-full max-h-[90vh] flex flex-col shadow-2xl border border-slate-200">
       <div class="p-6 border-b border-slate-100 flex items-start justify-between gap-4">
-        <div><div class="inline-flex px-2 py-1 rounded-full bg-emerald-50 text-emerald-700 text-[10px] font-bold mb-2"><i class="fa-solid fa-file-signature mr-1"></i> WAJIB DISETUJUI</div><h3 id="registration-terms-title" class="text-lg font-extrabold text-slate-900">Syarat dan Ketentuan</h3><p class="text-xs text-slate-500 mt-1">Untuk pendaftaran akun <strong id="registration-terms-role">Pembeli</strong> · <span id="registration-terms-version">Versi 1.0</span></p></div>
+        <div><div class="inline-flex px-2 py-1 rounded-full bg-emerald-50 text-emerald-700 text-[10px] font-bold mb-2"><i class="fa-solid fa-file-signature mr-1"></i> WAJIB DISETUJUI</div><h3 id="registration-terms-title" class="text-lg font-extrabold text-slate-900">Syarat dan Ketentuan</h3><p class="text-xs text-slate-500 mt-1">Untuk pendaftaran akun <strong id="registration-terms-role">Pembeli</strong> Â· <span id="registration-terms-version">Versi 1.0</span></p></div>
         <button type="button" onclick="app.cancelRegistrationTerms()" class="p-2 text-slate-400 hover:text-slate-700"><i class="fa-solid fa-xmark text-lg"></i></button>
       </div>
       <div class="p-6 overflow-y-auto"><div id="registration-terms-content" class="whitespace-pre-wrap text-sm leading-7 text-slate-700 bg-slate-50 border border-slate-200 rounded-2xl p-4"></div></div>
@@ -3963,7 +3927,7 @@
           <label class="block text-xs font-bold uppercase text-slate-700 mb-1">Kata Sandi (Password) *</label>
           <div class="relative">
             <i class="fa-solid fa-lock absolute left-3.5 top-3 text-slate-400 text-sm"></i>
-            <input type="password" id="reg-buyer-password" required value="123456" placeholder="Minimal 6 karakter" class="w-full bg-slate-50 border border-slate-300 rounded-xl pl-10 pr-3.5 py-2.5 text-xs focus:ring-2 focus:ring-brand-500 focus:outline-none font-medium">
+            <input type="password" id="reg-buyer-password" required value="" placeholder="Minimal 6 karakter" class="w-full bg-slate-50 border border-slate-300 rounded-xl pl-10 pr-3.5 py-2.5 text-xs focus:ring-2 focus:ring-brand-500 focus:outline-none font-medium">
           </div>
           <p class="text-[10px] text-slate-400 mt-1">Digunakan untuk login kembali ke portal pembeli Anda.</p>
         </div>
@@ -4042,7 +4006,7 @@
           <label class="block text-xs font-bold uppercase text-slate-700 mb-1">Kata Sandi (Password) *</label>
           <div class="relative">
             <i class="fa-solid fa-lock absolute left-3.5 top-3 text-slate-400 text-sm"></i>
-            <input type="password" id="reg-seller-password" required value="123456" placeholder="Minimal 6 karakter" class="w-full bg-slate-50 border border-slate-300 rounded-xl pl-10 pr-3.5 py-2.5 text-xs focus:ring-2 focus:ring-brand-500 focus:outline-none font-medium">
+            <input type="password" id="reg-seller-password" required value="" placeholder="Minimal 6 karakter" class="w-full bg-slate-50 border border-slate-300 rounded-xl pl-10 pr-3.5 py-2.5 text-xs focus:ring-2 focus:ring-brand-500 focus:outline-none font-medium">
           </div>
           <p class="text-[10px] text-slate-400 mt-1">Digunakan untuk login kembali ke dashboard penjual Anda.</p>
         </div>
@@ -4140,67 +4104,6 @@
     <div class="bg-white rounded-3xl max-w-xl w-full p-8 shadow-2xl border border-slate-200 space-y-6" id="printable-receipt">
       <div id="receipt-modal-content">
         <!-- Diisi otomatis oleh JavaScript -->
-      </div>
-    </div>
-  </div>
-
-  <!-- ================= MODAL 6: LOGIN / OAUTH GOOGLE ================= -->
-  <div id="modal-google-auth" class="fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-sm hidden items-center justify-center p-4 overflow-y-auto">
-    <div class="bg-white rounded-3xl max-w-md w-full p-6 sm:p-8 shadow-2xl border border-slate-200 space-y-5">
-      <!-- Google Branding Header -->
-      <div class="flex items-center justify-between border-b border-slate-100 pb-4">
-        <div class="flex items-center space-x-3">
-          <svg class="w-6 h-6" viewBox="0 0 24 24">
-            <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z"/>
-            <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.33 24 12 24z"/>
-            <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.16 0 9.97 0 12s.45 3.84 1.25 5.42l4.03-3.15z"/>
-            <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/>
-          </svg>
-          <span class="font-bold text-slate-800 text-sm">Masuk dengan Google</span>
-        </div>
-        <button type="button" onclick="app.closeGoogleLoginModal()" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg">
-          <i class="fa-solid fa-xmark text-lg"></i>
-        </button>
-      </div>
-
-      <div id="google-modal-role-subtitle" class="text-xs text-slate-600">
-        Pilih akun Google Anda untuk masuk ke <strong>Bursa Limbah</strong>:
-      </div>
-
-      <!-- Pilihan Akun Google Demo -->
-      <div class="space-y-2">
-        <button type="button" onclick="app.proceedGoogleLogin('budi.santoso@gmail.com', 'Budi Santoso', 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80')" class="w-full p-3 rounded-2xl border border-slate-200 hover:border-emerald-500 hover:bg-emerald-50/40 text-left transition flex items-center space-x-3 group">
-          <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80" alt="Budi" class="w-10 h-10 rounded-full object-cover border border-slate-200 shrink-0">
-          <div class="flex-1 min-w-0">
-            <div class="text-xs font-bold text-slate-900 group-hover:text-emerald-800">Budi Santoso</div>
-            <div class="text-[11px] text-slate-500 truncate">budi.santoso@gmail.com</div>
-          </div>
-          <i class="fa-solid fa-chevron-right text-xs text-slate-400 group-hover:text-emerald-600"></i>
-        </button>
-
-        <button type="button" onclick="app.proceedGoogleLogin('siti.aminah@gmail.com', 'Siti Aminah', 'https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&w=120&q=80')" class="w-full p-3 rounded-2xl border border-slate-200 hover:border-emerald-500 hover:bg-emerald-50/40 text-left transition flex items-center space-x-3 group">
-          <img src="https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&w=120&q=80" alt="Siti" class="w-10 h-10 rounded-full object-cover border border-slate-200 shrink-0">
-          <div class="flex-1 min-w-0">
-            <div class="text-xs font-bold text-slate-900 group-hover:text-emerald-800">Siti Aminah (PT Daur Hijau)</div>
-            <div class="text-[11px] text-slate-500 truncate">siti.aminah@gmail.com</div>
-          </div>
-          <i class="fa-solid fa-chevron-right text-xs text-slate-400 group-hover:text-emerald-600"></i>
-        </button>
-      </div>
-
-      <!-- Atau Masukkan Akun Google Kustom -->
-      <div class="pt-3 border-t border-slate-100 space-y-2">
-        <label class="block text-[11px] font-bold uppercase text-slate-600">Atau Gunakan Email Google Lain:</label>
-        <div class="flex gap-2">
-          <input type="email" id="custom-google-email" placeholder="nama@gmail.com" class="flex-1 bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-brand-500 focus:outline-none">
-          <button type="button" onclick="app.proceedCustomGoogleLogin()" class="px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition shrink-0">
-            Lanjut
-          </button>
-        </div>
-      </div>
-
-      <div class="text-[10px] text-slate-400 text-center leading-relaxed">
-        Dengan melanjutkan, Google memverifikasi identitas Anda untuk akses aman ke ekosistem Bursa Limbah.
       </div>
     </div>
   </div>
@@ -4454,7 +4357,7 @@
             <div>
               <div class="font-bold text-amber-950">Verifikasi Akun Bersifat Opsional</div>
               <p class="mt-0.5 text-amber-800 leading-relaxed">
-                Anda tetap dapat melakukan penawaran atau unggah pasokan tanpa verifikasi. Namun, verifikasi identitas (KTP atau NPWP) memberikan Anda badge <strong>Mitra Terverifikasi Resmi ✅</strong>, meningkatkan kepercayaan mitra bisnis, dan mempercepat transaksi escrow.
+                Anda tetap dapat melakukan penawaran atau unggah pasokan tanpa verifikasi. Namun, verifikasi identitas (KTP atau NPWP) memberikan Anda badge <strong>Mitra Terverifikasi Resmi âœ…</strong>, meningkatkan kepercayaan mitra bisnis, dan mempercepat transaksi escrow.
               </p>
             </div>
           </div>
@@ -4790,12 +4693,12 @@
         <div>
           <label class="block text-[11px] font-bold text-slate-700 mb-1">Pilih Komoditas Limbah:</label>
           <select id="mob-calc-commodity" onchange="app.updateMobileDpCalc()" class="w-full text-xs font-semibold bg-slate-50 border border-slate-200 rounded-xl p-2.5 focus:ring-2 focus:ring-emerald-500 focus:outline-none">
-            <option value="jelantah" data-price="10500" data-unit="Liter">🛢️ Minyak Jelantah (Rp10.500/Liter)</option>
-            <option value="besi" data-price="6200" data-unit="Kg">🏗️ Besi Rongsok / Scrap (Rp6.200/Kg)</option>
-            <option value="plastik" data-price="4800" data-unit="Kg">🍶 Plastik PET Bal (Rp4.800/Kg)</option>
-            <option value="kardus" data-price="2100" data-unit="Kg">📦 Kardus Bekas OCC (Rp2.100/Kg)</option>
-            <option value="oli" data-price="4500" data-unit="Liter">🛢️ Oli Bekas Industri (Rp4.500/Liter)</option>
-            <option value="tembaga" data-price="95000" data-unit="Kg">⚡ Tembaga Super (Rp95.000/Kg)</option>
+            <option value="jelantah" data-price="10500" data-unit="Liter">ðŸ›¢ï¸ Minyak Jelantah (Rp10.500/Liter)</option>
+            <option value="besi" data-price="6200" data-unit="Kg">ðŸ—ï¸ Besi Rongsok / Scrap (Rp6.200/Kg)</option>
+            <option value="plastik" data-price="4800" data-unit="Kg">ðŸ¶ Plastik PET Bal (Rp4.800/Kg)</option>
+            <option value="kardus" data-price="2100" data-unit="Kg">ðŸ“¦ Kardus Bekas OCC (Rp2.100/Kg)</option>
+            <option value="oli" data-price="4500" data-unit="Liter">ðŸ›¢ï¸ Oli Bekas Industri (Rp4.500/Liter)</option>
+            <option value="tembaga" data-price="95000" data-unit="Kg">âš¡ Tembaga Super (Rp95.000/Kg)</option>
           </select>
         </div>
 
@@ -4902,7 +4805,7 @@
           </div>
           <div>
             <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Waktu Pelaksanaan *</label>
-            <input type="text" id="evt-time" placeholder="Contoh: 09.00 – 15.00 WIB" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+            <input type="text" id="evt-time" placeholder="Contoh: 09.00 â€“ 15.00 WIB" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none">
           </div>
         </div>
 
@@ -5227,7 +5130,6 @@
             <i class="fa-solid fa-qrcode"></i>
           </div>
           <span class="text-xs font-bold text-white tracking-wide">Arahkan Kamera ke QR Penjual</span>
-          <span class="text-[11px] text-slate-400 mt-1">atau masukkan kode hasil scan di bawah ini</span>
         </div>
 
         <form id="form-scan-qr-input" onsubmit="app.submitScannedHandoverQr(event)" class="space-y-3">
@@ -5413,7 +5315,7 @@
             <div class="flex items-baseline gap-2">
               <span id="crypto-balance-clnk" class="text-3xl font-black text-amber-950 font-mono tracking-tight">500</span>
               <span class="text-sm font-bold text-amber-800">CLNK</span>
-              <span id="crypto-balance-clnk-idr" class="text-xs font-semibold text-slate-600 ml-auto">(≈ Rp 750.000)</span>
+              <span id="crypto-balance-clnk-idr" class="text-xs font-semibold text-slate-600 ml-auto">(â‰ˆ Rp 750.000)</span>
             </div>
             <div class="pt-2 border-t border-amber-200/80 flex items-center justify-between text-[11px] text-slate-600 font-medium">
               <span>Stablecoin: <strong id="crypto-balance-usdt" class="font-mono text-slate-800">50.00 USDT</strong></span>
@@ -5556,9 +5458,9 @@
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 
   <!-- Modul Aplikasi BURSA LIMBAH -->
-  <script src="js/data.js?v=6"></script>
-  <script src="js/store.js?v=6"></script>
-  <script src="js/storageClient.js?v=6"></script>
-  <script src="js/app.js?v=6"></script>
+  <script src="js/data.js?v=8"></script>
+  <script src="js/store.js?v=8"></script>
+  <script src="js/storageClient.js?v=7"></script>
+  <script src="js/app.js?v=8"></script>
 </body>
 </html>

@@ -147,7 +147,7 @@ class BursaLimbahStore {
             supportGuideBtnAction: remote.support_guide_btn_action || this.state.settings.supportGuideBtnAction || "modal",
             supportGuideBtnUrl: remote.support_guide_btn_url || this.state.settings.supportGuideBtnUrl || "",
             supportGuideBtnEnabled: remote.support_guide_btn_enabled === undefined ? (this.state.settings.supportGuideBtnEnabled !== false) : remote.support_guide_btn_enabled === 'true',
-            supportOperationalHours: remote.support_operational_hours || this.state.settings.supportOperationalHours || "Senin – Jumat: 08.00 – 17.00 WIB",
+            supportOperationalHours: remote.support_operational_hours || this.state.settings.supportOperationalHours || "Senin â€“ Jumat: 08.00 â€“ 17.00 WIB",
             supportMapsUrl: remote.support_maps_url || this.state.settings.supportMapsUrl || "",
             customFees: (() => {
               try {
@@ -174,7 +174,7 @@ class BursaLimbahStore {
               date: d.toISOString().split('T')[0],
               day: String(d.getDate()).padStart(2, '0'),
               monthYear: `${months[d.getMonth()]} ${d.getFullYear()}`,
-              time: ev.event_time || '09.00 – 12.00 WIB',
+              time: ev.event_time || '09.00 â€“ 12.00 WIB',
               location: ev.location || 'Online',
               image: ev.image || 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&w=800&q=80',
               description: ev.description || '',
@@ -487,7 +487,7 @@ class BursaLimbahStore {
             email: cleanId,
             phone: "+62 812-" + Math.floor(10000000 + Math.random() * 90000000),
             company: `CV ${displayName} Mandiri`,
-            password: password || "123456"
+            password: password || null
           });
         } else {
           newUser = this.registerBuyer({
@@ -496,7 +496,7 @@ class BursaLimbahStore {
             phone: "+62 812-" + Math.floor(10000000 + Math.random() * 90000000),
             company: `PT ${displayName} Daur Ulang`,
             tierId: "tier_starter", // Otomatis akun Pembeli Tier Gratis (Rp 1 - Rp 200.000)
-            password: password || "123456"
+            password: password || null
           });
         }
         return {
@@ -522,11 +522,11 @@ class BursaLimbahStore {
     }
 
     // Periksa password
-    const userPass = user.password || "123456";
-    if (password && password !== userPass) {
+    const userPass = user.password || null;
+    if (!userPass || (password && password !== userPass)) {
       return {
         success: false,
-        message: "Kata sandi yang Anda masukkan salah. Silakan coba lagi atau gunakan tombol Akun Demo."
+        message: "Kata sandi yang Anda masukkan salah. Silakan coba lagi atau hubungi admin."
       };
     }
 
@@ -672,106 +672,12 @@ class BursaLimbahStore {
     return { success: true, user: newUser, isNewAccount: true, source: 'local' };
   }
 
-  async loginWithGoogleAsync({ email, name, avatar, role = 'buyer' }) {
-    try {
-      const res = await fetch(`${this.apiBaseUrl}/api/auth/google`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, name, avatar, role })
-      });
-      const data = await res.json();
-      if (res.ok && data.success) {
-        const user = data.user;
-        const existingIdx = this.state.users.findIndex(u => u.id === user.id || (u.email && u.email.toLowerCase() === user.email.toLowerCase()));
-        if (existingIdx !== -1) {
-          this.state.users[existingIdx] = { ...this.state.users[existingIdx], ...user };
-        } else {
-          this.state.users.push(user);
-        }
-        if (user.role === 'buyer') {
-          this.state.activeUserId = user.id;
-          this.state.authenticatedBuyerId = user.id;
-          this.state.currentRole = 'buyer';
-        } else if (user.role === 'seller') {
-          this.state.sellerUserId = user.id;
-          this.state.authenticatedSellerId = user.id;
-          this.state.currentRole = 'seller';
-        } else if (user.role === 'admin') {
-          this.state.adminUserId = user.id;
-          this.state.currentRole = 'admin';
-        }
-        this.save();
-        return {
-          success: true,
-          user,
-          role: user.role,
-          isNewAccount: Boolean(data.isNewAccount),
-          source: 'mysql'
-        };
-      }
-    } catch (err) {
-      console.warn('[Store] Backend MySQL offline untuk Google Auth, fallback lokal');
-    }
-
-    const localRes = this.loginWithGoogle({ email, name, avatar, role });
-    localRes.source = 'local';
-    return localRes;
+  async loginWithGoogleAsync({ email, name, avatar, role = 'buyer' } = {}) {
+    return { success: false, message: 'Autentikasi Google telah dinonaktifkan demi keamanan.' };
   }
 
-  loginWithGoogle({ email, name, avatar, role = 'buyer' }) {
-    const cleanEmail = (email || '').trim().toLowerCase();
-    let user = this.state.users.find(u => u.email && u.email.toLowerCase() === cleanEmail);
-
-    let isNew = false;
-    if (!user) {
-      isNew = true;
-      const displayName = name || (cleanEmail.split('@')[0].replace(/[^a-zA-Z0-9]/g, ' '));
-      if (role === 'seller') {
-        user = this.registerSeller({
-          name: `${displayName} (Mitra Penjual)`,
-          email: cleanEmail,
-          phone: "+62 812-" + Math.floor(10000000 + Math.random() * 90000000),
-          company: `CV ${displayName} Sentra`,
-          password: "google_oauth_verified"
-        });
-      } else {
-        user = this.registerBuyer({
-          name: `${displayName} (Pembeli)`,
-          email: cleanEmail,
-          phone: "+62 812-" + Math.floor(10000000 + Math.random() * 90000000),
-          company: `PT ${displayName} Daur Ulang`,
-          tierId: "tier_starter",
-          password: "google_oauth_verified"
-        });
-      }
-    }
-
-    // Tandai akun Google
-    user.authProvider = 'google';
-    user.emailVerified = true;
-    if (avatar) user.avatar = avatar;
-
-    // Aktifkan sesi pengguna
-    if (user.role === 'buyer') {
-      this.state.activeUserId = user.id;
-      this.state.authenticatedBuyerId = user.id;
-      this.state.currentRole = 'buyer';
-    } else if (user.role === 'seller') {
-      this.state.sellerUserId = user.id;
-      this.state.authenticatedSellerId = user.id;
-      this.state.currentRole = 'seller';
-    } else if (user.role === 'admin') {
-      this.state.adminUserId = user.id;
-      this.state.currentRole = 'admin';
-    }
-
-    this.save();
-    return {
-      success: true,
-      user,
-      role: user.role,
-      isNewAccount: isNew
-    };
+  loginWithGoogle({ email, name, avatar, role = 'buyer' } = {}) {
+    return { success: false, message: 'Autentikasi Google telah dinonaktifkan demi keamanan.' };
   }
 
   updateUserProfile(userId, data = {}) {
@@ -996,7 +902,7 @@ class BursaLimbahStore {
       subscriptionActive: isSubActive,
       subscriptionTier: chosenTierId,
       subscriptionExpiry: nextMonth.toISOString().split("T")[0],
-      password: password || "123456"
+      password: password || null
     };
 
     this.state.users.push(newUser);
@@ -1021,7 +927,7 @@ class BursaLimbahStore {
       location: location || "Indonesia",
       bankAccount: bankAccount || "-",
       balance: 0,
-      password: password || "123456"
+      password: password || null
     };
 
     this.state.users.push(newUser);
@@ -2576,7 +2482,7 @@ class BursaLimbahStore {
       date: eventData.date || new Date().toISOString().split('T')[0],
       day: eventData.day || day,
       monthYear: eventData.monthYear || monthYear,
-      time: eventData.time || "09.00 – 15.00 WIB",
+      time: eventData.time || "09.00 â€“ 15.00 WIB",
       location: eventData.location || "Jakarta",
       image: eventData.image || "https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&w=800&q=80",
       description: eventData.description || "",

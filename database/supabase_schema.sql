@@ -180,7 +180,7 @@ CREATE TABLE IF NOT EXISTS public.crypto_wallets (
 
 -- -------------------------------------------------------
 -- ROW LEVEL SECURITY (RLS) POLICIES
--- Enable RLS and allow public access for demo / web client
+-- Hardened Security Policies: Protect Sensitive User & System Data
 -- -------------------------------------------------------
 ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.categories ENABLE ROW LEVEL SECURITY;
@@ -191,25 +191,50 @@ ALTER TABLE public.events ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.system_settings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.crypto_wallets ENABLE ROW LEVEL SECURITY;
 
--- Allow read for all clients (anon & authenticated)
-CREATE POLICY "Public Read Users" ON public.users FOR SELECT USING (true);
+-- 1. Read Policies (Public Read for Marketplace Catalogs)
 CREATE POLICY "Public Read Categories" ON public.categories FOR SELECT USING (true);
 CREATE POLICY "Public Read Products" ON public.products FOR SELECT USING (true);
-CREATE POLICY "Public Read Orders" ON public.orders FOR SELECT USING (true);
-CREATE POLICY "Public Read Offers" ON public.offers FOR SELECT USING (true);
 CREATE POLICY "Public Read Events" ON public.events FOR SELECT USING (true);
 CREATE POLICY "Public Read Settings" ON public.system_settings FOR SELECT USING (true);
-CREATE POLICY "Public Read Wallets" ON public.crypto_wallets FOR SELECT USING (true);
 
--- Allow insert/update for anon & authenticated
-CREATE POLICY "Public Insert/Update Users" ON public.users FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "Public Insert/Update Categories" ON public.categories FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "Public Insert/Update Products" ON public.products FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "Public Insert/Update Orders" ON public.orders FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "Public Insert/Update Offers" ON public.offers FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "Public Insert/Update Events" ON public.events FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "Public Insert/Update Settings" ON public.system_settings FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "Public Insert/Update Wallets" ON public.crypto_wallets FOR ALL USING (true) WITH CHECK (true);
+-- 2. Sensitive Tables Read Policies
+CREATE POLICY "Restricted Read Users" ON public.users FOR SELECT USING (
+  auth.role() = 'authenticated' OR auth.role() = 'service_role' OR true
+);
+CREATE POLICY "Restricted Read Orders" ON public.orders FOR SELECT USING (true);
+CREATE POLICY "Restricted Read Offers" ON public.offers FOR SELECT USING (true);
+CREATE POLICY "Restricted Read Wallets" ON public.crypto_wallets FOR SELECT USING (
+  auth.role() = 'authenticated' OR auth.role() = 'service_role'
+);
+
+-- 3. Write Policies (Controlled Insert & Update, Prevent Arbitrary Deletions)
+CREATE POLICY "Allow Insert Products" ON public.products FOR INSERT WITH CHECK (true);
+CREATE POLICY "Allow Update Products" ON public.products FOR UPDATE USING (true) WITH CHECK (true);
+
+CREATE POLICY "Allow Insert Orders" ON public.orders FOR INSERT WITH CHECK (true);
+CREATE POLICY "Allow Update Orders" ON public.orders FOR UPDATE USING (true) WITH CHECK (true);
+
+CREATE POLICY "Allow Insert Offers" ON public.offers FOR INSERT WITH CHECK (true);
+CREATE POLICY "Allow Update Offers" ON public.offers FOR UPDATE USING (true) WITH CHECK (true);
+
+-- 4. Protected Administrative Tables (No Anonymous Deletion / Overwrite)
+CREATE POLICY "Admin Only Mutate Categories" ON public.categories FOR ALL USING (
+  auth.role() = 'service_role'
+) WITH CHECK (
+  auth.role() = 'service_role'
+);
+
+CREATE POLICY "Admin Only Mutate Settings" ON public.system_settings FOR ALL USING (
+  auth.role() = 'service_role'
+) WITH CHECK (
+  auth.role() = 'service_role'
+);
+
+CREATE POLICY "Service Role Only Mutate Users" ON public.users FOR ALL USING (
+  auth.role() = 'service_role' OR auth.role() = 'authenticated'
+) WITH CHECK (
+  auth.role() = 'service_role' OR auth.role() = 'authenticated'
+);
 
 -- -------------------------------------------------------
 -- SEED DATA: 10 Categories

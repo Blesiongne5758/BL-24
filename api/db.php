@@ -1,7 +1,7 @@
 <?php
 // SPDX-License-Identifier: MIT
 // =======================================================
-// KONEKSI DATABASE MYSQL VIA PHP PDO (XAMPP / LARAGON)
+// KONEKSI DATABASE MYSQL VIA PHP PDO (XAMPP / LARAGON / REMOTE)
 // =======================================================
 
 header('Access-Control-Allow-Origin: *');
@@ -14,11 +14,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit;
 }
 
-$host = getenv('DB_HOST') ?: '108.136.70.118';
-$port = getenv('DB_PORT') ?: '3306';
-$dbname = getenv('DB_NAME') ?: 'bursalimbahdb';
-$username = getenv('DB_USER') ?: 'admin';
-$password = getenv('DB_PASSWORD') ?: 'AdminPassword2026!';
+if (file_exists(__DIR__ . '/config.php')) {
+    require_once __DIR__ . '/config.php';
+}
+
+$host = defined('DB_HOST') ? DB_HOST : (getenv('DB_HOST') ?: '127.0.0.1');
+$port = defined('DB_PORT') ? DB_PORT : (getenv('DB_PORT') ?: '3306');
+$dbname = defined('DB_NAME') ? DB_NAME : (getenv('DB_NAME') ?: 'bursalimbahdb');
+$username = defined('DB_USER') ? DB_USER : (getenv('DB_USER') ?: 'root');
+$password = defined('DB_PASSWORD') ? DB_PASSWORD : (getenv('DB_PASSWORD') ?: '');
 
 try {
     $dsn = "mysql:host={$host};port={$port};dbname={$dbname};charset=utf8mb4";
@@ -28,10 +32,11 @@ try {
         PDO::ATTR_EMULATE_PREPARES => false,
     ]);
 } catch (PDOException $e) {
+    error_log('Database Connection Error: ' . $e->getMessage());
     http_response_code(500);
     echo json_encode([
         'success' => false,
-        'message' => 'Gagal terhubung ke database MySQL: ' . $e->getMessage()
+        'message' => 'Gagal terhubung ke database. Silakan periksa konfigurasi server.'
     ]);
     exit;
 }

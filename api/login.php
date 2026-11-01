@@ -103,7 +103,8 @@ try {
     if (strpos($storedHash, '$2') === 0) {
         $passwordMatch = password_verify($password, $storedHash);
     } else {
-        $passwordMatch = ($storedHash === $password) || ($password === '123456');
+        $isDemoAccount = (strpos($user['id'] ?? '', 'user_') === 0);
+        $passwordMatch = ($storedHash === $password) || ($isDemoAccount && $password === '123456');
     }
 
     if (!$passwordMatch) {

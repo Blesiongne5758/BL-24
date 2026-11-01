@@ -20,3 +20,9 @@ test_backend_services.js
 test_crypto_and_features.js
 test_storage_architecture.js
 
+# Local Environment Secrets & Hosting Credentials
+*.local.php
+*.local.ps1
+api/config.local.php
+scripts/deploy_infinityfree.local.ps1
+.ftp-credentials*
