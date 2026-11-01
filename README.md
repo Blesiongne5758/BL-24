@@ -1,17 +1,17 @@
 # Circulink — Waste Trading Management MVP Platform
 
 > **Tagline**: *Verified Waste. Trusted Trade.*  
-> **Domain Target**: `circulink.com`  
+> **Domain Target**: `bursalimbah.com`  
 > **Referensi Blueprint**: Dokumen Perancangan `Circulink_Waste_Trading_MVP_Blueprint.md`  
 > **Lisensi**: [MIT License](LICENSE) (Copyright © 2026 Bursa Limbah Team)
 
-Circulink (Bursa Limbah) adalah platform marketplace komoditas limbah dan sirkular berbasis **traceability terverifikasi** yang mempertemukan penjual (industri manufaktur, pabrik, UMKM, bengkel, pengepul) dan pembeli (*off-taker*, pabrik daur ulang, bio-refinery) dalam satu ekosistem digital terintegrasi dengan Rekening Bersama Escrow dan Smart Contract Blockchain Web3.
+Circulink (Bursa Limbah) adalah platform marketplace komoditas limbah dan sirkular berbasis **traceability terverifikasi** yang mempertemukan penjual (industri manufaktur, pabrik, UMKM, bengkel, pengepul) dan pembeli (*off-taker*, pabrik daur ulang, bio-refinery) dalam satu ekosistem digital terintegrasi dengan Rekening Bersama Escrow dan verifikasi standar mutu.
 
 ---
 
 ## 🚀 Cara Menjalankan Aplikasi
 
-Aplikasi ini mendukung mode **client-side mandiri** (*standalone demo*) maupun **arsitektur backend enterprise penuh** (Node.js Express + MySQL + Nginx/Docker).
+Aplikasi ini mendukung mode **client-side mandiri** (*standalone production-ready frontend*) maupun **arsitektur backend enterprise penuh** (Node.js Express + MySQL + Nginx/Docker) serta integrasi cloud terdistribusi (Supabase & Cloudinary).
 
 ### A. Menjalankan Langsung di Frontend (Zero-Config)
 1. **Cara Paling Cepat**:
@@ -71,34 +71,32 @@ Seluruh modul dan kapabilitas sistem dapat diaktifkan atau dinonaktifkan secara 
 | 9 | **Ticker Harga Pasar Terkini** | `marketTicker` | Bar running ticker harga pasar komoditas daur ulang di header atas. |
 | 10 | **Pendaftaran Akun Baru** | `userRegistration` | Membuka atau membatasi pendaftaran akun baru bagi mitra publik. |
 | 11 | **Layanan Ekspedisi & Logistik** | `logisticsService` | Fitur cek ongkir armada truk dan kurir penjemputan limbah. |
-| 12 | **Dompet Kripto & Web3** | `cryptoWallet` | Tombol dompet header, modul Web3, klaim reward daur ulang, dan escrow on-chain. |
 
 ---
 
-## ⛓️ Integrasi Blockchain & Dompet Kripto ($CLNK Utility Token)
+## 🔐 Keamanan, Autentikasi & Perlindungan Data
 
-Circulink mengintegrasikan dompet kripto Web3 dan token utilitas sirkular untuk insentif ekonomi sirkular dan transaksi terdesentralisasi:
+Platform Bursa Limbah telah diperketat secara komprehensif mengikuti standar keamanan web modern:
 
-- **Spesifikasi Smart Contract & Jaringan**:
-  - Jaringan: **Polygon PoS (Matic Mainnet)** — hemat energi dan ramah lingkungan.
-  - Token Utilitas: **`$CLNK` (Circulink Utility Token)**.
-  - Kurs Acuan: Rp 1.500 per 1 `$CLNK` (dapat disesuaikan dinamis di Admin Settings).
-  - Smart Contract Token: `0x71C25e79140C9404B6732B2586eFf1dF3993CLNK`.
-  - Smart Contract Escrow: `0x3A28F50B9402De069F78465C58a18357aF38ESCROW`.
-  - *Gasless Relayer Sponsored*: Pengguna dapat mengklaim reward dan bertransaksi tanpa memerlukan saldo native MATIC.
-- **Dompet Kripto Web3 Pengguna (`#modal-crypto-wallet`)**:
-  - Alamat publik EVM unik (`0x...`) untuk setiap pengguna dengan tombol salin 1-klik.
-  - Tampilan saldo real-time: `$CLNK` (dengan estimasi konversi IDR), stablecoin `USDT`, dan gas native `MATIC`.
-  - **Klaim Reward Insentif Daur Ulang**: Reward 10 `$CLNK` per 100 Kg pasokan limbah terverifikasi dengan animasi confetti dan pencatatan transaksi on-chain.
-  - **Transfer Token P2P**: Mengirim token antar pengguna secara instan dengan verifikasi alamat on-chain.
-  - **Riwayat Transaksi Blockchain**: Log transaksi transparan mencakup jenis transaksi, nominal, stempel waktu, dan TxHash.
-- **Pusat Distribusi Token Airdrop Admin (`#modal-admin-airdrop`)**:
-  - Mengelola pool airdrop (2.500.000 `$CLNK`) untuk membagikan token insentif ke seluruh pengguna terdaftar atau ke alamat wallet spesifik.
-- **Alat Transaksi & Pembayaran Escrow**:
-  - Pembeli dapat memilih metode pembayaran pada saat checkout:
-    1. **Rekening Bersama Escrow** (Rupiah via Transfer Bank / QRIS / VA)
-    2. **Dompet Kripto Sirkular** (`$CLNK` Web3 Escrow Smart Contract)
-  - Nilai pembayaran dikonversi otomatis ke `$CLNK` dan dikunci dalam smart contract hingga proses serah terima limbah tervalidasi.
+1. **Pemisahan Kredensial & Rahasia (Credential Hardening)**:
+   - Kredensial sensitif (Cloudinary API Secret, Supabase Keys, Kredensial FTP) dipisahkan ke dalam berkas konfigurasi lokal (`*.local.php`, `*.local.ps1`) yang otomatis diabaikan oleh `.gitignore`.
+   - Repositori publik aman dari kebocoran token rahasia (*zero hardcoded secrets*).
+2. **Pembersihan Halaman Login**:
+   - Akses cepat akun demo (1-klik) dan pembocoran kata sandi bawaan telah dihapus total dari tampilan login antarmuka pengguna.
+   - Autentikasi Google OAuth dinonaktifkan (`403 Forbidden`) untuk mencegah kerentanan autentikasi pihak ketiga tanpa verifikasi domain.
+3. **Pencegahan Akses Berkas HTTP Terlarang (`.htaccess`)**:
+   - Memblokir akses langsung HTTP ke berkas berekstensi sensitif: `.env*`, `.sql`, `.ps1`, `.bat`, `.log`, dan `config.local.php`.
+4. **Proteksi Injeksi & XSS**:
+   - Seluruh titik rendering data dinamis pada antarmuka diproteksi dengan fungsi sanitasi `esc()` (`escapeHtml`).
+   - Middleware backend membersihkan tag HTML berbahaya dan injeksi script dari payload masukan JSON.
+5. **Autentikasi & Otorisasi Kuat**:
+   - Autentikasi berbasis **JWT (JSON Web Token)** dengan verifikasi peran berbasis RBAC (*Role-Based Access Control*).
+   - Enkripsi kata sandi menggunakan `bcrypt` dengan cost factor 10.
+   - Rate limiting via `express-rate-limit` guna memitigasi serangan *brute force* dan DoS.
+6. **Hardened Row Level Security (RLS) pada Supabase**:
+   - Kebijakan RLS ketat pada setiap tabel: data sensitif (`users`, `system_settings`) hanya dapat dimodifikasi oleh `service_role` atau pengguna terautentikasi.
+7. **Pencegahan Error Leakage**:
+   - Penanganan error database PDO pada backend PHP tidak membocorkan informasi struktur tabel atau kredensial ke respon JSON publik (dialihkan ke `error_log()`).
 
 ---
 
@@ -117,7 +115,7 @@ Circulink menerapkan arsitektur penyimpanan berkas terpisah (*decoupled storage 
    - **Private Bucket / Vault** (`circulink-private-vault`): Dokumen identitas rahasia KYC (KTP, NPWP, NIB), dokumen izin lingkungan B3, dan bukti pelunasan transaksi.
    - **Akses Dokumen Privat**: Akses berkas privat HANYA diberikan melalui **Pre-Signed GET URL berumur pendek** (TTL 15 menit) yang diterbitkan server (`GET /api/storage/private-url`) setelah memverifikasi kepemilikan dokumen atau status pembayaran DP pesanan terkait.
 4. **Validasi Berkas Ganda (Client & Server)**:
-   - **Validasi Sisi Klien (`js/storageClient.js`)**: Skema validasi Zod-equivalent untuk memeriksa MIME type yang diizinkan (JPEG, PNG, WebP, HEIC, PDF), batas ukuran berkas (maks. 10MB foto, maks. 20MB dokumen), dan pemblokiran ekstensi ganda/berbahaya.
+   - **Validasi Sisi Klien (`js/storageClient.js`)**: Skema validasi untuk memeriksa MIME type yang diizinkan (JPEG, PNG, WebP, HEIC, PDF), batas ukuran berkas (maks. 10MB foto, maks. 20MB dokumen), dan pemblokiran ekstensi ganda/berbahaya.
    - **Validasi Sisi Server (`storage.service.js`)**: Pemeriksaan *magic bytes* (header signature biner) untuk mencegah penyamaran skrip/berkas berbahaya (*polyglot injection*).
 5. **Optimasi Media Otomatis (ImageKit / Cloudinary)**:
    - Konversi format otomatis ke **WebP / AVIF** dengan kompresi mutu cerdas (`q_auto`, `f_auto`).
@@ -140,42 +138,31 @@ Circulink menerapkan arsitektur penyimpanan berkas terpisah (*decoupled storage 
 
 ---
 
-## 🛡️ Keamanan & Kepatuhan Standar Industri
-
-1. **Pencegahan XSS Menyeluruh (Anti-XSS Sanitization)**:
-   - Seluruh titik rendering data dinamis (129+ titik pada `js/app.js`) diproteksi dengan fungsi sanitasi `esc()` (`escapeHtml`).
-   - Middleware backend `server/middleware/sanitizer.js` secara otomatis membersihkan tag HTML dan injeksi script dari payload masukan JSON pengguna.
-2. **Autentikasi & Otorisasi Kuat**:
-   - Autentikasi berbasis **JWT (JSON Web Token)** dengan verifikasi peran berbasis RBAC (*Role-Based Access Control*).
-   - Enkripsi kata sandi menggunakan `bcrypt` dengan cost factor 10.
-   - Rate limiting via `express-rate-limit` (100 request/15 menit untuk API umum, 10 request/15 menit untuk endpoint autentikasi) guna memitigasi serangan *brute force* dan DoS.
-3. **Pencadangan & Pemulihan Database Otomatis**:
-   - `server/scripts/backup.js`: Utilitas pencadangan otomatis skema dan data MySQL dengan kompresi gzip.
-   - `server/scripts/restore.js`: Utilitas restorasi cepat database dari file cadangan (*snapshot*).
-4. **Perhitungan Metrik ESG Teruji**:
-   - Perhitungan reduksi jejak karbon (CO2e) otomatis per kilogram/liter komoditas yang diperdagangkan, dikonversi menjadi ekuivalensi pohon tertanam.
-
----
-
 ## 📁 Struktur Direktori & File Proyek
 
 ```text
 bursalimbah/
-├── .gitignore                               # Konfigurasi file yang diabaikan Git
+├── .gitignore                               # Konfigurasi file sensitif & lokal yang diabaikan Git
+├── .htaccess                                # Header keamanan Apache, kompresi Gzip & proteksi berkas rahasia
 ├── DEPLOYMENT.md                            # Panduan deployment produksi (Nginx, PM2, Docker)
 ├── LICENSE                                  # Lisensi Open-Source MIT
 ├── README.md                                # Dokumentasi komprehensif proyek
 ├── docker-compose.yml                       # Konfigurasi orkestrasi container Docker
 ├── start-website.bat                        # Launcher 1-klik Windows
-├── index.html                               # Antarmuka SPA utama (Tailwind CSS + FontAwesome)
+├── index.html                               # Antarmuka SPA utama (Tailwind CSS + FontAwesome Vector Icons)
 │
 ├── css/
 │   └── style.css                            # Styling khusus tema Bursa Limbah & animasi
 ├── js/
-│   ├── data.js                              # Seed data awal kategori, produk, fitur, dan Web3 config
-│   ├── store.js                             # State manager reaktif, feature flags, dan Web3 crypto wallet
-│   ├── storageClient.js                     # Klien direct upload Cloud Storage & Zod file validation
-│   └── app.js                               # Controller UI, modal checkout, airdrop, dan mitigasi XSS
+│   ├── data.js                              # Seed data awal kategori, produk, komoditas, dan fitur
+│   ├── store.js                             # State manager reaktif, persistence, dan filter logic
+│   ├── storageClient.js                     # Klien direct upload Cloud Storage & validasi berkas
+│   ├── supabaseClient.js                    # Klien sinkronisasi cloud real-time PostgreSQL Supabase
+│   └── app.js                               # Controller UI utama, alur checkout, dan mitigasi XSS
+│
+├── scripts/
+│   ├── deploy_infinityfree.ps1              # Skrip deployment otomatis ke InfinityFree via FTP
+│   └── deploy_infinityfree.local.ps1        # Berkas kredensial FTP lokal (diabaikan oleh Git)
 │
 ├── server/
 │   ├── Dockerfile                           # Definisi Docker container backend
@@ -204,43 +191,18 @@ bursalimbah/
 ├── database/
 │   ├── setup_complete.sql                   # Skrip inisialisasi lengkap database MySQL
 │   ├── schema.sql                           # Skema struktur tabel database
+│   ├── supabase_schema.sql                  # Skema PostgreSQL Supabase dengan Hardened RLS Policies
 │   └── create_database.sql                  # Skrip pembuatan database bursalimbah
 │
 ├── nginx/
 │   └── nginx.conf                           # Konfigurasi reverse proxy, gzip, dan header keamanan
 │
-└── api/                                     # Alternatif backend ringan PHP (XAMPP / cPanel)
-    ├── db.php                               # Koneksi PDO MySQL
-    ├── login.php                            # Endpoint login pengguna
-    ├── register.php                         # Endpoint registrasi akun baru
-    └── google.php                           # Endpoint autentikasi Google OAuth
-```
-
----
-
-## 🧪 Rangkaian Pengujian Otomatis (QA Test Suites)
-
-Platform ini dilengkapi 5 suite pengujian unit mandiri untuk menjamin stabilitas dan keandalan kode:
-
-1. **Audit Kepatuhan & Lisensi (`test_audit.js`)**:
-   - Memvalidasi 97 parameter: lisensi MIT, integritas skema database, keselarasan ID elemen QRIS/metode bayar, versi skrip cache-busting, dan sanitasi DOM.
-   - Hasil: **97/97 PASS** (100%).
-2. **Logika Bisnis & Alur Transaksi (`test_logic.js`)**:
-   - Menguji validasi batas kuota tier, penerbitan pesanan DP 30%, pengunggahan bukti pelunasan sisa 70%, dan verifikasi admin.
-   - Hasil: **5/5 PASS** (100%).
-3. **Layanan Backend Modular (`test_backend_services.js`)**:
-   - Menguji layanan JWT, mesin status transaksi escrow, kalkulator dampak lingkungan ESG, engine validasi tier rules, dan sanitasi input Anti-XSS.
-   - Hasil: **10/10 PASS** (100%).
-4. **Fitur Sakelar Admin & Dompet Kripto (`test_crypto_and_features.js`)**:
-   - Menguji master feature toggle on/off, konfigurasi blockchain, pembuatan dompet publik pengguna, transfer P2P token $CLNK, klaim insentif daur ulang, distribusi airdrop admin, dan pembayaran pemesanan via crypto escrow.
-   - Hasil: **7/7 PASS** (100%).
-5. **Arsitektur Penyimpanan Cloud & Media (`test_storage_architecture.js`)**:
-   - Menguji validasi MIME/ekstensi ganda Zod, inspeksi magic bytes anti-skrip, pembuatan Pre-Signed PUT URL decoupled, proteksi private KYC vault dengan Pre-Signed GET URL, dan optimasi format WebP via ImageKit/Cloudinary.
-   - Hasil: **6/6 PASS** (100%).
-
-Jalankan seluruh pengujian dengan satu perintah:
-```bash
-node test_audit.js; node test_logic.js; node test_backend_services.js; node test_crypto_and_features.js; node test_storage_architecture.js
+└── api/                                     # Backend ringan PHP (cPanel / Apache / InfinityFree)
+    ├── config.php                           # Loader konfigurasi dinamis (env var / config.local.php)
+    ├── db.php                               # Koneksi PDO MySQL aman (error logging tertutup)
+    ├── login.php                            # Endpoint login terproteksi
+    ├── register.php                         # Endpoint registrasi akun mitra baru
+    └── google.php                           # Endpoint dinonaktifkan (403 Forbidden)
 ```
 
 ---
@@ -259,7 +221,7 @@ Platform Bursa Limbah CircuLink telah dirancang dengan arsitektur modern terdese
   4. Klik **Simpan Pengaturan**.
 
 ### 2. Supabase (Database PostgreSQL Terkelola & Sinkronisasi Cloud)
-- **Skema Lengkap**: Disediakan pada file [`database/supabase_schema.sql`](database/supabase_schema.sql) mencakup tabel `users`, `categories`, `products`, `orders`, `offers`, `events`, `system_settings`, dan `crypto_wallets` beserta Row Level Security (RLS).
+- **Skema Lengkap**: Disediakan pada file [`database/supabase_schema.sql`](database/supabase_schema.sql) mencakup tabel `users`, `categories`, `products`, `orders`, `offers`, `events`, dan `system_settings` beserta Row Level Security (RLS) yang diperketat.
 - **Koneksi REST & SDK**: Menggunakan PostgREST API dan Supabase JS Client resmi via CDN, mendukung uji koneksi latensi langsung dari Admin Panel.
 - **Cara Konfigurasi**:
   1. Buka project Supabase Anda di [supabase.com](https://supabase.com).
@@ -271,15 +233,16 @@ Platform Bursa Limbah CircuLink telah dirancang dengan arsitektur modern terdese
 
 ## 🌐 Panduan Deployment InfinityFree Hosting
 
-Aplikasi web CircuLink dapat di-hosting secara langsung pada hosting gratis [InfinityFree](https://infinityfree.com):
+Aplikasi web CircuLink dapat di-hosting secara langsung pada hosting [InfinityFree](https://infinityfree.com):
 
 1. **Struktur Folder Web**:
-   - Seluruh file statis (`index.html`, `css/`, `js/`, `assets/`, `.htaccess`) ditempatkan di dalam folder `/htdocs/`.
-   - File placeholder bawaan `index2.html` telah dihapus secara otomatis.
+   - Seluruh file statis (`index.html`, `css/`, `js/`, `assets/`, `api/`, `.htaccess`) ditempatkan di dalam folder `/htdocs/`.
+   - File placeholder bawaan `index2.html` telah dibersihkan secara otomatis.
 2. **Kredensial FTP**:
    - **Host**: `ftpupload.net` (Port 21, Passive Mode)
    - **Target Root**: `/htdocs/`
 3. **Deployment Otomatis via PowerShell**:
+   Simpan kredensial pada `scripts/deploy_infinityfree.local.ps1`, lalu jalankan dari PowerShell komputer Anda:
    ```powershell
    powershell -ExecutionPolicy Bypass -File scripts/deploy_infinityfree.ps1
    ```
