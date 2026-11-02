@@ -11,7 +11,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 $input = json_decode(file_get_contents('php://input'), true) ?? $_POST;
 
 $email = trim(strtolower($input['email'] ?? ''));
-$password = $input['password'] ?? '123456';
+$password = $input['password'] ?? '';
 $role = $input['role'] ?? 'buyer';
 $name = trim($input['name'] ?? '');
 $company = trim($input['company'] ?? '');
