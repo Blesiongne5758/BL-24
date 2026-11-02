@@ -1,7 +1,7 @@
 <?php
 // SPDX-License-Identifier: MIT
 // =======================================================
-// CircuLink - API Health Check Endpoint (PHP / InfinityFree)
+// CircuLink - API Health Check Endpoint (PHP)
 // =======================================================
 
 header('Access-Control-Allow-Origin: *');
@@ -18,7 +18,7 @@ echo json_encode([
     'success' => true,
     'status' => 'ok',
     'service' => 'circulink-api-php',
-    'platform' => 'InfinityFree / Apache',
+    'platform' => 'Apache',
     'php_version' => phpversion(),
     'timestamp' => date('c'),
     'features' => [
