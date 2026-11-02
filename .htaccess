@@ -57,4 +57,10 @@ Options -Indexes
     # Handle OPTIONS method for CORS preflight
     RewriteCond %{REQUEST_METHOD} OPTIONS
     RewriteRule ^(.*)$ $1 [R=200,L]
+
+    # Friendly URL redirects for login and registration
+    RewriteRule ^login/?$ index.html#login [NE,L,R=302]
+    RewriteRule ^masuk/?$ index.html#login [NE,L,R=302]
+    RewriteRule ^daftar/?$ index.html#daftar [NE,L,R=302]
+    RewriteRule ^register/?$ index.html#daftar [NE,L,R=302]
 </IfModule>

@@ -103,10 +103,14 @@
           </a>
 
           <!-- Profile / Login Action -->
-          <div id="nav-action-container" class="flex items-center gap-1.5">
+          <div id="nav-action-container" class="flex items-center gap-2">
             <button onclick="app.showLoginPage()" class="flex items-center gap-1.5 px-3 py-2 text-xs font-bold rounded-xl border border-slate-300 hover:border-emerald-400 hover:text-emerald-700 bg-white text-slate-700 shadow-2xs transition active:scale-95 cursor-pointer">
-              <i class="fa-solid fa-user text-emerald-600"></i>
-              <span class="mobile-header-login-label hidden sm:inline">Akun / Masuk</span>
+              <i class="fa-solid fa-right-to-bracket text-emerald-600"></i>
+              <span>Masuk</span>
+            </button>
+            <button onclick="app.showRegisterOptions()" class="flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-2xs transition active:scale-95 cursor-pointer">
+              <i class="fa-solid fa-user-plus text-amber-300"></i>
+              <span>Daftar</span>
             </button>
           </div>
         </div>
@@ -5049,9 +5053,9 @@
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 
   <!-- Modul Aplikasi BURSA LIMBAH -->
-  <script src="js/data.js?v=12"></script>
-  <script src="js/store.js?v=12"></script>
+  <script src="js/data.js?v=13"></script>
+  <script src="js/store.js?v=13"></script>
   <script src="js/storageClient.js?v=7"></script>
-  <script src="js/app.js?v=12"></script>
+  <script src="js/app.js?v=13"></script>
 </body>
 </html>

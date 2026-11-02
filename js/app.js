@@ -70,15 +70,51 @@ class BursaLimbahApp {
     this.switchAppTab('home');
 
     // Render tampilan modul awal
-    this.renderBuyerMarketplace();
-    this.renderSellerDashboard();
-    this.renderAdminDashboard();
-    this.updateAdminPendingBadge();
-    this.updateAdminSubPendingBadge();
-    this.updateAdminTicketsBadge();
-    this.updateChatUnreadBadge();
-    this.updateNavUI();
-    this.applyFeatureFlags();
+    try { this.renderBuyerMarketplace(); } catch (e) { console.warn('Init buyer error:', e); }
+    try { this.renderSellerDashboard(); } catch (e) { console.warn('Init seller error:', e); }
+    try { this.renderAdminDashboard(); } catch (e) { console.warn('Init admin error:', e); }
+    try { this.updateAdminPendingBadge(); } catch (e) {}
+    try { this.updateAdminSubPendingBadge(); } catch (e) {}
+    try { this.updateAdminTicketsBadge(); } catch (e) {}
+    try { this.updateChatUnreadBadge(); } catch (e) {}
+    try { this.updateNavUI(); } catch (e) { console.warn('Init nav error:', e); }
+    try { this.applyFeatureFlags(); } catch (e) {}
+
+    // Dukungan navigasi URL langsung (#login, #daftar, ?action=login)
+    this.setupUrlRouting();
+  }
+
+  setupUrlRouting() {
+    window.addEventListener('hashchange', () => this.handleRouteFromUrl());
+    this.handleRouteFromUrl();
+  }
+
+  handleRouteFromUrl() {
+    try {
+      const hash = (window.location.hash || '').toLowerCase().replace('#', '').trim();
+      const params = new URLSearchParams(window.location.search || '');
+      const action = params.get('action') || params.get('page') || params.get('tab') || hash;
+      if (!action) return;
+      if (action === 'login' || action === 'masuk') {
+        this.showLoginPage();
+      } else if (action === 'register' || action === 'daftar') {
+        this.showRegisterOptions();
+      } else if (action === 'daftar-pembeli' || action === 'register-buyer') {
+        this.showBuyerRegisterModal(null, true);
+      } else if (action === 'daftar-penjual' || action === 'register-seller') {
+        this.showSellerRegisterModal(true);
+      } else if (action === 'jual' || action === 'sell') {
+        this.switchAppTab('sell');
+      } else if (action === 'langganan' || action === 'subscription' || action === 'sub') {
+        this.switchAppTab('sub');
+      } else if (action === 'simulasi' || action === 'sim') {
+        this.switchAppTab('sim');
+      } else if (action === 'solutions' || action === 'solusi') {
+        this.switchAppTab('solutions');
+      }
+    } catch (e) {
+      console.warn('Router parse error:', e);
+    }
   }
 
   // ================= FUNGSI BANTU & FORMATTER =================
@@ -1051,27 +1087,27 @@ class BursaLimbahApp {
           <p class="text-slate-500 text-xs mt-1">Masuk ke akun untuk mengakses fitur lengkap</p>
         </div>
         <div class="space-y-2">
-          <button onclick="app.showLoginPage('buyer')" class="w-full flex items-center gap-3 p-3 rounded-2xl bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 transition active:scale-98 text-left">
+          <button onclick="app.showLoginPage()" class="w-full flex items-center gap-3 p-3.5 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold transition active:scale-98 text-left shadow-md shadow-emerald-600/20 cursor-pointer">
+            <i class="fa-solid fa-right-to-bracket text-lg w-7 text-center"></i>
+            <div>
+              <p class="text-sm font-bold">Masuk ke Akun</p>
+              <p class="text-[10px] text-emerald-100">Portal tunggal: Pembeli, Penjual & Admin</p>
+            </div>
+            <i class="fa-solid fa-chevron-right text-emerald-200 text-xs ml-auto"></i>
+          </button>
+          <button onclick="app.showRegisterOptions()" class="w-full flex items-center gap-3 p-3.5 rounded-2xl bg-white border border-slate-200 hover:bg-slate-50 transition active:scale-98 text-left shadow-2xs cursor-pointer">
+            <i class="fa-solid fa-user-plus text-emerald-600 text-lg w-7 text-center"></i>
+            <div>
+              <p class="text-sm font-bold text-slate-800">Daftar Akun Baru</p>
+              <p class="text-[10px] text-slate-500">Pilih peran sebagai Pembeli atau Mitra Penjual</p>
+            </div>
+            <i class="fa-solid fa-chevron-right text-slate-400 text-xs ml-auto"></i>
+          </button>
+          <button onclick="app.switchAppTab('sub')" class="w-full flex items-center gap-3 p-3 rounded-2xl bg-amber-50 border border-amber-200 hover:bg-amber-100 transition active:scale-98 text-left cursor-pointer">
             <i class="fa-solid fa-crown text-amber-500 text-lg w-7 text-center"></i>
             <div>
-              <p class="text-sm font-bold text-slate-800">Masuk sebagai Pembeli</p>
-              <p class="text-[10px] text-slate-500">Akses harga, GPS & kontak penjual</p>
-            </div>
-            <i class="fa-solid fa-chevron-right text-slate-400 text-xs ml-auto"></i>
-          </button>
-          <button onclick="app.showLoginPage('seller')" class="w-full flex items-center gap-3 p-3 rounded-2xl bg-slate-50 border border-slate-200 hover:bg-slate-100 transition active:scale-98 text-left">
-            <i class="fa-solid fa-store text-emerald-600 text-lg w-7 text-center"></i>
-            <div>
-              <p class="text-sm font-bold text-slate-800">Masuk sebagai Penjual</p>
-              <p class="text-[10px] text-slate-500">Kelola pasokan & statistik penjualan</p>
-            </div>
-            <i class="fa-solid fa-chevron-right text-slate-400 text-xs ml-auto"></i>
-          </button>
-          <button onclick="app.switchAppTab('sub')" class="w-full flex items-center gap-3 p-3 rounded-2xl bg-amber-50 border border-amber-200 hover:bg-amber-100 transition active:scale-98 text-left">
-            <i class="fa-solid fa-star text-amber-500 text-lg w-7 text-center"></i>
-            <div>
               <p class="text-sm font-bold text-slate-800">Lihat Paket Berlangganan</p>
-              <p class="text-[10px] text-slate-500">Mulai dari Rp 150.000/bulan</p>
+              <p class="text-[10px] text-slate-500">Akses data harga, GPS & kontak penjual</p>
             </div>
             <i class="fa-solid fa-chevron-right text-slate-400 text-xs ml-auto"></i>
           </button>
@@ -7556,8 +7592,8 @@ class BursaLimbahApp {
     `).join('');
 
     const updateCalc = () => {
-      const selected = catSelect.selectedOptions[0];
-      const unit = selected ? selected.getAttribute('data-unit') : 'Unit';
+      const selected = (catSelect.selectedOptions && catSelect.selectedOptions[0]) || (catSelect.options && catSelect.selectedIndex >= 0 && catSelect.options[catSelect.selectedIndex]) || null;
+      const unit = selected ? (selected.getAttribute('data-unit') || 'Unit') : 'Unit';
       const qty = Number(qtyInput.value) || 0;
       const price = Number(priceInput.value) || 0;
 
@@ -7628,8 +7664,8 @@ class BursaLimbahApp {
     };
 
     catSelect.addEventListener('change', () => {
-      const selected = catSelect.selectedOptions[0];
-      if (selected) priceInput.value = selected.getAttribute('data-price');
+      const selected = (catSelect.selectedOptions && catSelect.selectedOptions[0]) || (catSelect.options && catSelect.selectedIndex >= 0 && catSelect.options[catSelect.selectedIndex]) || null;
+      if (selected) priceInput.value = selected.getAttribute('data-price') || '';
       updateCalc();
     });
 
