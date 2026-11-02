@@ -476,12 +476,12 @@ class BursaLimbahApp {
       `;
     } else {
       navContainer.innerHTML = `
-        <button onclick="app.showLoginPage()" class="px-3.5 py-2 text-xs font-bold rounded-xl border border-slate-300 hover:border-emerald-500 hover:text-emerald-700 bg-white text-slate-700 shadow-sm transition flex items-center space-x-1.5">
-          <i class="fa-solid fa-right-to-bracket text-emerald-600"></i>
+        <button onclick="app.showLoginPage()" class="btn-nav-masuk flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3.5 py-1.5 sm:py-2 text-[11px] sm:text-xs font-bold rounded-xl border border-slate-300 hover:border-emerald-400 hover:text-emerald-700 bg-white text-slate-700 shadow-2xs transition active:scale-95 cursor-pointer whitespace-nowrap">
+          <i class="fa-solid fa-right-to-bracket text-emerald-600 text-xs"></i>
           <span>Masuk</span>
         </button>
-        <button onclick="app.showRegisterOptions()" class="px-3.5 py-2 text-xs font-bold rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm transition flex items-center space-x-1.5">
-          <i class="fa-solid fa-user-plus text-amber-300"></i>
+        <button onclick="app.showRegisterOptions()" class="btn-nav-daftar flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3.5 py-1.5 sm:py-2 text-[11px] sm:text-xs font-bold rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-2xs transition active:scale-95 cursor-pointer whitespace-nowrap">
+          <i class="fa-solid fa-user-plus text-amber-300 text-xs"></i>
           <span>Daftar</span>
         </button>
       `;
@@ -1720,7 +1720,7 @@ class BursaLimbahApp {
 
           <div class="p-4 pt-0">
             <div class="text-[11px] font-bold ${isB3 ? 'text-rose-600 group-hover:text-rose-700' : 'text-brand-600 group-hover:text-brand-700'} flex items-center justify-between border-t border-slate-100 pt-2.5">
-              <span>${isB3 ? 'âš ï¸ Buka Bursa B3' : 'Buka Bursa Pembeli'}</span>
+              <span>${isB3 ? '<i class="fa-solid fa-triangle-exclamation mr-1 text-rose-500"></i> Buka Bursa B3' : 'Buka Bursa Pembeli'}</span>
               <i class="fa-solid fa-arrow-right text-[10px] transform group-hover:translate-x-1 transition"></i>
             </div>
           </div>
@@ -2506,7 +2506,7 @@ class BursaLimbahApp {
                 <span class="text-slate-500">10. Regulasi KLHK:</span>
                 ${p.isB3 ? `
                   <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-100 text-rose-800 border border-rose-300">
-                    âš ï¸ Limbah B3 (${esc(p.b3PermitNumber || 'Izin KLHK Valid')})
+                    <i class="fa-solid fa-triangle-exclamation mr-1 text-rose-600"></i> Limbah B3 (${esc(p.b3PermitNumber || 'Izin KLHK Valid')})
                   </span>
                 ` : `
                   <span class="px-2 py-0.5 rounded text-[10px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
@@ -7735,13 +7735,13 @@ class BursaLimbahApp {
     const b3 = categories.filter(c => c.group === 'b3');
 
     const optgroupHtml = `
-      <optgroup label="ðŸ“¦ Kategori Utama (12)">
+      <optgroup label="Kategori Utama (12)">
         ${utama.map(c => `<option value="${c.id}">${esc(c.name)}</option>`).join('')}
       </optgroup>
-      <optgroup label="ðŸ­ Khusus Industri B2B (3)">
+      <optgroup label="Khusus Industri B2B (3)">
         ${industri.map(c => `<option value="${c.id}">${esc(c.name)}</option>`).join('')}
       </optgroup>
-      <optgroup label="âš ï¸ Limbah B3 (Izin Khusus KLHK) (1)">
+      <optgroup label="Limbah B3 (Wajib Izin Khusus KLHK) (1)">
         ${b3.map(c => `<option value="${c.id}">${esc(c.name)} [Wajib Izin KLHK]</option>`).join('')}
       </optgroup>
     `;

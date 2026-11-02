@@ -363,18 +363,46 @@ input[type="range"] {
     display: none;
   }
 
-  header .mobile-header-actions > button,
-  header #nav-action-container > button {
+  /* Hanya tombol icon tunggal (chat) yang berbentuk 34x34px */
+  header .mobile-header-actions > button:not(#nav-action-container button) {
     width: 34px;
     height: 34px;
     padding: 0;
     border-radius: 12px;
   }
 
+  /* Tombol Masuk & Daftar pada mobile view: rapi, proporsional & nyaman disentuh */
+  header #nav-action-container {
+    display: flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+  }
+
   header #nav-action-container > button {
-    justify-content: center;
-    border-color: #dbe5df;
-    background: #f0fdf4;
+    width: auto !important;
+    height: auto !important;
+    min-height: 32px !important;
+    padding: 5px 10px !important;
+    border-radius: 10px !important;
+    font-size: 11px !important;
+    font-weight: 700 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    white-space: nowrap !important;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  }
+
+  header #nav-action-container > button.btn-nav-masuk {
+    background: #ffffff !important;
+    color: #334155 !important;
+    border: 1px solid #cbd5e1 !important;
+  }
+
+  header #nav-action-container > button.btn-nav-daftar {
+    background: #059669 !important;
+    color: #ffffff !important;
+    border: 1px solid #059669 !important;
   }
 
   .mobile-header-login-label {
