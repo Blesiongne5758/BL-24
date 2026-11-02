@@ -592,17 +592,6 @@ class BursaLimbahApp {
       }
       this.showToast(res.message || 'Gagal masuk. Periksa kembali isian Anda.', 'error');
     }
-  } else {
-        this.showToast(`Selamat datang kembali, ${res.user.name}!`, 'success');
-      }
-      this.setRole(res.role, false);
-    } else {
-      if (alertBox) {
-        alertBox.classList.remove('hidden');
-        if (alertMsg) alertMsg.textContent = res.message;
-      }
-      this.showToast(res.message, 'error');
-    }
   }
 
   togglePasswordVisibility(inputId, btn) {
@@ -4834,7 +4823,10 @@ class BursaLimbahApp {
     event.preventDefault();
     const buyer = this.store.getCurrentUser();
     try {
-      this.store.createOffer({ productId, buyerId: buyer.id, offerPrice: document.getElementById('offer-price').value, quantity: document.getElementById('offer-quantity').value, note: document.getElementById('offer-note').value });
+      const offerPrice = document.getElementById('offer-price')?.value;
+      const quantity = document.getElementById('offer-quantity')?.value;
+      const note = document.getElementById('offer-note')?.value || '';
+      this.store.createOffer({ productId, buyerId: buyer?.id, offerPrice, quantity, note });
       this.closeModals();
       this.showToast('Penawaran dikirim ke penjual. Anda akan diberi notifikasi setelah diputuskan.', 'success');
     } catch (error) { this.showToast(error.message, 'error'); }
