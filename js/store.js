@@ -463,61 +463,21 @@ class BursaLimbahStore {
     return (this.state.users || []).filter(u => u.role === role);
   }
 
-  loginUser(identifier, password, expectedRole = null) {
+  loginUser(identifier, password) {
     const cleanId = (identifier || "").trim().toLowerCase();
     const cleanDigits = cleanId.replace(/[^0-9]/g, "");
 
-    const user = this.state.users.find(u => {
+    const user = (this.state.users || []).find(u => {
       const emailMatch = u.email && u.email.toLowerCase() === cleanId;
-      const phoneMatch = cleanDigits && u.phone && u.phone.replace(/[^0-9]/g, "") === cleanDigits;
-      return emailMatch || phoneMatch;
+      const usernameMatch = (u.username && u.username.toLowerCase() === cleanId) || (u.id && u.id.toLowerCase() === cleanId);
+      const phoneMatch = cleanDigits && cleanDigits.length >= 7 && u.phone && u.phone.replace(/[^0-9]/g, "").includes(cleanDigits);
+      return emailMatch || usernameMatch || phoneMatch;
     });
 
     if (!user) {
-      // Jika pengguna memasukkan format email yang valid, sediakan akses login instan sesuai tab peran (pembeli/penjual)
-      if (cleanId.includes("@") && cleanId.includes(".")) {
-        const role = expectedRole || "buyer";
-        const emailName = cleanId.split("@")[0].replace(/[^a-zA-Z0-9]/g, " ").trim();
-        const displayName = emailName.charAt(0).toUpperCase() + emailName.slice(1);
-
-        let newUser;
-        if (role === "seller") {
-          newUser = this.registerSeller({
-            name: `${displayName} (Mitra Penjual)`,
-            email: cleanId,
-            phone: "+62 812-" + Math.floor(10000000 + Math.random() * 90000000),
-            company: `CV ${displayName} Mandiri`,
-            password: password || null
-          });
-        } else {
-          newUser = this.registerBuyer({
-            name: `${displayName} (Pembeli)`,
-            email: cleanId,
-            phone: "+62 812-" + Math.floor(10000000 + Math.random() * 90000000),
-            company: `PT ${displayName} Daur Ulang`,
-            tierId: "tier_starter", // Otomatis akun Pembeli Tier Gratis (Rp 1 - Rp 200.000)
-            password: password || null
-          });
-        }
-        return {
-          success: true,
-          user: newUser,
-          role: newUser.role,
-          isNewAccount: true
-        };
-      }
-
       return {
         success: false,
-        message: "Akun tidak ditemukan. Silakan masukkan alamat email yang valid (contoh: nama@perusahaan.com) untuk masuk."
-      };
-    }
-
-    if (expectedRole && user.role !== expectedRole) {
-      const roleLabel = user.role === "buyer" ? "Pembeli" : (user.role === "seller" ? "Penjual" : "Pengelola");
-      return {
-        success: false,
-        message: `Akun ini terdaftar sebagai ${roleLabel}. Silakan masuk melalui tab login ${roleLabel}.`
+        message: "Akun tidak ditemukan. Pastikan email, username, atau nomor telepon telah terdaftar, atau silakan daftar akun baru."
       };
     }
 
@@ -526,11 +486,11 @@ class BursaLimbahStore {
     if (!userPass || (password && password !== userPass)) {
       return {
         success: false,
-        message: "Kata sandi yang Anda masukkan salah. Silakan coba lagi atau hubungi admin."
+        message: "Kata sandi yang Anda masukkan salah. Silakan coba lagi."
       };
     }
 
-    // Aktifkan sesi pengguna
+    // Aktifkan sesi pengguna secara otomatis sesuai peran yang terdaftar
     if (user.role === "buyer") {
       this.state.activeUserId = user.id;
       this.state.authenticatedBuyerId = user.id;
@@ -553,12 +513,12 @@ class BursaLimbahStore {
   }
 
   // ================= MYSQL BACKEND INTEGRATION (ASYNC) =================
-  async loginUserAsync(identifier, password, expectedRole = null) {
+  async loginUserAsync(identifier, password) {
     try {
       const res = await fetch(`${this.apiBaseUrl}/api/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ identifier, password, role: expectedRole })
+        body: JSON.stringify({ identifier, password })
       });
 
       const data = await res.json();
@@ -572,15 +532,16 @@ class BursaLimbahStore {
           this.state.users.push(user);
         }
 
-        if (user.role === "buyer") {
+        const role = user.role || data.role || 'buyer';
+        if (role === "buyer") {
           this.state.activeUserId = user.id;
           this.state.authenticatedBuyerId = user.id;
           this.state.currentRole = "buyer";
-        } else if (user.role === "seller") {
+        } else if (role === "seller") {
           this.state.sellerUserId = user.id;
           this.state.authenticatedSellerId = user.id;
           this.state.currentRole = "seller";
-        } else if (user.role === "admin") {
+        } else if (role === "admin") {
           this.state.adminUserId = user.id;
           this.state.currentRole = "admin";
         }
@@ -589,21 +550,20 @@ class BursaLimbahStore {
         return {
           success: true,
           user,
-          role: user.role,
-          isNewAccount: Boolean(data.isNewAccount),
+          role,
           source: 'mysql'
         };
-      } else if (res.status === 401 || res.status === 403 || res.status === 409 || res.status === 400) {
+      } else if (res.status === 401 || res.status === 403 || res.status === 409 || res.status === 400 || res.status === 404) {
         return {
           success: false,
-          message: data.message || "Email atau kata sandi tidak valid."
+          message: data.message || "Email, username, atau kata sandi tidak valid."
         };
       }
     } catch (netErr) {
       console.warn('[Store] Server MySQL offline, fallback ke penyimpanan lokal:', netErr.message);
     }
 
-    const localRes = this.loginUser(identifier, password, expectedRole);
+    const localRes = this.loginUser(identifier, password);
     localRes.source = 'local';
     return localRes;
   }

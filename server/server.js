@@ -526,8 +526,8 @@ app.post('/api/auth/login', async (req, res) => {
     const cleanId = identifier.trim().toLowerCase();
     const cleanDigits = cleanId.replace(/[^0-9]/g, '');
 
-    let query = 'SELECT * FROM users WHERE LOWER(email) = ?';
-    let params = [cleanId];
+    let query = 'SELECT * FROM users WHERE LOWER(email) = ? OR LOWER(username) = ? OR id = ?';
+    let params = [cleanId, cleanId, cleanId];
 
     if (cleanDigits.length >= 7) {
       query += ' OR REPLACE(REPLACE(phone, "-", ""), " ", "") LIKE ?';
@@ -600,15 +600,7 @@ app.post('/api/auth/login', async (req, res) => {
 
     const userRecord = users[0];
 
-    // Role check
-    if (expectedRole && userRecord.role !== expectedRole) {
-      const roleLabel = userRecord.role === 'buyer' ? 'Pembeli' : (userRecord.role === 'seller' ? 'Penjual' : 'Pengelola');
-      return res.status(403).json({
-        success: false,
-        message: `Akun ini terdaftar sebagai ${roleLabel}. Silakan masuk melalui tab ${roleLabel}.`
-      });
-    }
-
+    // Role check (Auto-routing: peran otomatis dibaca dari userRecord.role)
     // Password verification
     let passwordMatch = false;
     const isDemoMode = process.env.DEMO_MODE !== 'false';
@@ -626,7 +618,7 @@ app.post('/api/auth/login', async (req, res) => {
     if (!passwordMatch) {
       return res.status(401).json({
         success: false,
-        message: isDemoMode ? 'Kata sandi salah. Kata sandi default akun demo: 123456.' : 'Kredensial login tidak cocok.'
+        message: 'Kata sandi yang Anda masukkan salah. Silakan coba lagi.'
       });
     }
 

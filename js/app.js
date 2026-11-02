@@ -504,206 +504,95 @@ class BursaLimbahApp {
     }
   }
 
-  // ================= MODUL AUTENTIKASI & HALAMAN LOGIN =================
-  showLoginPage(role = 'buyer') {
-    this.currentLoginTab = role;
+  // ================= MODUL AUTENTIKASI & HALAMAN LOGIN (PORTAL TERPADU) =================
+  showLoginPage(role = null) {
     this.setRole('login', false);
   }
 
-  switchLoginTab(role) {
-    this.currentLoginTab = role;
-    this.renderLoginPage();
+  switchLoginTab(role = null) {
+    this.showLoginPage();
   }
 
   renderLoginPage() {
-    const tab = this.currentLoginTab;
-
-    // Update Tombol Tab
-    const btnBuyer = document.getElementById('login-tab-btn-buyer');
-    const btnSeller = document.getElementById('login-tab-btn-seller');
-    const btnAdmin = document.getElementById('login-tab-btn-admin');
-    const checkBuyer = document.getElementById('login-tab-check-buyer');
-    const checkSeller = document.getElementById('login-tab-check-seller');
-    const checkAdmin = document.getElementById('login-tab-check-admin');
-
-    const defaultStyle = 'p-5 rounded-2xl border-2 border-slate-200 bg-white text-left transition relative shadow-sm hover:border-slate-300 hover:shadow group focus:outline-none';
-
-    if (btnBuyer) btnBuyer.className = (tab === 'buyer') ? 'p-5 rounded-2xl border-2 border-emerald-500 bg-emerald-50/80 text-left transition relative shadow-sm hover:shadow group focus:outline-none' : defaultStyle;
-    if (btnSeller) btnSeller.className = (tab === 'seller') ? 'p-5 rounded-2xl border-2 border-slate-800 bg-slate-50 text-left transition relative shadow-sm hover:shadow group focus:outline-none' : defaultStyle;
-    if (btnAdmin) btnAdmin.className = (tab === 'admin') ? 'p-5 rounded-2xl border-2 border-amber-500 bg-amber-50/80 text-left transition relative shadow-sm hover:shadow group focus:outline-none' : defaultStyle;
-
-    if (checkBuyer) checkBuyer.classList.toggle('hidden', tab !== 'buyer');
-    if (checkSeller) checkSeller.classList.toggle('hidden', tab !== 'seller');
-    if (checkAdmin) checkAdmin.classList.toggle('hidden', tab !== 'admin');
-
-    // Update Banner Kartu
-    const banner = document.getElementById('login-form-banner');
-    const title = document.getElementById('login-form-title');
-    const subtitle = document.getElementById('login-form-subtitle');
-    const badge = document.getElementById('login-form-badge');
-    const icon = document.getElementById('login-form-icon');
-    const hint = document.getElementById('login-hint-role');
-    const inputIdentifier = document.getElementById('login-input-identifier');
-    const submitLabel = document.getElementById('login-submit-label');
-    const submitBtn = document.getElementById('login-submit-btn');
-    const prompt = document.getElementById('login-register-prompt');
-    const identifierLabel = document.getElementById('login-identifier-label');
-    const sellerInfoBanner = document.getElementById('seller-auto-register-info');
-
-    if (tab === 'buyer') {
-      if (banner) banner.className = 'px-6 py-5 bg-gradient-to-r from-emerald-600 to-teal-700 text-white flex items-center justify-between';
-      if (title) title.textContent = 'Masuk sebagai Pembeli';
-      if (subtitle) subtitle.textContent = 'Buka katalog, harga terverifikasi, & tiket timbang';
-      if (badge) {
-        badge.textContent = 'PORTAL PEMBELI';
-        badge.className = 'px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-white/20 text-white border border-white/30';
-      }
-      if (icon) icon.className = 'fa-solid fa-crown text-amber-300';
-      if (hint) {
-        hint.textContent = 'Akun Pembeli';
-        hint.className = 'text-[11px] font-semibold text-emerald-700';
-      }
-      if (identifierLabel) identifierLabel.textContent = 'Email Terdaftar / Nomor WhatsApp *';
-      if (inputIdentifier) inputIdentifier.placeholder = 'pengadaan@hijaulestari.co.id';
-      if (submitLabel) submitLabel.textContent = 'Masuk ke Portal Pembeli';
-      if (submitBtn) submitBtn.className = 'w-full py-3.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold text-sm shadow-lg shadow-emerald-600/25 transition transform active:scale-95 flex items-center justify-center space-x-2';
-      if (sellerInfoBanner) sellerInfoBanner.classList.add('hidden');
-      if (prompt) {
-        prompt.innerHTML = `
-          Belum memiliki akun Pembeli?
-          <button type="button" onclick="app.showBuyerRegisterModal()" class="text-emerald-700 font-bold hover:underline ml-1">
-            Daftar & Berlangganan 3-Tier â†’
-          </button>
-        `;
-      }
-    } else if (tab === 'seller') {
-      if (banner) banner.className = 'px-6 py-5 bg-gradient-to-r from-slate-900 to-slate-800 text-white flex items-center justify-between';
-      if (title) title.textContent = 'Masuk / Daftar sebagai Penjual';
-      if (subtitle) subtitle.textContent = 'Login akun lama atau daftar baru instan cukup dengan memasukkan email aktif';
-      if (badge) {
-        badge.textContent = 'PORTAL MITRA PENJUAL';
-        badge.className = 'px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-emerald-500/30 text-emerald-300 border border-emerald-500/40';
-      }
-      if (icon) icon.className = 'fa-solid fa-store text-emerald-300';
-      if (hint) {
-        hint.textContent = 'Login / Daftar dengan Email';
-        hint.className = 'text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200';
-      }
-      if (identifierLabel) identifierLabel.textContent = 'Email Penjual (Baru / Terdaftar) *';
-      if (inputIdentifier) inputIdentifier.placeholder = 'contoh: budi@sentrajelantah.id atau email baru';
-      if (submitLabel) submitLabel.textContent = 'Masuk / Daftar sebagai Penjual';
-      if (submitBtn) submitBtn.className = 'w-full py-3.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-emerald-400 font-bold text-sm shadow-lg shadow-slate-900/25 transition transform active:scale-95 flex items-center justify-center space-x-2';
-      if (sellerInfoBanner) sellerInfoBanner.classList.remove('hidden');
-      if (prompt) {
-        prompt.innerHTML = `
-          <div class="space-y-1">
-            <p class="text-xs text-slate-600">
-              ðŸ’¡ <strong>Email baru?</strong> Cukup ketik email & kata sandi di atas, akun Mitra Penjual akan <strong>otomatis dibuat</strong>.
-            </p>
-            <p class="text-[11px] text-slate-500">
-              Ingin mendaftar lengkap dengan data NIB & rekening bank?
-              <button type="button" onclick="app.showSellerRegisterModal()" class="text-emerald-700 font-bold hover:underline ml-1">
-                Buka Formulir Pemasok Lengkap â†’
-              </button>
-            </p>
-          </div>
-        `;
-      }
-    } else if (tab === 'admin') {
-      if (banner) banner.className = 'px-6 py-5 bg-gradient-to-r from-slate-950 via-slate-900 to-indigo-950 text-white flex items-center justify-between';
-      if (title) title.textContent = 'Masuk Pusat Pengelola (Admin)';
-      if (subtitle) subtitle.textContent = 'Akses terbatas: kurasi pasokan, audit escrow, & kontrol 3-tier';
-      if (badge) {
-        badge.textContent = 'PUSAT PENGELOLA';
-        badge.className = 'px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-amber-400/20 text-amber-300 border border-amber-400/30';
-      }
-      if (icon) icon.className = 'fa-solid fa-user-shield text-amber-400';
-      if (hint) {
-        hint.textContent = 'Akun Administrator Utama';
-        hint.className = 'text-[11px] font-semibold text-amber-700';
-      }
-      if (identifierLabel) identifierLabel.textContent = 'Email Administrator *';
-      if (inputIdentifier) inputIdentifier.placeholder = 'admin@bursalimbah.com';
-      if (submitLabel) submitLabel.textContent = 'Masuk ke Dashboard Pengelola';
-      if (submitBtn) submitBtn.className = 'w-full py-3.5 rounded-xl bg-slate-950 hover:bg-slate-900 text-amber-300 font-bold text-sm shadow-lg shadow-slate-950/30 border border-amber-400/30 transition transform active:scale-95 flex items-center justify-center space-x-2';
-      if (sellerInfoBanner) sellerInfoBanner.classList.add('hidden');
-      if (prompt) {
-        prompt.innerHTML = `
-          <div class="text-slate-500 text-xs flex items-center justify-center space-x-1.5 py-1">
-            <i class="fa-solid fa-lock text-amber-600 text-[11px]"></i>
-            <span>Area Terbatas: Khusus administrator & staf resmi Bursa Limbah.</span>
-          </div>
-        `;
-      }
-    }
-
-    // Sembunyikan notifikasi error sebelumnya
     const alertBox = document.getElementById('login-alert-box');
     if (alertBox) alertBox.classList.add('hidden');
-
-    this.renderQuickLoginAccounts();
+    const inputIdentifier = document.getElementById('login-input-identifier');
+    if (inputIdentifier) {
+      inputIdentifier.value = '';
+      inputIdentifier.focus();
+    }
+    const inputPassword = document.getElementById('login-input-password');
+    if (inputPassword) {
+      inputPassword.value = '';
+    }
   }
 
   renderQuickLoginAccounts() {
-    const container = document.getElementById('login-quick-accounts-container');
-    if (container) {
-      container.innerHTML = '';
-      const parentSection = container.closest('.space-y-3') || container.parentElement;
-      if (parentSection) {
-        parentSection.classList.add('hidden');
-      }
-    }
+    // Dinonaktifkan: Akses akun demo telah dihapus total
   }
 
   quickRegisterNewSellerDemo() {
-    // Fitur pendaftaran demo dinonaktifkan
-    this.showToast('Fitur pendaftaran cepat tidak tersedia.', 'info');
+    this.showToast('Fitur pendaftaran cepat demo dinonaktifkan.', 'info');
   }
 
   async quickLogin(identifier, password, role) {
-    const inputId = document.getElementById('login-input-identifier');
-    const inputPass = document.getElementById('login-input-password');
-    if (inputId) inputId.value = identifier;
-    if (inputPass) inputPass.value = password;
-
-    const res = await this.store.loginUserAsync(identifier, password, role);
-    if (res.success) {
-      this.triggerConfetti();
-      if (res.isNewAccount) {
-        if (res.role === 'seller') {
-          this.showToast(`ðŸŽ‰ Pendaftaran berhasil! Selamat datang Mitra Penjual baru (${res.user.email}).`, 'success');
-        } else {
-          this.showToast(`ðŸŽ‰ Pendaftaran berhasil! Akun Pembeli (${res.user.email}) aktif dengan Starter Tier Gratis.`, 'success');
-        }
-      } else {
-        this.showToast(`Berhasil masuk sebagai ${res.user.name}!`, 'success');
-      }
-      this.setRole(role, false);
-    } else {
-      this.showToast(res.message, 'error');
-    }
+    return this.handleLoginFormSubmit(new Event('submit'));
   }
 
   async handleLoginFormSubmit(event) {
     event.preventDefault();
-    const identifier = document.getElementById('login-input-identifier').value.trim();
-    const password = document.getElementById('login-input-password').value;
-
-    const res = await this.store.loginUserAsync(identifier, password, this.currentLoginTab);
+    const identifier = document.getElementById('login-input-identifier')?.value.trim() || '';
+    const password = document.getElementById('login-input-password')?.value || '';
 
     const alertBox = document.getElementById('login-alert-box');
     const alertMsg = document.getElementById('login-alert-msg');
+    const submitBtn = document.getElementById('login-submit-btn');
+
+    if (!identifier) {
+      if (alertBox && alertMsg) {
+        alertMsg.textContent = 'Harap masukkan email, username, atau nomor WhatsApp terdaftar.';
+        alertBox.classList.remove('hidden');
+      }
+      return;
+    }
+
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.classList.add('opacity-75');
+    }
+
+    const res = await this.store.loginUserAsync(identifier, password);
+
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.classList.remove('opacity-75');
+    }
 
     if (res.success) {
       if (alertBox) alertBox.classList.add('hidden');
       this.triggerConfetti();
-      if (res.isNewAccount) {
-        if (res.role === 'seller') {
-          this.showToast(`ðŸŽ‰ Pendaftaran berhasil! Selamat datang Mitra Penjual baru (${res.user.email}).`, 'success');
-        } else {
-          this.showToast(`ðŸŽ‰ Pendaftaran berhasil! Akun Pembeli (${res.user.email}) aktif dengan Starter Tier Gratis.`, 'success');
-        }
+
+      const user = res.user;
+      const role = res.role || user.role || 'buyer';
+
+      if (role === 'admin') {
+        this.showToast('Berhasil masuk! Selamat datang di Pusat Pengelola (Admin).', 'success');
+      } else if (role === 'seller') {
+        this.showToast(`Berhasil masuk! Selamat datang Mitra Penjual (${user.name || user.email}).`, 'success');
       } else {
+        this.showToast(`Berhasil masuk! Selamat datang ${user.name || user.email} di Portal Pembeli.`, 'success');
+      }
+
+      // Otomatis mengarahkan ke halaman sesuai peran pengguna
+      this.setRole(role, false);
+    } else {
+      if (alertBox && alertMsg) {
+        alertMsg.textContent = res.message || 'Email, username, atau kata sandi tidak sesuai.';
+        alertBox.classList.remove('hidden');
+      }
+      this.showToast(res.message || 'Gagal masuk. Periksa kembali isian Anda.', 'error');
+    }
+  } else {
         this.showToast(`Selamat datang kembali, ${res.user.name}!`, 'success');
       }
       this.setRole(res.role, false);

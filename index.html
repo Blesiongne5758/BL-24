@@ -150,139 +150,83 @@
   <!-- ================= WADAH UTAMA APLIKASI ================= -->
   <main id="app-container" class="flex-1 pb-4 lg:pb-0">
 
-    <!-- ================= TAMPILAN 0: HALAMAN LOGIN (PENJUAL & PEMBELI) ================= -->
-    <div id="view-login" class="tab-content hidden max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10 lg:py-16 space-y-8">
+    <!-- ================= TAMPILAN 0: HALAMAN LOGIN (PORTAL TERPADU RESMI) ================= -->
+    <div id="view-login" class="tab-content hidden max-w-xl mx-auto px-4 sm:px-6 py-10 sm:py-14 space-y-6">
       
       <!-- Navigasi Kembali -->
-      <div class="flex items-center justify-between">
-        <button onclick="app.setRole('public')" class="inline-flex items-center space-x-2 text-xs font-bold text-slate-600 hover:text-brand-600 bg-white border border-slate-200 hover:border-brand-300 px-3.5 py-2 rounded-xl shadow-sm transition">
+      <div class="flex items-center justify-between text-xs text-slate-500">
+        <button type="button" onclick="app.setRole('public')" class="inline-flex items-center space-x-1.5 px-3.5 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-bold transition shadow-2xs cursor-pointer">
           <i class="fa-solid fa-arrow-left"></i>
-          <span>Kembali ke Beranda Bursa</span>
+          <span>Kembali ke Beranda</span>
         </button>
-        <div class="text-xs text-slate-500 font-medium">
-          <i class="fa-solid fa-shield-check text-emerald-600 mr-1"></i> Keamanan SSL & Autentikasi Terenkripsi
+        <div class="text-xs text-slate-500 font-medium flex items-center gap-1.5">
+          <i class="fa-solid fa-shield-halved text-emerald-600"></i>
+          <span>Keamanan SSL</span>
         </div>
       </div>
 
       <!-- Judul & Pengantar Halaman Login -->
-      <div class="text-center max-w-xl mx-auto space-y-2.5">
-        <div class="inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold shadow-sm">
+      <div class="text-center space-y-2">
+        <div class="inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold shadow-2xs">
           <span class="w-2 h-2 rounded-full bg-emerald-600"></span>
           <span>Portal Masuk Resmi Bursa Limbah</span>
         </div>
         <h1 class="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
           Masuk ke Akun Anda
         </h1>
-        <p class="text-sm text-slate-600 leading-relaxed">
-          Pilih portal akun Anda di bawah ini untuk mengakses <strong>Halaman Akun Pembeli</strong>, <strong>Dashboard Penjual</strong>, atau <strong>Pusat Pengelola (Admin)</strong>.
+        <p class="text-xs sm:text-sm text-slate-600 leading-relaxed max-w-md mx-auto">
+          Satu pintu masuk untuk <strong>Pembeli</strong>, <strong>Mitra Penjual</strong>, dan <strong>Pengelola</strong>. Sistem otomatis mendeteksi dan mengarahkan ke dashboard peran Anda.
         </p>
       </div>
 
-      <!-- Pemilihan Tab Peran: Pembeli vs Penjual vs Pengelola -->
-      <div class="grid sm:grid-cols-3 gap-3.5 max-w-4xl mx-auto">
-        
-        <!-- Tab Akun Pembeli -->
-        <button id="login-tab-btn-buyer" onclick="app.switchLoginTab('buyer')" class="p-5 rounded-2xl border-2 border-emerald-500 bg-emerald-50/80 text-left transition relative shadow-sm hover:shadow group focus:outline-none">
-          <div class="flex items-start justify-between mb-3">
-            <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-500 text-white flex items-center justify-center text-xl shadow-md shadow-emerald-600/20">
-              <i class="fa-solid fa-crown text-amber-300"></i>
-            </div>
-            <span id="login-tab-check-buyer" class="w-6 h-6 rounded-full bg-emerald-600 text-white flex items-center justify-center text-xs shadow">
-              <i class="fa-solid fa-check"></i>
-            </span>
-          </div>
-          <div class="text-xs font-bold uppercase tracking-wider text-emerald-800 mb-0.5">Akses Pembeli Industri</div>
-          <h3 class="text-lg font-bold text-slate-900 leading-snug">Akun Pembeli</h3>
-          <p class="text-xs text-slate-600 mt-1.5 leading-relaxed">
-            Untuk pabrik, manufaktur, dan industri daur ulang pencari pasokan limbah dengan 3-tier paket langganan & escrow DP 30%.
-          </p>
-        </button>
-
-        <!-- Tab Akun Penjual -->
-        <button id="login-tab-btn-seller" onclick="app.switchLoginTab('seller')" class="p-5 rounded-2xl border-2 border-slate-200 bg-white text-left transition relative shadow-sm hover:border-slate-300 hover:shadow group focus:outline-none">
-          <div class="flex items-start justify-between mb-3">
-            <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-slate-800 to-slate-700 text-white flex items-center justify-center text-xl shadow-md shadow-slate-900/20">
-              <i class="fa-solid fa-store text-emerald-300"></i>
-            </div>
-            <span id="login-tab-check-seller" class="w-6 h-6 rounded-full bg-emerald-600 text-white hidden items-center justify-center text-xs shadow">
-              <i class="fa-solid fa-check"></i>
-            </span>
-          </div>
-          <div class="text-xs font-bold uppercase tracking-wider text-slate-500 mb-0.5">Pemasok & Pengepul</div>
-          <h3 class="text-lg font-bold text-slate-900 leading-snug">Akun Penjual</h3>
-          <p class="text-xs text-slate-600 mt-1.5 leading-relaxed">
-            Untuk restoran, pabrik, dan pengepul limbah untuk mengunggah pasokan komoditas, melacak kurasi mutu, dan menarik saldo dompet penjualan.
-          </p>
-        </button>
-
-        <!-- Tab Akun Pengelola (Admin) -->
-        <button id="login-tab-btn-admin" onclick="app.switchLoginTab('admin')" class="p-5 rounded-2xl border-2 border-slate-200 bg-white text-left transition relative shadow-sm hover:border-slate-300 hover:shadow group focus:outline-none">
-          <div class="flex items-start justify-between mb-3">
-            <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-slate-950 to-indigo-950 text-amber-300 flex items-center justify-center text-xl shadow-md shadow-slate-950/20">
-              <i class="fa-solid fa-user-shield"></i>
-            </div>
-            <span id="login-tab-check-admin" class="w-6 h-6 rounded-full bg-slate-900 text-amber-300 hidden items-center justify-center text-xs shadow">
-              <i class="fa-solid fa-check"></i>
-            </span>
-          </div>
-          <div class="text-xs font-bold uppercase tracking-wider text-amber-800 mb-0.5">Pusat Kontrol Sistem</div>
-          <h3 class="text-lg font-bold text-slate-900 leading-snug">Akun Pengelola</h3>
-          <p class="text-xs text-slate-600 mt-1.5 leading-relaxed">
-            Khusus administrator & staf resmi untuk kurasi pasokan, audit rekening bersama DP, dan konfigurasi paket 3-tier.
-          </p>
-        </button>
-
-      </div>
-
-      <!-- Kartu Formulir Login -->
-      <div class="max-w-xl mx-auto bg-white rounded-3xl border border-slate-200 shadow-xl overflow-hidden">
+      <!-- Kartu Formulir Login Tunggal -->
+      <div class="bg-white rounded-3xl border border-slate-200 shadow-xl overflow-hidden">
         
         <!-- Header Banner Kartu Form -->
-        <div id="login-form-banner" class="px-6 py-5 bg-gradient-to-r from-emerald-600 to-teal-700 text-white flex items-center justify-between">
+        <div id="login-form-banner" class="px-6 py-5 bg-gradient-to-r from-slate-900 via-emerald-950 to-teal-900 text-white flex items-center justify-between">
           <div class="flex items-center space-x-3">
-            <div class="w-10 h-10 rounded-xl bg-white/15 backdrop-blur-sm flex items-center justify-center text-xl" id="login-form-icon-wrap">
-              <i id="login-form-icon" class="fa-solid fa-crown text-amber-300"></i>
+            <div class="w-10 h-10 rounded-xl bg-white/15 backdrop-blur-sm flex items-center justify-center text-xl">
+              <i class="fa-solid fa-right-to-bracket text-emerald-400"></i>
             </div>
             <div>
-              <h4 id="login-form-title" class="font-extrabold text-base">Masuk sebagai Pembeli</h4>
-              <p id="login-form-subtitle" class="text-xs text-emerald-100">Buka katalog, harga terverifikasi, & tiket timbang</p>
+              <h4 class="font-extrabold text-base">Autentikasi Akun</h4>
+              <p class="text-xs text-emerald-100/80">Masukkan kredensial terdaftar Anda</p>
             </div>
           </div>
-          <span id="login-form-badge" class="px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-white/20 text-white border border-white/30">
-            PORTAL PEMBELI
+          <span class="px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-emerald-500/30 text-emerald-300 border border-emerald-500/40">
+            PORTAL RESMI
           </span>
         </div>
 
-        <div class="p-6 sm:p-8 space-y-6">
+        <div class="p-6 sm:p-8 space-y-5">
           
           <!-- Notifikasi Error Login (Jika Gagal) -->
           <div id="login-alert-box" class="hidden p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-start space-x-3">
             <i class="fa-solid fa-circle-exclamation text-rose-600 mt-0.5 text-base shrink-0"></i>
-            <div id="login-alert-msg" class="leading-relaxed">Email atau kata sandi tidak sesuai.</div>
+            <div id="login-alert-msg" class="leading-relaxed font-medium">Email, username, atau kata sandi tidak sesuai.</div>
           </div>
 
           <!-- Formulir Input -->
           <form id="form-login-account" onsubmit="app.handleLoginFormSubmit(event)" class="space-y-4">
             <div>
-              <label class="block text-xs font-bold uppercase text-slate-700 mb-1.5 flex items-center justify-between">
-                <span id="login-identifier-label">Email Terdaftar / Nomor WhatsApp *</span>
-                <span id="login-hint-role" class="text-[11px] font-semibold text-emerald-700">Akun Pembeli</span>
+              <label class="block text-xs font-bold uppercase text-slate-700 mb-1.5">
+                Email / Username / No. WhatsApp *
               </label>
               <div class="relative">
-                <i class="fa-solid fa-envelope absolute left-3.5 top-3.5 text-slate-400 text-sm"></i>
-                <input type="text" id="login-input-identifier" required placeholder="nama@perusahaan.com atau nomor WhatsApp" class="w-full bg-slate-50 border border-slate-300 rounded-xl pl-10 pr-4 py-2.5 text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none font-medium">
+                <i class="fa-solid fa-user absolute left-3.5 top-3.5 text-slate-400 text-sm"></i>
+                <input type="text" id="login-input-identifier" required placeholder="nama@perusahaan.com, username, atau 08123456789" class="w-full bg-slate-50 border border-slate-300 rounded-xl pl-10 pr-4 py-2.5 text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none font-medium">
               </div>
             </div>
 
             <div>
               <div class="flex items-center justify-between mb-1.5">
                 <label class="block text-xs font-bold uppercase text-slate-700">Kata Sandi *</label>
-                <button type="button" onclick="app.showForgotPasswordInfo()" class="text-[11px] text-emerald-700 hover:underline font-semibold">Lupa Kata Sandi?</button>
+                <button type="button" onclick="app.showForgotPasswordInfo()" class="text-[11px] text-emerald-700 hover:underline font-semibold cursor-pointer">Lupa Kata Sandi?</button>
               </div>
               <div class="relative">
                 <i class="fa-solid fa-lock absolute left-3.5 top-3.5 text-slate-400 text-sm"></i>
                 <input type="password" id="login-input-password" required value="" placeholder="Masukkan kata sandi" class="w-full bg-slate-50 border border-slate-300 rounded-xl pl-10 pr-10 py-2.5 text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none">
-                <button type="button" onclick="app.togglePasswordVisibility('login-input-password', this)" class="absolute right-3.5 top-3 text-slate-400 hover:text-slate-600 text-sm p-0.5">
+                <button type="button" onclick="app.togglePasswordVisibility('login-input-password', this)" class="absolute right-3.5 top-3 text-slate-400 hover:text-slate-600 text-sm p-0.5 cursor-pointer">
                   <i class="fa-solid fa-eye"></i>
                 </button>
               </div>
@@ -296,52 +240,21 @@
             </div>
 
             <!-- Tombol Submit Masuk -->
-            <button type="submit" id="login-submit-btn" class="w-full py-3.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold text-sm shadow-lg shadow-emerald-600/25 transition transform active:scale-95 flex items-center justify-center space-x-2">
+            <button type="submit" id="login-submit-btn" class="w-full py-3.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold text-sm shadow-lg shadow-emerald-600/25 transition transform active:scale-95 flex items-center justify-center space-x-2 cursor-pointer">
               <i class="fa-solid fa-right-to-bracket"></i>
-              <span id="login-submit-label">Masuk ke Portal Pembeli</span>
+              <span id="login-submit-label">Masuk ke Akun</span>
             </button>
           </form>
 
-          <!-- Info Daftar Otomatis Penjual (tampil di tab Penjual) -->
-          <div id="seller-auto-register-info" class="hidden p-4 rounded-2xl bg-gradient-to-r from-slate-900 to-slate-800 border border-emerald-500/40 text-white text-xs space-y-2.5">
-            <div class="flex items-start space-x-3">
-              <div class="w-8 h-8 rounded-xl bg-emerald-500/20 flex items-center justify-center shrink-0 mt-0.5 border border-emerald-500/30">
-                <i class="fa-solid fa-store text-emerald-400 text-sm"></i>
-              </div>
-              <div>
-                <p class="font-bold text-emerald-400 text-xs uppercase tracking-wide flex items-center gap-1.5">
-                  <span>Daftar & Login Mitra Penjual via Email</span>
-                  <span class="px-1.5 py-0.5 rounded bg-emerald-500/30 text-emerald-300 text-[10px] font-bold">Instan</span>
-                </p>
-                <p class="text-slate-300 leading-relaxed text-[11px] mt-0.5">
-                  Ketik email aktif Anda di atas. Jika akun belum terdaftar, sistem akan <strong class="text-white">langsung mendaftarkan Anda secara otomatis</strong> sebagai Mitra Penjual tanpa syarat biaya langganan.
-                </p>
-              </div>
-            </div>
-            <div class="grid grid-cols-3 gap-2 pt-1 border-t border-slate-700/60">
-              <div class="bg-white/5 rounded-xl px-2.5 py-2 text-center border border-white/5">
-                <i class="fa-solid fa-cloud-arrow-up text-emerald-400 text-xs mb-1 block"></i>
-                <span class="text-[10px] text-slate-300 font-semibold block leading-tight">Unggah Pasokan</span>
-              </div>
-              <div class="bg-white/5 rounded-xl px-2.5 py-2 text-center border border-white/5">
-                <i class="fa-solid fa-shield-halved text-emerald-400 text-xs mb-1 block"></i>
-                <span class="text-[10px] text-slate-300 font-semibold block leading-tight">Rekber Escrow</span>
-              </div>
-              <div class="bg-white/5 rounded-xl px-2.5 py-2 text-center border border-white/5">
-                <i class="fa-solid fa-wallet text-emerald-400 text-xs mb-1 block"></i>
-                <span class="text-[10px] text-slate-300 font-semibold block leading-tight">Pencairan Cepat</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- Ajakan Pendaftaran Akun Baru -->
-          <div class="pt-3 border-t border-slate-100 text-center">
-            <p id="login-register-prompt" class="text-xs text-slate-600">
-              Belum memiliki akun Pembeli?
-              <button type="button" onclick="app.showBuyerRegisterModal()" class="text-emerald-700 font-bold hover:underline ml-1">
-                Daftar & Berlangganan 3-Tier Ã¢â€ â€™
-              </button>
+          <!-- Ajakan Pendaftaran Akun Baru (Pilih Penjual / Pembeli) -->
+          <div class="pt-4 border-t border-slate-100 text-center space-y-2">
+            <p class="text-xs text-slate-600">
+              Belum memiliki akun Bursa Limbah?
             </p>
+            <button type="button" onclick="app.showRegisterOptions()" class="w-full py-2.5 px-4 rounded-xl border-2 border-emerald-500/40 bg-emerald-50/50 hover:bg-emerald-50 text-emerald-800 text-xs font-bold transition flex items-center justify-center space-x-2 group cursor-pointer shadow-2xs">
+              <i class="fa-solid fa-user-plus text-emerald-600 group-hover:scale-110 transition-transform"></i>
+              <span>Daftar Akun Baru (Pilih Penjual atau Pembeli) &rarr;</span>
+            </button>
           </div>
 
         </div>
@@ -5136,9 +5049,9 @@
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 
   <!-- Modul Aplikasi BURSA LIMBAH -->
-  <script src="js/data.js?v=10"></script>
-  <script src="js/store.js?v=10"></script>
+  <script src="js/data.js?v=11"></script>
+  <script src="js/store.js?v=11"></script>
   <script src="js/storageClient.js?v=7"></script>
-  <script src="js/app.js?v=10"></script>
+  <script src="js/app.js?v=11"></script>
 </body>
 </html>
