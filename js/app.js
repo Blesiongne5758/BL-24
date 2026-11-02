@@ -63,6 +63,7 @@ class BursaLimbahApp {
     this.renderPublicPostings();
     this.renderPublicSubscriptionTiers();
     this.renderEvents('semua');
+    this.initSimulationListeners();
 
     // Set peran awal dari data store
     const currentRole = this.store.getCurrentRole();
@@ -902,6 +903,76 @@ class BursaLimbahApp {
   }
 
   // ===== NAVIGASI BOTTOM NAV BARU: Cari / Event / Pesan / Saya =====
+  // ================= SIMULASI KALKULATOR DP 30% & ESG =================
+  updateSimulationResults() {
+    const qtyInput = document.getElementById('sim-qty');
+    const priceInput = document.getElementById('sim-price');
+    const catSelect = document.getElementById('sim-category');
+
+    const qtyDisplay = document.getElementById('mob-calc-qty-display');
+    const totalDisplay = document.getElementById('mob-calc-total-val');
+    const dpDisplay = document.getElementById('mob-calc-dp-val');
+    const remDisplay = document.getElementById('mob-calc-remaining-val');
+    const esgDisplay = document.getElementById('calc-result-esg');
+
+    if (!qtyInput || !priceInput || !catSelect) return;
+
+    const qty = parseFloat(qtyInput.value) || 0;
+    const price = parseFloat(priceInput.value) || 0;
+    const categoryId = catSelect.value;
+
+    // 1. Basic Financials
+    const total = qty * price;
+    const dpPercent = this.store.getSettings().downPaymentPercent || 30;
+    const dp = Math.round(total * (dpPercent / 100));
+    const remaining = total - dp;
+
+    // 2. ESG Calculation (Mimicking server/services/esg.service.js)
+    const esgFactors = {
+      'oil': 2.85,    // Minyak Jelantah
+      'plastic': 1.5, // Plastik
+      'paper': 0.8,   // Kertas
+      'metal': 3.2,   // Logam
+      'default': 1.2
+    };
+
+    const factor = esgFactors[categoryId] || esgFactors['default'];
+    const kgCO2e = Math.round(qty * factor * 100) / 100;
+
+    // Update DOM
+    if (qtyDisplay) qtyDisplay.textContent = `${qty.toLocaleString('id-ID')} unit`;
+    if (totalDisplay) totalDisplay.textContent = this.formatRupiah(total);
+    if (dpDisplay) dpDisplay.textContent = this.formatRupiah(dp);
+    if (remDisplay) remDisplay.textContent = this.formatRupiah(remaining);
+    if (esgDisplay) {
+      esgDisplay.innerHTML = `<i class="fa-solid fa-leaf text-emerald-500 mr-1"></i> Mengurangi proyeksi <strong>${kgCO2e.toLocaleString('id-ID')} Kg</strong> jejak karbon (CO2e).`;
+    }
+  }
+
+  initSimulationListeners() {
+    const inputs = ['sim-qty', 'sim-price', 'sim-category'];
+    inputs.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.addEventListener('input', () => this.updateSimulationResults());
+    });
+
+    [500, 1000, 2500, 5000, 10000].forEach(val => {
+      const btn = document.getElementById(`sim-preset-${val}`);
+      if (btn) {
+        btn.onclick = () => {
+          const qtyInput = document.getElementById('sim-qty');
+          if (qtyInput) {
+            qtyInput.value = val;
+            this.updateSimulationResults();
+          }
+        };
+      }
+    });
+
+    // Initialize with current values to clear hardcoded HTML placeholders
+    this.updateSimulationResults();
+  }
+
   switchBottomTab(tabKey) {
     this.currentBottomTab = tabKey;
 
@@ -1792,11 +1863,16 @@ class BursaLimbahApp {
             <!-- Banner Gambar & Label Tipe Postingan -->
             <div class="relative h-44 bg-slate-100 overflow-hidden">
               <img src="${mainPhoto}" alt="${esc(item.title)}" class="w-full h-full object-cover">
-              
+
               <div class="absolute top-2 left-2 flex flex-col gap-1">
                 <span class="px-2.5 py-0.5 rounded-md text-[10px] font-bold bg-slate-900/80 backdrop-blur-sm text-white">
                   ${esc(item.code)}
                 </span>
+                <a href="https://www.google.com/search?q=harga+${encodeURIComponent(item.category || 'limbah')} +terbaru" target="_blank" class="px-2 py-0.5 rounded-md text-[9px] font-bold bg-blue-600/90 backdrop-blur-sm text-white hover:bg-blue-700 transition flex items-center gap-1">
+                  <i class="fa-brands fa-google"></i> Cek Harga Pasar
+                </a>
+              </div>
+            </div>
                 <span class="px-2 py-0.5 rounded-md text-[10px] font-semibold ${isSupply ? 'bg-emerald-600/90 text-white' : 'bg-blue-600/90 text-white'} backdrop-blur-sm">
                   ${isSupply ? 'Pasokan Penjual' : 'Permintaan Pembeli'}
                 </span>
