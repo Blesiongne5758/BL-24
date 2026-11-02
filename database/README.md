@@ -4,13 +4,7 @@ Database MySQL untuk platform Bursa Limbah. Berisi 20 tabel lengkap untuk mengel
 
 ## Koneksi Database
 
-| Setting | Nilai |
-|---------|-------|
-| Host | `108.136.70.118` |
-| Port | `3306` |
-| Database | `bursalimbahdb` |
-| User | `admin` |
-| Password | `AdminPassword2026!` |
+
 
 > Konfigurasi tersimpan di `server/.env`
 
@@ -82,13 +76,7 @@ mysql -h 108.136.70.118 -u admin -p bursalimbahdb -e "SHOW TABLES;"
 
 ## Akun Demo
 
-| Role | Email | Password |
-|------|-------|----------|
-| Admin | `admin@bursalimbah.id` | `123456` |
-| Penjual 1 | `budi.seller@demo.id` | `123456` |
-| Penjual 2 | `siti.seller@demo.id` | `123456` |
-| Pembeli 1 | `hijau.buyer@demo.id` | `123456` |
-| Pembeli 2 | `ahmad.buyer@demo.id` | `123456` |
+
 
 ---
 
