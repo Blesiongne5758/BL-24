@@ -808,38 +808,71 @@ class BursaLimbahStore {
     return this.getSubscriptionTierById(tierId);
   }
 
-  toggleBuyerSubscription(buyerId, targetTierId = null) {
-    const user = this.state.users.find(u => u.id === (buyerId || this.state.activeUserId));
-    if (user) {
-      user.subscriptionActive = !user.subscriptionActive;
-      if (targetTierId) {
-        user.subscriptionTier = targetTierId;
-      }
-      if (user.subscriptionActive) {
-        const nextMonth = new Date();
-        nextMonth.setMonth(nextMonth.getMonth() + 1);
-        user.subscriptionExpiry = nextMonth.toISOString().split("T")[0];
-      } else {
-        user.subscriptionExpiry = null;
-      }
+  async toggleBuyerSubscription(buyerId, targetTierId = null) {
+    const userId = buyerId || this.state.activeUserId;
+    const user = this.state.users.find(u => u.id === userId);
+    if (!user) return null;
+
+    const newStatus = !user.subscriptionActive;
+    const newTier = targetTierId || user.subscriptionTier;
+
+    try {
+      const response = await fetch(`${this.apiBaseUrl}/api/update_subscription.php`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: userId,
+          tierId: newTier,
+          subscriptionActive: newStatus
+        })
+      });
+
+      const result = await response.json();
+      if (!result.success) throw new Error(result.message);
+
+      // Update local state to match server
+      user.subscriptionActive = newStatus;
+      user.subscriptionTier = newTier;
+      user.subscriptionExpiry = result.data.subscriptionExpiry;
+
       this.save();
       return user;
+    } catch (error) {
+      console.error('[Store] Failed to toggle subscription:', error);
+      throw error;
     }
-    return null;
   }
 
-  setBuyerTier(buyerId, tierId) {
-    const user = this.state.users.find(u => u.id === (buyerId || this.state.activeUserId));
-    if (user) {
+  async setBuyerTier(buyerId, tierId) {
+    const userId = buyerId || this.state.activeUserId;
+    const user = this.state.users.find(u => u.id === userId);
+    if (!user) return null;
+
+    try {
+      const response = await fetch(`${this.apiBaseUrl}/api/update_subscription.php`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: userId,
+          tierId: tierId,
+          subscriptionActive: true
+        })
+      });
+
+      const result = await response.json();
+      if (!result.success) throw new Error(result.message);
+
+      // Update local state
       user.subscriptionTier = tierId;
       user.subscriptionActive = true;
-      const nextMonth = new Date();
-      nextMonth.setMonth(nextMonth.getMonth() + 1);
-      user.subscriptionExpiry = nextMonth.toISOString().split("T")[0];
+      user.subscriptionExpiry = result.data.subscriptionExpiry;
+
       this.save();
       return user;
+    } catch (error) {
+      console.error('[Store] Failed to set buyer tier:', error);
+      throw error;
     }
-    return null;
   }
 
   registerBuyer({ name, email, phone, company, tierId, password, subscriptionActive }) {
@@ -1101,9 +1134,12 @@ class BursaLimbahStore {
       // 10 Atribut Wajib Listing:
       condition: productData.condition || "Bersih",
       grade: productData.grade || "Grade Standar Industri",
+      gradeMutu: productData.gradeMutu || productData.grade || "Standar",
       minimumOrder: Number(productData.minimumOrder) || 1,
       minimumOrderUnit: productData.minimumOrderUnit || productData.unit || "Kg",
       pickupSchedule: productData.pickupSchedule || "Siap Angkut Segera (H+0 s/d H+1)",
+      asalUsul: productData.asalUsul || "Sumber Industri Terverifikasi",
+      regulasi: productData.regulasi || "Non-B3 (Umum)",
       listingStatus: productData.listingStatus || "Tersedia",
       isB3: Boolean(productData.isB3),
       b3PermitNumber: productData.b3PermitNumber || null,
