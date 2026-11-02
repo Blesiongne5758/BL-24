@@ -1,15 +1,15 @@
 -- ====================================================================
 -- BURSA LIMBAH — DATA DEMO (seed_demo.sql)
 -- Berisi: 1 Admin, 2 Penjual, 2 Pembeli, 5 Produk, 1 Event, Notifikasi
--- Password semua akun demo: 123456
--- Hash bcrypt untuk "123456": $2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lh...
+-- Password semua akun demo: 
+-- Hash bcrypt untuk "": 
 -- ====================================================================
 
 USE `bursalimbahdb`;
 
--- Password hash untuk "123456" (bcrypt rounds=10)
+-- Password hash untuk "" (bcrypt rounds=10)
 -- Gunakan ini untuk semua akun demo
-SET @pass_hash = '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWu';
+SET @pass_hash = '';
 
 -- ====================================================================
 -- SEED: USERS (1 Admin, 2 Penjual, 2 Pembeli)
