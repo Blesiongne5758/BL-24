@@ -598,36 +598,48 @@ class BursaLimbahApp {
       submitBtn.classList.add('opacity-75');
     }
 
-    const res = await this.store.loginUserAsync(identifier, password);
+    try {
+      const { data: user, error } = await window.circulinkSupabase.client.auth.signInWithPassword({
+        email: identifier,
+        password: password,
+      });
 
-    if (submitBtn) {
-      submitBtn.disabled = false;
-      submitBtn.classList.remove('opacity-75');
-    }
+      if (error) throw error;
 
-    if (res.success) {
+      // Supabase auth doesn't store 'role' in auth.users by default in the same way as our old system.
+      // We need to fetch the user profile from our 'users' table.
+      const { data: profile, error: profileError } = await window.circulinkSupabase.client
+        .from('users')
+        .select('role, name, company')
+        .eq('id', user.user.id)
+        .single();
+
+      if (profileError || !profile) throw new Error('Profil pengguna tidak ditemukan.');
+
       if (alertBox) alertBox.classList.add('hidden');
       this.triggerConfetti();
 
-      const user = res.user;
-      const role = res.role || user.role || 'buyer';
-
+      const role = profile.role || 'buyer';
       if (role === 'admin') {
         this.showToast('Berhasil masuk! Selamat datang di Pusat Pengelola (Admin).', 'success');
       } else if (role === 'seller') {
-        this.showToast(`Berhasil masuk! Selamat datang Mitra Penjual (${user.name || user.email}).`, 'success');
+        this.showToast(`Berhasil masuk! Selamat datang Mitra Penjual (${profile.name || identifier}).`, 'success');
       } else {
-        this.showToast(`Berhasil masuk! Selamat datang ${user.name || user.email} di Portal Pembeli.`, 'success');
+        this.showToast(`Berhasil masuk! Selamat datang ${profile.name || identifier} di Portal Pembeli.`, 'success');
       }
 
-      // Otomatis mengarahkan ke halaman sesuai peran pengguna
       this.setRole(role, false);
-    } else {
+    } catch (error) {
       if (alertBox && alertMsg) {
-        alertMsg.textContent = res.message || 'Email, username, atau kata sandi tidak sesuai.';
+        alertMsg.textContent = error.message || 'Email atau kata sandi tidak sesuai.';
         alertBox.classList.remove('hidden');
       }
-      this.showToast(res.message || 'Gagal masuk. Periksa kembali isian Anda.', 'error');
+      this.showToast(error.message || 'Gagal masuk. Periksa kembali isian Anda.', 'error');
+    } finally {
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.classList.remove('opacity-75');
+      }
     }
   }
 
@@ -710,39 +722,46 @@ class BursaLimbahApp {
     const location = 'Indonesia';
     const bankAccount = '-';
 
-    const existing = this.store.state.users.find(u => u.email && u.email.toLowerCase() === email.toLowerCase());
-    if (existing) {
-      if (existing.role === 'seller') {
-        this.showToast(`Email ${email} sudah terdaftar. Silakan langsung masuk.`, 'info');
-        this.closeModals();
-        this.showLoginPage('seller');
-        const inputId = document.getElementById('login-input-identifier');
-        if (inputId) inputId.value = email;
-        return;
-      } else {
-        this.showToast(`Email ${email} sudah terdaftar sebagai ${existing.role === 'buyer' ? 'Pembeli' : 'Pengelola'}.`, 'error');
-        return;
-      }
+    try {
+      // 1. Create Auth User
+      const { data: authData, error: authError } = await window.circulinkSupabase.client.auth.signUp({
+        email,
+        password,
+      });
+
+      if (authError) throw authError;
+
+      const userId = authData.user?.id;
+      if (!userId) throw new Error('Gagal membuat akun autentikasi.');
+
+      // 2. Create User Profile in 'users' table
+      const { error: profileError } = await window.circulinkSupabase.client
+        .from('users')
+        .insert([{
+          id: userId,
+          role: 'seller',
+          name,
+          company,
+          phone,
+          email,
+          location,
+          bankAccount,
+          verified_badge: 'Pemasok Terverifikasi',
+          balance: 0,
+          terms_accepted: true,
+          terms_version: this.store.getSettings().termsVersion
+        }]);
+
+      if (profileError) throw profileError;
+
+      this.closeModals();
+      this.termsAcceptedForRegistration = null;
+      this.triggerConfetti();
+      this.showToast(`Selamat datang ${name}! Akun Penjual berhasil dibuat. Lengkapi data rekening & lokasi di Menu Pengaturan.`, 'success');
+      this.setRole('seller', false);
+    } catch (error) {
+      this.showToast(error.message || 'Pendaftaran penjual gagal.', 'error');
     }
-
-    const res = await this.store.registerSellerAsync({
-      company,
-      name,
-      phone,
-      email,
-      location,
-      bankAccount,
-      password,
-      termsAccepted: true,
-      termsVersion: this.store.getSettings().termsVersion
-    });
-    if (!res.success) { this.showToast(res.message || 'Pendaftaran penjual gagal.', 'error'); return; }
-
-    this.closeModals();
-    this.termsAcceptedForRegistration = null;
-    this.triggerConfetti();
-    this.showToast(`Selamat datang ${name}! Akun Penjual berhasil dibuat. Lengkapi data rekening & lokasi di Menu Pengaturan.`, 'success');
-    this.setRole('seller', false);
   }
 
   logout() {
@@ -1571,19 +1590,44 @@ class BursaLimbahApp {
       note: document.getElementById('event-participant-note').value.trim()
     };
     try {
-      const endpoint = action === 'interest' ? 'interests' : 'registrations';
-      const response = await fetch(`${this.store.apiBaseUrl}/api/events/${encodeURIComponent(eventId)}/${endpoint}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-      const result = await response.json();
-      if (!response.ok || !result.success) throw new Error(result.message || 'Pendaftaran event gagal diproses.');
-      if (action === 'interest' || !result.paymentRequired) {
+      const table = action === 'interest' ? 'event_interests' : 'event_registrations_v2';
+      const { data, error } = await window.circulinkSupabase.client
+        .from(table)
+        .insert([{
+          id: `EV-${action.toUpperCase()}-${Date.now()}`,
+          event_id: eventId,
+          ...payload
+        }])
+        .select();
+
+      if (error) throw error;
+
+      if (action === 'interest') {
         this.closeEventRegistrationModal();
-        this.showToast(result.message, 'success');
+        this.showToast('Minat Anda berhasil dicatat!', 'success');
         return;
       }
-      const payment = result.paymentInstructions;
+
+      // For registrations, check if payment is required (mocking the backend logic)
+      const eventData = this.store.getEventById(eventId);
+      const price = this.getEventTicketPrice(eventData);
+
+      if (price === 0) {
+        this.closeEventRegistrationModal();
+        this.showToast('Pendaftaran gratis berhasil!', 'success');
+        return;
+      }
+
+      const payment = {
+        bank: 'BCA',
+        accountName: 'PT Bursa Limbah Indonesia',
+        accountNumber: '827199201122',
+        totalAmount: price * payload.attendeeCount
+      };
+
       document.getElementById('event-registration-form').classList.add('hidden');
       const panel = document.getElementById('event-payment-panel');
-      panel.innerHTML = `<div class="rounded-xl bg-amber-50 border border-amber-200 p-3 text-xs text-amber-900"><strong>Total tagihan: ${this.formatRupiah(result.totalAmount)}</strong><br>Transfer ke ${payment.bank} a.n. ${payment.accountName}, rekening ${payment.accountNumber}.</div><label class="block text-xs font-bold text-slate-700">Nomor referensi transfer<input id="event-payment-reference" required class="mt-1.5 w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 text-sm"></label><button onclick="app.submitEventPayment('${result.registrationId}')" class="w-full px-4 py-2.5 rounded-xl bg-emerald-600 text-white text-xs font-bold">Kirim Konfirmasi Pembayaran</button>`;
+      panel.innerHTML = `<div class="rounded-xl bg-amber-50 border border-amber-200 p-3 text-xs text-amber-900"><strong>Total tagihan: ${this.formatRupiah(payment.totalAmount)}</strong><br>Transfer ke ${payment.bank} a.n. ${payment.accountName}, rekening ${payment.accountNumber}.</div><label class="block text-xs font-bold text-slate-700">Nomor referensi transfer<input id="event-payment-reference" required class="mt-1.5 w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 text-sm"></label><button onclick="app.submitEventPayment('${data[0].id}')" class="w-full px-4 py-2.5 rounded-xl bg-emerald-600 text-white text-xs font-bold">Kirim Konfirmasi Pembayaran</button>`;
       panel.classList.remove('hidden');
     } catch (error) { this.showToast(error.message, 'error'); }
   }
@@ -1591,11 +1635,18 @@ class BursaLimbahApp {
   async submitEventPayment(registrationId) {
     const paymentReference = document.getElementById('event-payment-reference')?.value.trim();
     try {
-      const response = await fetch(`${this.store.apiBaseUrl}/api/event-payments/${encodeURIComponent(registrationId)}/submit`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ paymentReference }) });
-      const result = await response.json();
-      if (!response.ok || !result.success) throw new Error(result.message || 'Konfirmasi pembayaran gagal.');
+      const { error } = await window.circulinkSupabase.client
+        .from('event_payments')
+        .update({
+          payment_reference: paymentReference,
+          payment_status: 'submitted',
+          paid_at: new Date().toISOString()
+        })
+        .eq('registration_id', registrationId);
+
+      if (error) throw error;
       this.closeEventRegistrationModal();
-      this.showToast(result.message, 'success');
+      this.showToast('Konfirmasi pembayaran berhasil dikirim!', 'success');
     } catch (error) { this.showToast(error.message, 'error'); }
   }
 
@@ -1619,11 +1670,12 @@ class BursaLimbahApp {
     const tickerSettings = this.store.getSettings();
     if (!tickerSettings.tickerEnabled) return;
     try {
-      const response = await fetch(`${this.store.apiBaseUrl}/api/market-prices`);
+      // Fetch direct from public exchange rate API
+      const response = await fetch('https://open.er-api.com/v6/latest/USD');
       if (response.ok) {
         const data = await response.json();
-        if (data && data.success && data.rates && data.rates.USD_IDR) {
-          const liveUsd = Math.round(data.rates.USD_IDR);
+        if (data && data.success && data.rates && data.rates.IDR) {
+          const liveUsd = Math.round(data.rates.IDR);
           const previousRate = this.marketCurrencies?.usd?.rate;
           const delta = previousRate ? liveUsd - previousRate : 0;
           const changePercent = previousRate && delta !== 0 ? `${delta > 0 ? '+' : ''}${((delta / previousRate) * 100).toFixed(2)}%` : '0.00%';
@@ -1631,7 +1683,7 @@ class BursaLimbahApp {
           this.marketCurrencies.usd.rate = liveUsd;
           this.marketCurrencies.usd.trend = delta > 0 ? 'up' : delta < 0 ? 'down' : 'flat';
           this.marketCurrencies.usd.changePercent = changePercent;
-          this.marketTickerUpdatedAt = data.updatedAt || new Date().toISOString();
+          this.marketTickerUpdatedAt = data.time_last_update_utc || new Date().toISOString();
           this.marketTickerSource = data.source || 'Market Price API';
           this.renderPriceTicker();
         }
@@ -2164,43 +2216,48 @@ class BursaLimbahApp {
     const password = document.getElementById('reg-buyer-password') ? document.getElementById('reg-buyer-password').value : '123456';
 
     const company = name; // Default nama perusahaan sama dengan nama penanggung jawab
-    const chosenTierId = 'tier_starter';
+    const chosenTierId = this.selectedRegisterTier || 'tier_starter';
 
-    const existing = this.store.state.users.find(u => u.email && u.email.toLowerCase() === email.toLowerCase());
-    if (existing) {
-      if (existing.role === 'buyer') {
-        this.showToast(`Email ${email} sudah terdaftar. Silakan langsung masuk.`, 'info');
-        this.closeModals();
-        this.showLoginPage('buyer');
-        const inputId = document.getElementById('login-input-identifier');
-        if (inputId) inputId.value = email;
-        return;
-      } else {
-        this.showToast(`Email ${email} sudah terdaftar sebagai ${existing.role === 'seller' ? 'Penjual' : 'Pengelola'}.`, 'error');
-        return;
-      }
+    try {
+      // 1. Create Auth User
+      const { data: authData, error: authError } = await window.circulinkSupabase.client.auth.signUp({
+        email,
+        password,
+      });
+
+      if (authError) throw authError;
+
+      const userId = authData.user?.id;
+      if (!userId) throw new Error('Gagal membuat akun autentikasi.');
+
+      // 2. Create User Profile in 'users' table
+      const { error: profileError } = await window.circulinkSupabase.client
+        .from('users')
+        .insert([{
+          id: userId,
+          role: 'buyer',
+          name,
+          company,
+          phone,
+          email,
+          tier_id: chosenTierId,
+          subscription_active: true,
+          terms_accepted: true,
+          terms_version: this.store.getSettings().termsVersion
+        }]);
+
+      if (profileError) throw profileError;
+
+      const tier = this.store.getSubscriptionTierById(chosenTierId);
+
+      this.closeModals();
+      this.termsAcceptedForRegistration = null;
+      this.setRole('buyer', false);
+      this.triggerConfetti();
+      this.showToast(`Selamat datang ${name}! Akun Pembeli aktif dengan ${tier ? tier.name : 'Paket Starter'}. Lengkapi profil di Menu Pengaturan.`, 'success');
+    } catch (error) {
+      this.showToast(error.message || 'Pendaftaran pembeli gagal.', 'error');
     }
-
-    const res = await this.store.registerBuyerAsync({
-      name,
-      company,
-      phone,
-      email,
-      password,
-      tierId: chosenTierId,
-      subscriptionActive: true,
-      termsAccepted: true,
-      termsVersion: this.store.getSettings().termsVersion
-    });
-    if (!res.success) { this.showToast(res.message || 'Pendaftaran pembeli gagal.', 'error'); return; }
-
-    const tier = this.store.getSubscriptionTierById(chosenTierId);
-
-    this.closeModals();
-    this.termsAcceptedForRegistration = null;
-    this.setRole('buyer', false);
-    this.triggerConfetti();
-    this.showToast(`Selamat datang ${name}! Akun Pembeli aktif dengan ${tier ? tier.name : 'Paket Starter'}. Lengkapi profil di Menu Pengaturan.`, 'success');
   }
 
   // ================= 4. KATALOG PEMBELI: PENGECEKAN TIER RENTANG HARGA & FITUR =================
