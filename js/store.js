@@ -11,7 +11,7 @@ class BursaLimbahStore {
     this.apiBaseUrl = this.detectApiBaseUrl();
     this.isBackendConnected = false;
     this.initStore();
-    this.checkBackendHealth();
+    this.checkSupabaseHealth();
   }
 
   detectApiBaseUrl() {
@@ -22,16 +22,12 @@ class BursaLimbahStore {
     return 'http://localhost:5000';
   }
 
-  async checkBackendHealth() {
+  async checkSupabaseHealth() {
     try {
-      const res = await fetch(`${this.apiBaseUrl}/api/health`, { method: 'GET' });
-      if (res.ok) {
-        const data = await res.json();
-        this.isBackendConnected = (data.database === 'connected');
-        console.log('[BursaLimbah Store] Terhubung ke MySQL Backend API:', data);
-        if (this.isBackendConnected) {
-          await this.syncWithBackend();
-        }
+      const status = await window.circulinkSupabase.testConnection();
+      this.isBackendConnected = status.ok;
+      if (this.isBackendConnected) {
+        await this.syncWithSupabase();
       }
     } catch (e) {
       this.isBackendConnected = false;

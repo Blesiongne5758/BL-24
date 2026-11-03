@@ -73,7 +73,7 @@ async function logAudit(userId, action, targetType = null, targetId = null, deta
     const ip = req ? (req.headers['x-forwarded-for']?.split(',')[0].trim() || req.socket.remoteAddress) : null;
     const ua = req ? req.headers['user-agent'] : null;
     await pool.query(
-      'INSERT INTO audit_logs (user_id, action, target_type, target_id, ip_address, user_agent, details) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      'INSERT INTO audit_logs (user_id, action, target_type, target_id, ip_address, user_agent, details) VALUES ($1, $2, $3, $4, $5, $6, $7)',
       [userId || null, action, targetType, targetId ? String(targetId) : null, ip, ua ? ua.substring(0, 255) : null, details ? JSON.stringify(details) : null]
     );
   } catch (err) {
@@ -249,7 +249,7 @@ app.get('/api/storage/private-url', authenticate, async (req, res) => {
     if (!isAdmin && !isOwner) {
       // Check if user is buyer/seller of an order with this document
       const [orderRows] = await pool.query(
-        'SELECT id, buyer_id, seller_id, status FROM orders WHERE (buyer_id = ? OR seller_id = ?) AND (remaining_payment_proof LIKE ? OR id LIKE ?)',
+        'SELECT id, buyer_id, seller_id, status FROM orders WHERE (buyer_id = $1 OR seller_id = $2) AND (remaining_payment_proof LIKE $3 OR id LIKE $4)',
         [user.id, user.id, `%${key}%`, `%${key}%`]
       ).catch(() => [[]]);
 
@@ -429,7 +429,7 @@ app.post('/api/auth/register', async (req, res) => {
     const cleanEmail = email.trim().toLowerCase();
 
     // 1. Cek apakah email sudah terdaftar
-    const [existing] = await pool.query('SELECT id, email, role FROM users WHERE LOWER(email) = ?', [cleanEmail]);
+    const [existing] = await pool.query('SELECT id, email, role FROM users WHERE LOWER(email) = $1', [cleanEmail]);
     if (existing.length > 0) {
       const existingUser = existing[0];
       const roleLabel = existingUser.role === 'buyer' ? 'Pembeli' : (existingUser.role === 'seller' ? 'Penjual' : 'Pengelola');
@@ -463,7 +463,7 @@ app.post('/api/auth/register', async (req, res) => {
         subscription_tier, subscription_active, subscription_expiry,
         identity_verified, verification_status, verified_badge,
         bank_account, location, balance
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, 'local', ?, 1, ?, 0, 'unverified', ?, ?, ?, 0.00)
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, 'local', $8, 1, $9, 0, 'unverified', $10, $11, $12, 0.00)
     `;
 
     const [termsRows] = await pool.query("SELECT setting_key, setting_value FROM system_settings WHERE setting_key IN ('terms_title', 'terms_version')");
@@ -480,7 +480,7 @@ app.post('/api/auth/register', async (req, res) => {
         subscriptionExpiry, verifiedBadge, bankAccount, location
       ]);
       await connection.query(
-        'INSERT INTO user_terms_acceptances (id, user_id, terms_version, terms_title) VALUES (?, ?, ?, ?)',
+        'INSERT INTO user_terms_acceptances (id, user_id, terms_version, terms_title) VALUES ($1, $2, $3, $4)',
         [`terms_${crypto.randomUUID()}`, newId, activeTermsVersion, termsSettings.terms_title || 'Syarat dan Ketentuan Penggunaan Bursa Limbah']
       );
       await connection.commit();
@@ -489,7 +489,7 @@ app.post('/api/auth/register', async (req, res) => {
       throw error;
     } finally { connection.release(); }
 
-    const [rows] = await pool.query('SELECT * FROM users WHERE id = ?', [newId]);
+    const [rows] = await pool.query('SELECT * FROM users WHERE id = $1', [newId]);
     const newUser = mapUserFromDb(rows[0]);
     const token = generateAccessToken(newUser);
     const refreshToken = generateRefreshToken(newUser);
@@ -526,7 +526,7 @@ app.post('/api/auth/login', async (req, res) => {
     const cleanId = identifier.trim().toLowerCase();
     const cleanDigits = cleanId.replace(/[^0-9]/g, '');
 
-    let query = 'SELECT * FROM users WHERE LOWER(email) = ? OR LOWER(username) = ? OR id = ?';
+    let query = 'SELECT * FROM users WHERE LOWER(email) = $1 OR LOWER(username) = $2 OR id = $3';
     let params = [cleanId, cleanId, cleanId];
 
     if (cleanDigits.length >= 7) {
@@ -559,7 +559,7 @@ app.post('/api/auth/login', async (req, res) => {
             subscription_tier, subscription_active, subscription_expiry,
             identity_verified, verification_status, verified_badge,
             bank_account, location, balance
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, 'local', 'tier_starter', 1, ?, 0, 'unverified', ?, '-', 'Indonesia', 0.00)
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, 'local', 'tier_starter', 1, $8, 0, 'unverified', $9, '-', 'Indonesia', 0.00)
         `;
 
         await pool.query(insertQuery, [
@@ -574,7 +574,7 @@ app.post('/api/auth/login', async (req, res) => {
           roleToAssign === 'seller' ? 'Pemasok Baru' : 'Pembeli Baru'
         ]);
 
-        const [createdRows] = await pool.query('SELECT * FROM users WHERE id = ?', [newId]);
+        const [createdRows] = await pool.query('SELECT * FROM users WHERE id = $1', [newId]);
         const newUser = mapUserFromDb(createdRows[0]);
         const token = generateAccessToken(newUser);
         const refreshToken = generateRefreshToken(newUser);
@@ -673,7 +673,7 @@ app.post('/api/auth/refresh', async (req, res) => {
     return res.status(401).json({ success: false, message: 'Refresh token kedaluwarsa atau tidak valid.' });
   }
 
-  const [rows] = await pool.query('SELECT * FROM users WHERE id = ?', [payload.id]);
+  const [rows] = await pool.query('SELECT * FROM users WHERE id = $1', [payload.id]);
   if (rows.length === 0) {
     return res.status(401).json({ success: false, message: 'Pengguna tidak ditemukan.' });
   }
@@ -718,20 +718,20 @@ app.put('/api/users/:id/profile', async (req, res) => {
 
     const updates = [];
     const params = [];
-    if (name) { updates.push('name = ?'); params.push(name); }
-    if (company) { updates.push('company = ?'); params.push(company); }
-    if (phone) { updates.push('phone = ?'); params.push(phone); }
-    if (location) { updates.push('location = ?'); params.push(location); }
-    if (bankAccount) { updates.push('bank_account = ?'); params.push(bankAccount); }
-    if (avatar) { updates.push('avatar = ?'); params.push(avatar); }
+    if (name) { updates.push('name = $1'); params.push(name); }
+    if (company) { updates.push('company = $2'); params.push(company); }
+    if (phone) { updates.push('phone = $3'); params.push(phone); }
+    if (location) { updates.push('location = $4'); params.push(location); }
+    if (bankAccount) { updates.push('bank_account = $5'); params.push(bankAccount); }
+    if (avatar) { updates.push('avatar = $6'); params.push(avatar); }
     if (paymentMethods !== undefined) {
-      updates.push('payment_methods = ?');
+      updates.push('payment_methods = $7');
       params.push(typeof paymentMethods === 'object' ? JSON.stringify(paymentMethods) : paymentMethods);
     }
 
     if (updates.length > 0) {
       params.push(id);
-      await pool.query(`UPDATE users SET ${updates.join(', ')} WHERE id = ?`, params);
+      await pool.query(`UPDATE users SET ${updates.join(', ')} WHERE id = $8`, params);
     }
 
     const [updatedRows] = await pool.query('SELECT * FROM users WHERE id = ?', [id]);
@@ -758,15 +758,15 @@ app.post('/api/users/:id/verify', async (req, res) => {
 
     const query = `
       UPDATE users SET 
-        verification_type = ?,
-        ktp_number = COALESCE(?, ktp_number),
-        npwp_number = COALESCE(?, npwp_number),
-        verification_doc_url = COALESCE(?, verification_doc_url),
+        verification_type = $1,
+        ktp_number = COALESCE($2, ktp_number),
+        npwp_number = COALESCE($3, npwp_number),
+        verification_doc_url = COALESCE($4, verification_doc_url),
         identity_verified = 1,
         verification_status = 'verified',
-        verified_badge = ?,
-        verified_at = ?
-      WHERE id = ?
+        verified_badge = $5,
+        verified_at = $6
+      WHERE id = $7
     `;
 
     await pool.query(query, [type || 'ktp', ktpNumber || null, npwpNumber || null, docUrl || null, verifiedBadge, verifiedAt, id]);
@@ -855,19 +855,19 @@ app.get('/api/products', async (req, res) => {
     const params = [];
 
     if (status && status !== 'all') {
-      query += ' AND p.status = ?';
+      query += ' AND p.status = $1';
       params.push(status);
     }
     if (sellerId) {
-      query += ' AND p.seller_id = ?';
+      query += ' AND p.seller_id = $2';
       params.push(sellerId);
     }
     if (categoryId) {
-      query += ' AND p.category_id = ?';
+      query += ' AND p.category_id = $3';
       params.push(categoryId);
     }
 
-    query += ' ORDER BY p.created_at DESC LIMIT ?';
+    query += ' ORDER BY p.created_at DESC LIMIT $4';
     params.push(parseInt(limit, 10));
 
     const [rows] = await pool.query(query, params);
@@ -877,7 +877,7 @@ app.get('/api/products', async (req, res) => {
     let imagesByProduct = {};
     if (productIds.length > 0) {
       const [images] = await pool.query(
-        'SELECT * FROM product_images WHERE product_id IN (?) ORDER BY is_evidence DESC',
+        'SELECT * FROM product_images WHERE product_id = ANY($1) ORDER BY is_evidence DESC',
         [productIds]
       );
       images.forEach(img => {
@@ -898,20 +898,20 @@ app.get('/api/products/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const query = `
-      SELECT p.*, 
+      SELECT p.*,
              c.main_category, c.sub_category, c.category_code,
              u.name AS seller_name, u.company AS seller_company, u.phone AS seller_phone
       FROM products p
       LEFT JOIN categories c ON p.category_id = c.id
       LEFT JOIN users u ON p.seller_id = u.id
-      WHERE p.id = ?
+      WHERE p.id = $1
     `;
     const [rows] = await pool.query(query, [id]);
     if (rows.length === 0) {
       return res.status(404).json({ success: false, message: 'Produk tidak ditemukan.' });
     }
 
-    const [images] = await pool.query('SELECT * FROM product_images WHERE product_id = ?', [id]);
+    const [images] = await pool.query('SELECT * FROM product_images WHERE product_id = $1', [id]);
     const product = mapProductFromDb(rows[0], images);
     return res.json({ success: true, product });
   } catch (error) {
@@ -928,7 +928,7 @@ app.post('/api/products', async (req, res) => {
 
     // Pastikan seller_id ada di database, jika belum buatkan placeholder
     if (data.sellerId) {
-      const [uCheck] = await pool.query('SELECT id FROM users WHERE id = ?', [data.sellerId]);
+      const [uCheck] = await pool.query('SELECT id FROM users WHERE id = $1', [data.sellerId]);
       if (uCheck.length === 0) {
         await pool.query(
           'INSERT INTO users (id, name, email, role, password_hash) VALUES (?, ?, ?, ?, ?)',
@@ -939,7 +939,7 @@ app.post('/api/products', async (req, res) => {
 
     // Pastikan category_id valid
     let catId = data.categoryId || 'sub_oil_001';
-    const [catCheck] = await pool.query('SELECT id FROM categories WHERE id = ?', [catId]);
+    const [catCheck] = await pool.query('SELECT id FROM categories WHERE id = $1', [catId]);
     if (catCheck.length === 0) {
       const [firstCat] = await pool.query('SELECT id FROM categories LIMIT 1');
       if (firstCat.length > 0) catId = firstCat[0].id;
@@ -951,7 +951,7 @@ app.post('/api/products', async (req, res) => {
         container_type, weight, volume, unit, origin_source, location, city,
         latitude, longitude, asking_price, minimum_order, pickup_schedule,
         status, is_b3, b3_permit_number
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23)
     `;
 
     await pool.query(insertSql, [
@@ -988,7 +988,7 @@ app.post('/api/products', async (req, res) => {
         const caption = typeof evidence === 'string' ? null : (evidence.type || null);
         if (imgUrl) {
           await pool.query(
-            'INSERT INTO product_images (id, product_id, image_url, caption, is_evidence) VALUES (?, ?, ?, ?, 1)',
+            'INSERT INTO product_images (id, product_id, image_url, caption, is_evidence) VALUES ($1, $2, $3, $4, 1)',
             [`IMG-${id}-${i + 1}`, id, imgUrl, caption]
           );
         }
@@ -1016,7 +1016,7 @@ app.patch('/api/products/:id/status', async (req, res) => {
       return res.status(400).json({ success: false, message: 'Status wajib diisi.' });
     }
 
-    await pool.query('UPDATE products SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?', [status, id]);
+    await pool.query('UPDATE products SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2', [status, id]);
     return res.json({ success: true, message: `Status produk berhasil diubah menjadi: ${status}` });
   } catch (error) {
     return res.status(500).json({ success: false, message: error.message });
@@ -1026,8 +1026,8 @@ app.patch('/api/products/:id/status', async (req, res) => {
 app.delete('/api/products/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    await pool.query('DELETE FROM product_images WHERE product_id = ?', [id]);
-    await pool.query('DELETE FROM products WHERE id = ?', [id]);
+    await pool.query('DELETE FROM product_images WHERE product_id = $1', [id]);
+    await pool.query('DELETE FROM products WHERE id = $1', [id]);
     return res.json({ success: true, message: 'Produk berhasil dihapus.' });
   } catch (error) {
     return res.status(500).json({ success: false, message: error.message });
@@ -1054,8 +1054,8 @@ app.get('/api/orders', async (req, res) => {
     const params = [];
 
     if (buyerId) { sql += ' AND o.buyer_id = ?'; params.push(buyerId); }
-    if (sellerId) { sql += ' AND o.seller_id = ?'; params.push(sellerId); }
-    if (status) { sql += ' AND o.escrow_status = ?'; params.push(status); }
+    if (sellerId) { sql += ' AND o.seller_id = $2'; params.push(sellerId); }
+    if (status) { sql += ' AND o.escrow_status = $3'; params.push(status); }
 
     sql += ' ORDER BY o.created_at DESC';
 
@@ -1076,7 +1076,7 @@ app.post('/api/orders', async (req, res) => {
 
     // 1. Validasi Aturan Tier Berlangganan Pembeli jika buyerId terdaftar
     if (data.buyerId) {
-      const [bRows] = await pool.query('SELECT subscription_tier, identity_verified FROM users WHERE id = ?', [data.buyerId]);
+      const [bRows] = await pool.query('SELECT subscription_tier, identity_verified FROM users WHERE id = $1', [data.buyerId]);
       if (bRows.length > 0) {
         const userTierKey = bRows[0].subscription_tier || 'tier_starter';
         const tierConfig = DEFAULT_TIERS[userTierKey] || DEFAULT_TIERS.tier_starter;
@@ -1099,7 +1099,7 @@ app.post('/api/orders', async (req, res) => {
     // 3. Estimasi Reduksi Emisi Karbon ESG (kg CO2e)
     let categoryKey = 'default';
     if (data.productId) {
-      const [pRows] = await pool.query('SELECT category_id FROM products WHERE id = ?', [data.productId]);
+      const [pRows] = await pool.query('SELECT category_id FROM products WHERE id = $1', [data.productId]);
       if (pRows.length > 0 && pRows[0].category_id) {
         categoryKey = pRows[0].category_id;
       }
@@ -1108,7 +1108,7 @@ app.post('/api/orders', async (req, res) => {
 
     // Pastikan buyer dan seller terdaftar di tabel users
     if (data.buyerId) {
-      const [bCheck] = await pool.query('SELECT id FROM users WHERE id = ?', [data.buyerId]);
+      const [bCheck] = await pool.query('SELECT id FROM users WHERE id = $1', [data.buyerId]);
       if (bCheck.length === 0) {
         await pool.query(
           'INSERT INTO users (id, name, email, role, password_hash) VALUES (?, ?, ?, ?, ?)',
@@ -1117,7 +1117,7 @@ app.post('/api/orders', async (req, res) => {
       }
     }
     if (data.sellerId) {
-      const [sCheck] = await pool.query('SELECT id FROM users WHERE id = ?', [data.sellerId]);
+      const [sCheck] = await pool.query('SELECT id FROM users WHERE id = $1', [data.sellerId]);
       if (sCheck.length === 0) {
         await pool.query(
           'INSERT INTO users (id, name, email, role, password_hash) VALUES (?, ?, ?, ?, ?)',
@@ -1132,7 +1132,7 @@ app.post('/api/orders', async (req, res) => {
         total_amount, dp_percentage, dp_amount, remaining_amount,
         handling_fee, escrow_status, pickup_date, notes, shipping_method,
         co2_reduction_kg
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
     `;
 
     await pool.query(insertSql, [
@@ -1156,7 +1156,7 @@ app.post('/api/orders', async (req, res) => {
 
     // Update status produk menjadi 'booked'
     if (data.productId) {
-      await pool.query("UPDATE products SET status = 'booked' WHERE id = ?", [data.productId]);
+      await pool.query("UPDATE products SET status = 'booked' WHERE id = $1", [data.productId]);
     }
 
     await logAudit(data.buyerId, 'create_order', 'order', orderId, {
@@ -1184,12 +1184,12 @@ app.patch('/api/orders/:id/status', async (req, res) => {
     const { id } = req.params;
     const { escrowStatus } = req.body;
 
-    await pool.query('UPDATE orders SET escrow_status = ? WHERE id = ?', [escrowStatus, id]);
+    await pool.query('UPDATE orders SET escrow_status = $1 WHERE id = $2', [escrowStatus, id]);
 
     if (escrowStatus === 'completed') {
       const [order] = await pool.query('SELECT product_id FROM orders WHERE id = ?', [id]);
       if (order.length > 0 && order[0].product_id) {
-        await pool.query('UPDATE products SET status = \'completed\' WHERE id = ?', [order[0].product_id]);
+        await pool.query('UPDATE products SET status = \'completed\' WHERE id = $1', [order[0].product_id]);
       }
     }
 
@@ -1206,14 +1206,14 @@ app.post('/api/orders/:id/remaining-proof', async (req, res) => {
     const now = new Date().toISOString().replace('T', ' ').substring(0, 19);
     try {
       await pool.query(
-        `UPDATE orders SET 
+        `UPDATE orders SET
           escrow_status = 'proof_submitted',
           remaining_payment_status = 'proof_submitted',
-          remaining_payment_proof = ?,
-          remaining_payment_notes = ?,
-          remaining_payment_submitted_at = ?,
-          notes = CONCAT(COALESCE(notes, ''), ' [Bukti Pelunasan Diunggah Ref: ', ?, ']')
-        WHERE id = ?`,
+          remaining_payment_proof = $1,
+          remaining_payment_notes = $2,
+          remaining_payment_submitted_at = $3,
+          notes = CONCAT(COALESCE(notes, ''), ' [Bukti Pelunasan Diunggah Ref: ', $4, ']')
+        WHERE id = $5`,
         [
           proofData.proofImageUrl || proofData.imageUrl || '',
           proofData.notes || '',
@@ -1224,7 +1224,7 @@ app.post('/api/orders/:id/remaining-proof', async (req, res) => {
       );
     } catch (dbErr) {
       console.warn('[DB Warning] remaining-proof update fallback:', dbErr.message);
-      await pool.query("UPDATE orders SET escrow_status = 'proof_submitted' WHERE id = ?", [id]).catch(() => {});
+      await pool.query("UPDATE orders SET escrow_status = 'proof_submitted' WHERE id = $1", [id]).catch(() => {});
     }
     return res.json({ success: true, message: 'Bukti sisa pembayaran berhasil dikirim dan menunggu verifikasi.' });
   } catch (error) {
@@ -1243,25 +1243,25 @@ app.post('/api/orders/:id/verify-remaining', async (req, res) => {
 
     try {
       await pool.query(
-        `UPDATE orders SET 
-          escrow_status = ?,
-          remaining_payment_status = ?,
-          remaining_payment_verified_at = ?,
-          remaining_payment_verified_by = ?
-        WHERE id = ?`,
+        `UPDATE orders SET
+          escrow_status = $1,
+          remaining_payment_status = $2,
+          remaining_payment_verified_at = $3,
+          remaining_payment_verified_by = $4
+        WHERE id = $5`,
         [newStatus, remainingStatus, now, verifierInfo, id]
       );
 
       if (verifierRole === 'admin') {
-        const [order] = await pool.query('SELECT product_id FROM orders WHERE id = ?', [id]);
+        const [order] = await pool.query('SELECT product_id FROM orders WHERE id = $1', [id]);
         if (order.length > 0 && order[0].product_id) {
-          await pool.query("UPDATE products SET status = 'completed' WHERE id = ?", [order[0].product_id]);
+          await pool.query("UPDATE products SET status = 'completed' WHERE id = $1", [order[0].product_id]);
         }
       }
     } catch (dbErr) {
       console.warn('[DB Warning] verify-remaining update fallback:', dbErr.message);
       if (verifierRole === 'admin') {
-        await pool.query("UPDATE orders SET escrow_status = 'completed' WHERE id = ?", [id]).catch(() => {});
+        await pool.query("UPDATE orders SET escrow_status = 'completed' WHERE id = $1", [id]).catch(() => {});
       }
     }
     return res.json({ success: true, message: `Verifikasi pelunasan oleh ${verifierName || verifierRole} berhasil dicatat.` });
@@ -1282,8 +1282,8 @@ app.get('/api/offers', async (req, res) => {
       LEFT JOIN users ub ON ub.id = o.buyer_id LEFT JOIN users us ON us.id = p.seller_id WHERE 1=1`;
     const params = [];
     if (buyerId) { sql += ' AND o.buyer_id = ?'; params.push(buyerId); }
-    if (sellerId) { sql += ' AND p.seller_id = ?'; params.push(sellerId); }
-    if (status) { sql += ' AND o.status = ?'; params.push(status); }
+    if (sellerId) { sql += ' AND p.seller_id = $2'; params.push(sellerId); }
+    if (status) { sql += ' AND o.status = $3'; params.push(status); }
     sql += ' ORDER BY o.created_at DESC';
     const [offers] = await pool.query(sql, params);
     return res.json({ success: true, offers });
@@ -1295,7 +1295,7 @@ app.post('/api/offers', async (req, res) => {
     const data = req.body;
     const id = data.id || `OFF-${Date.now()}`;
     await pool.query(`INSERT INTO offers (id, product_id, buyer_id, offer_price, quantity, unit, note, status)
-      VALUES (?, ?, ?, ?, ?, ?, ?, 'pending')`, [id, data.productId, data.buyerId, Number(data.offerPrice), Number(data.quantity) || 1, data.unit || 'Kg', data.note || null]);
+      VALUES ($1, $2, $3, $4, $5, $6, $7, 'pending')`, [id, data.productId, data.buyerId, Number(data.offerPrice), Number(data.quantity) || 1, data.unit || 'Kg', data.note || null]);
     return res.status(201).json({ success: true, offerId: id });
   } catch (error) { return res.status(500).json({ success: false, message: error.message }); }
 });
@@ -1306,7 +1306,7 @@ app.patch('/api/offers/:id/status', async (req, res) => {
     const { sellerId, status } = req.body;
     if (!['accepted', 'rejected'].includes(status)) return res.status(400).json({ success: false, message: 'Status penawaran tidak valid.' });
     const [result] = await pool.query(`UPDATE offers o JOIN products p ON p.id = o.product_id
-      SET o.status = ? WHERE o.id = ? AND p.seller_id = ? AND o.status = 'pending'`, [status, id, sellerId]);
+      SET o.status = $1 WHERE o.id = $2 AND p.seller_id = $3 AND o.status = 'pending'`, [status, id, sellerId]);
     if (!result.affectedRows) return res.status(404).json({ success: false, message: 'Penawaran tidak ditemukan atau sudah diproses.' });
     return res.json({ success: true, message: 'Status penawaran diperbarui.' });
   } catch (error) { return res.status(500).json({ success: false, message: error.message }); }
@@ -1315,7 +1315,7 @@ app.patch('/api/offers/:id/status', async (req, res) => {
 app.get('/api/notifications', async (req, res) => {
   try {
     const { userId } = req.query;
-    const [notifications] = await pool.query(`SELECT * FROM notifications ${userId ? 'WHERE user_id = ?' : ''} ORDER BY created_at DESC LIMIT 100`, userId ? [userId] : []);
+    const [notifications] = await pool.query(`SELECT * FROM notifications ${userId ? 'WHERE user_id = $1' : ''} ORDER BY created_at DESC LIMIT 100`, userId ? [userId] : []);
     return res.json({ success: true, notifications });
   } catch (error) { return res.status(500).json({ success: false, message: error.message }); }
 });
@@ -1324,7 +1324,7 @@ app.post('/api/notifications', async (req, res) => {
   try {
     const n = req.body;
     const id = n.id || `NTF-${Date.now()}`;
-    await pool.query('INSERT INTO notifications (id, user_id, type, title, message, link, is_read) VALUES (?, ?, ?, ?, ?, ?, ?)', [id, n.userId, n.type || 'info', n.title, n.message, n.link || null, n.isRead ? 1 : 0]);
+    await pool.query('INSERT INTO notifications (id, user_id, type, title, message, link, is_read) VALUES ($1, $2, $3, $4, $5, $6, $7)', [id, n.userId, n.type || 'info', n.title, n.message, n.link || null, n.isRead ? 1 : 0]);
     return res.status(201).json({ success: true, notificationId: id });
   } catch (error) { return res.status(500).json({ success: false, message: error.message }); }
 });
@@ -1338,7 +1338,7 @@ app.get('/api/events', async (req, res) => {
     let sql = 'SELECT * FROM events';
     const params = [];
     if (status && status !== 'all') {
-      sql += ' WHERE status = ?';
+      sql += ' WHERE status = $1';
       params.push(status);
     }
     sql += ' ORDER BY event_date ASC';
@@ -1358,7 +1358,7 @@ app.post('/api/events', async (req, res) => {
       INSERT INTO events (
         id, title, description, event_type, location, event_date,
         event_time, quota, registered, price, image, status, created_by
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
     `;
 
     await pool.query(sql, [
@@ -1389,18 +1389,18 @@ app.put('/api/events/:id', async (req, res) => {
     const data = req.body;
 
     const sql = `
-      UPDATE events SET 
-        title = COALESCE(?, title),
-        description = COALESCE(?, description),
-        event_type = COALESCE(?, event_type),
-        location = COALESCE(?, location),
-        event_date = COALESCE(?, event_date),
-        event_time = COALESCE(?, event_time),
-        quota = COALESCE(?, quota),
-        price = COALESCE(?, price),
-        image = COALESCE(?, image),
-        status = COALESCE(?, status)
-      WHERE id = ?
+      UPDATE events SET
+        title = COALESCE($1, title),
+        description = COALESCE($2, description),
+        event_type = COALESCE($3, event_type),
+        location = COALESCE($4, location),
+        event_date = COALESCE($5, event_date),
+        event_time = COALESCE($6, event_time),
+        quota = COALESCE($7, quota),
+        price = COALESCE($8, price),
+        image = COALESCE($9, image),
+        status = COALESCE($10, status)
+      WHERE id = $11
     `;
 
     await pool.query(sql, [
@@ -1426,7 +1426,7 @@ app.put('/api/events/:id', async (req, res) => {
 app.delete('/api/events/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    await pool.query('DELETE FROM events WHERE id = ?', [id]);
+    await pool.query('DELETE FROM events WHERE id = $1', [id]);
     return res.json({ success: true, message: 'Event berhasil dihapus.' });
   } catch (error) {
     return res.status(500).json({ success: false, message: error.message });
@@ -1467,7 +1467,7 @@ app.post('/api/events/:id/interests', async (req, res) => {
       if (!events.length || !['aktif', 'published'].includes(events[0].status)) throw new Error('Event tidak tersedia.');
       const participantId = await upsertEventParticipant(connection, participant);
       const interestId = `EVI-${crypto.randomUUID()}`;
-      await connection.query('INSERT INTO event_interests (id, event_id, participant_id, attendee_count, note) VALUES (?, ?, ?, ?, ?)', [interestId, req.params.id, participantId, participant.attendeeCount, String(req.body.note || '').trim() || null]);
+      await connection.query('INSERT INTO event_interests (id, event_id, participant_id, attendee_count, note) VALUES ($1, $2, $3, $4, $5)', [interestId, req.params.id, participantId, participant.attendeeCount, String(req.body.note || '').trim() || null]);
       await connection.commit();
       return res.status(201).json({ success: true, interestId, message: 'Minat Anda sudah dicatat. Tim event akan menghubungi Anda.' });
     } catch (error) {
@@ -1484,12 +1484,12 @@ app.post('/api/events/:id/registrations', async (req, res) => {
     const connection = await pool.getConnection();
     try {
       await connection.beginTransaction();
-      const [events] = await connection.query('SELECT id, title, price, quota, registered, status FROM events WHERE id = ? FOR UPDATE', [req.params.id]);
+      const [events] = await connection.query('SELECT id, title, price, quota, registered, status FROM events WHERE id = $1 FOR UPDATE', [req.params.id]);
       const event = events[0];
       if (!event || !['aktif', 'published'].includes(event.status)) throw new Error('Event tidak tersedia untuk pendaftaran.');
       if (Number(event.registered) + participant.attendeeCount > Number(event.quota)) throw new Error('Kuota event tidak mencukupi untuk jumlah peserta yang dipilih.');
       const participantId = await upsertEventParticipant(connection, participant);
-      const [existing] = await connection.query('SELECT id FROM event_registrations_v2 WHERE event_id = ? AND participant_id = ?', [event.id, participantId]);
+      const [existing] = await connection.query('SELECT id FROM event_registrations_v2 WHERE event_id = $1 AND participant_id = $2', [event.id, participantId]);
       if (existing.length) throw new Error('Email ini sudah terdaftar pada event tersebut.');
 
       const registrationId = `EVR-${crypto.randomUUID()}`;
@@ -1499,9 +1499,9 @@ app.post('/api/events/:id/registrations', async (req, res) => {
       const paymentId = `EVPAY-${crypto.randomUUID()}`;
       await connection.query(`INSERT INTO event_registrations_v2
         (id, event_id, participant_id, attendee_count, unit_price, total_amount, registration_status)
-        VALUES (?, ?, ?, ?, ?, ?, ?)`, [registrationId, event.id, participantId, participant.attendeeCount, unitPrice, totalAmount, isFree ? 'confirmed' : 'awaiting_payment']);
-      await connection.query('INSERT INTO event_payments (id, registration_id, amount, payment_status, paid_at) VALUES (?, ?, ?, ?, ?)', [paymentId, registrationId, totalAmount, isFree ? 'paid' : 'pending', isFree ? new Date() : null]);
-      await connection.query('UPDATE events SET registered = registered + ? WHERE id = ?', [participant.attendeeCount, event.id]);
+        VALUES ($1, $2, $3, $4, $5, $6, $7)`, [registrationId, event.id, participantId, participant.attendeeCount, unitPrice, totalAmount, isFree ? 'confirmed' : 'awaiting_payment']);
+      await connection.query('INSERT INTO event_payments (id, registration_id, amount, payment_status, paid_at) VALUES ($1, $2, $3, $4, $5)', [paymentId, registrationId, totalAmount, isFree ? 'paid' : 'pending', isFree ? new Date() : null]);
+      await connection.query('UPDATE events SET registered = registered + $1 WHERE id = $2', [participant.attendeeCount, event.id]);
       await connection.commit();
       return res.status(201).json({
         success: true, registrationId, paymentId, paymentRequired: !isFree, totalAmount,
@@ -1545,9 +1545,9 @@ app.get('/api/chats', async (req, res) => {
     `;
     const params = [];
 
-    if (productId) { sql += ' AND r.product_id = ?'; params.push(productId); }
-    if (buyerId) { sql += ' AND r.buyer_id = ?'; params.push(buyerId); }
-    if (sellerId) { sql += ' AND r.seller_id = ?'; params.push(sellerId); }
+    if (productId) { sql += ' AND r.product_id = $1'; params.push(productId); }
+    if (buyerId) { sql += ' AND r.buyer_id = $2'; params.push(buyerId); }
+    if (sellerId) { sql += ' AND r.seller_id = $3'; params.push(sellerId); }
 
     sql += ' ORDER BY m.created_at ASC';
 
@@ -1581,7 +1581,7 @@ app.post('/api/chats', async (req, res) => {
 
     // Cari atau buat chat room
     let [rooms] = await pool.query(
-      'SELECT id FROM chat_rooms WHERE product_id = ? AND buyer_id = ? AND seller_id = ?',
+      'SELECT id FROM chat_rooms WHERE product_id = $1 AND buyer_id = $2 AND seller_id = $3',
       [pId, bId, sId]
     );
 
@@ -1589,7 +1589,7 @@ app.post('/api/chats', async (req, res) => {
     if (rooms.length === 0) {
       roomId = `room_${Date.now()}`;
       await pool.query(
-        'INSERT INTO chat_rooms (id, buyer_id, seller_id, product_id) VALUES (?, ?, ?, ?)',
+        'INSERT INTO chat_rooms (id, buyer_id, seller_id, product_id) VALUES ($1, $2, $3, $4)',
         [roomId, bId, sId, pId]
       );
     } else {
@@ -1600,7 +1600,7 @@ app.post('/api/chats', async (req, res) => {
     const senderId = (senderRole === 'seller') ? sId : bId;
 
     await pool.query(
-      'INSERT INTO chat_messages (id, room_id, sender_id, message) VALUES (?, ?, ?, ?)',
+      'INSERT INTO chat_messages (id, room_id, sender_id, message) VALUES ($1, $2, $3, $4)',
       [msgId, roomId, senderId, text]
     );
 
@@ -1671,7 +1671,7 @@ app.put('/api/settings', async (req, res) => {
     const entries = Object.entries(req.body);
     for (const [key, value] of entries) {
       await pool.query(
-        'INSERT INTO system_settings (setting_key, setting_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)',
+        'INSERT INTO system_settings (setting_key, setting_value) VALUES ($1, $2) ON CONFLICT (setting_key) DO UPDATE SET setting_value = EXCLUDED.setting_value',
         [key, String(value)]
       );
     }
@@ -1731,7 +1731,7 @@ app.post('/api/admin/backups', async (req, res) => {
 app.get('/api/admin/audit-logs', async (req, res) => {
   try {
     const limit = parseInt(req.query.limit, 10) || 50;
-    const [rows] = await pool.query('SELECT * FROM audit_logs ORDER BY created_at DESC LIMIT ?', [limit]);
+    const [rows] = await pool.query('SELECT * FROM audit_logs ORDER BY created_at DESC LIMIT $1', [limit]);
     return res.json({ success: true, count: rows.length, auditLogs: rows });
   } catch (error) {
     return res.status(500).json({ success: false, message: error.message });
@@ -1763,10 +1763,10 @@ async function ensureDatabaseSchema() {
   try {
     // 1. users: payment_methods
     const [userCols] = await pool.query(
-      "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'users' AND COLUMN_NAME = 'payment_methods'"
+      "SELECT COLUMN_NAME FROM information_schema.columns WHERE table_name = 'users' AND column_name = 'payment_methods'"
     );
     if (userCols.length === 0) {
-      await pool.query("ALTER TABLE users ADD COLUMN `payment_methods` LONGTEXT DEFAULT NULL");
+      await pool.query("ALTER TABLE users ADD COLUMN payment_methods TEXT DEFAULT NULL");
       console.log('  [DB Migration] Kolom payment_methods berhasil ditambahkan ke tabel users.');
     }
 
@@ -1791,11 +1791,11 @@ async function ensureDatabaseSchema() {
 
     for (const col of orderColumnDefs) {
       const [cols] = await pool.query(
-        "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'orders' AND COLUMN_NAME = ?",
+        "SELECT COLUMN_NAME FROM information_schema.columns WHERE table_name = 'orders' AND column_name = $1",
         [col.name]
       );
       if (cols.length === 0) {
-        await pool.query(`ALTER TABLE orders ADD COLUMN \`${col.name}\` ${col.def}`);
+        await pool.query(`ALTER TABLE orders ADD COLUMN ${col.name} ${col.def}`);
         console.log(`  [DB Migration] Kolom ${col.name} berhasil ditambahkan ke tabel orders.`);
       }
     }

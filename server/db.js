@@ -1,58 +1,51 @@
 // SPDX-License-Identifier: MIT
 /**
  * BURSA LIMBAH / CIRCULINK — Database Connection Pool & Query Manager
- * Production-ready MySQL connection management with connection pooling,
- * reconnect resilience, transaction manager, and healthcheck probing.
+ * Production-ready PostgreSQL (Supabase) connection management with
+ * connection pooling, reconnect resilience, transaction manager, and healthcheck probing.
  */
 
-const mysql = require('mysql2/promise');
+const { Pool } = require('pg');
 const path  = require('path');
 require('dotenv').config({ path: path.join(__dirname, '.env') });
 
 const dbConfig = {
-  host:             process.env.DB_HOST     || 'localhost',
-  port:             parseInt(process.env.DB_PORT, 10) || 3306,
-  user:             process.env.DB_USER     || 'root',
-  password:         process.env.DB_PASSWORD || '',
-  database:         process.env.DB_NAME     || 'bursalimbahdb',
-  waitForConnections: true,
-  connectionLimit:  parseInt(process.env.DB_CONNECTION_LIMIT, 10) || 15,
-  queueLimit:       0,
-  connectTimeout:   10000,
-  enableKeepAlive:  true,
-  keepAliveInitialDelay: 30000,
-  dateStrings:      true
+  connectionString: process.env.DB_URL,
+  max:             parseInt(process.env.DB_MAX_CONNECTIONS, 10) || 20,
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 10000,
+  ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : false
 };
 
-// Buat pool koneksi MySQL
-const pool = mysql.createPool(dbConfig);
+// Buat pool koneksi PostgreSQL
+const pool = new Pool(dbConfig);
 
 /**
- * Uji koneksi ke database MySQL.
+ * Uji koneksi ke database PostgreSQL.
  * Dipanggil saat server pertama kali start.
  */
 async function testConnection() {
   try {
-    const connection = await pool.getConnection();
-    const [rows] = await connection.query('SELECT VERSION() AS version, NOW() AS server_time');
+    const client = await pool.connect();
+    const res = await client.query('SELECT version() AS version, NOW() AS server_time');
     console.log('╔══════════════════════════════════════════════════════╗');
-    console.log('║  ✅  MySQL Database Terhubung                        ║');
-    console.log(`║  Host     : ${dbConfig.host}:${dbConfig.port}`.padEnd(54) + '║');
-    console.log(`║  Database : ${dbConfig.database}`.padEnd(54) + '║');
-    console.log(`║  MySQL    : ${rows[0].version}`.padEnd(54) + '║');
-    console.log(`║  Waktu DB : ${rows[0].server_time}`.padEnd(54) + '║');
+    console.log('║  ✅  PostgreSQL Database Terhubung (Supabase)        ║');
+    console.log(`║  URL      : ${dbConfig.connectionString ? 'Configured' : 'Not Set'}`.padEnd(54) + '║');
+    console.log(`║  Max Pool : ${dbConfig.max}`.padEnd(54) + '║');
+    console.log(`║  PG Ver   : ${res.rows[0].version}`.substring(0, 53).padEnd(54) + '║');
+    console.log(`║  Waktu DB : ${res.rows[0].server_time}`.substring(0, 53).padEnd(54) + '║');
     console.log('╚══════════════════════════════════════════════════════╝');
-    connection.release();
+    client.release();
     return true;
   } catch (error) {
     console.error('╔══════════════════════════════════════════════════════╗');
-    console.error('║  ❌  GAGAL Terhubung ke Database MySQL               ║');
+    console.error('║  ❌  GAGAL Terhubung ke Database PostgreSQL          ║');
     console.error(`║  Error: ${error.message}`.substring(0, 53).padEnd(53) + '║');
     console.error('║                                                      ║');
     console.error('║  Pastikan:                                           ║');
-    console.error('║  1. Server MySQL aktif di host yang dikonfigurasi    ║');
-    console.error('║  2. Database "bursalimbahdb" sudah dibuat            ║');
-    console.error('║  3. Periksa file server/.env                         ║');
+    console.error('║  1. DB_URL di server/.env sudah benar                ║');
+    console.error('║  2. Akses network ke Supabase diizinkan             ║');
+    console.error('║  3. DB_SSL=true jika menggunakan Supabase             ║');
     console.error('╚══════════════════════════════════════════════════════╝');
     return false;
   }
@@ -64,9 +57,9 @@ async function testConnection() {
 async function ping() {
   const start = Date.now();
   try {
-    const connection = await pool.getConnection();
-    await connection.query('SELECT 1');
-    connection.release();
+    const client = await pool.connect();
+    await client.query('SELECT 1');
+    client.release();
     return { healthy: true, latencyMs: Date.now() - start };
   } catch (error) {
     return { healthy: false, error: error.message, latencyMs: Date.now() - start };
@@ -75,14 +68,14 @@ async function ping() {
 
 /**
  * Eksekusi query tunggal dengan error handling.
- * @param {string} sql   Query SQL
+ * @param {string} sql   Query SQL (Use $1, $2 for placeholders)
  * @param {Array}  params Parameter bind
  * @returns {Promise<Array>} Rows hasil query
  */
 async function query(sql, params = []) {
   try {
-    const [rows] = await pool.query(sql, params);
-    return rows;
+    const res = await pool.query(sql, params);
+    return res.rows;
   } catch (error) {
     console.error('[DB Query Error]', error.message);
     throw error;
@@ -92,20 +85,20 @@ async function query(sql, params = []) {
 /**
  * Eksekutor Transaksi Terkelola (ACID compliant).
  * Menjalankan sejumlah operasi query dalam 1 transaction; otomatis commit atau rollback saat error.
- * @param {Function} callback function(connection)
+ * @param {Function} callback function(client)
  */
 async function withTransaction(callback) {
-  const connection = await pool.getConnection();
+  const client = await pool.connect();
   try {
-    await connection.beginTransaction();
-    const result = await callback(connection);
-    await connection.commit();
+    await client.query('BEGIN');
+    const result = await callback(client);
+    await client.query('COMMIT');
     return result;
   } catch (error) {
-    await connection.rollback();
+    await client.query('ROLLBACK');
     throw error;
   } finally {
-    connection.release();
+    client.release();
   }
 }
 
