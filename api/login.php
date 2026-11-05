@@ -24,8 +24,9 @@ $cleanDigits = preg_replace('/[^0-9]/', '', $cleanId);
 
 try {
     // 1. Cari user berdasarkan email, username, atau ID
-    $sql = 'SELECT * FROM users WHERE LOWER(email) = ? OR LOWER(username) = ? OR id = ?';
-    $params = [$cleanId, $cleanId, $cleanId];
+    // Skema bawaan tidak memiliki kolom username; dukung email, ID, dan nomor telepon.
+    $sql = 'SELECT * FROM users WHERE LOWER(email) = ? OR id = ?';
+    $params = [$cleanId, $cleanId];
 
     if (strlen($cleanDigits) >= 7) {
         $sql .= ' OR REPLACE(REPLACE(phone, "-", ""), " ", "") LIKE ?';
@@ -67,6 +68,9 @@ try {
 
     // 4. Sukses login (auto-routing sesuai peran terdaftar)
     $authUser = mapUserRow($user);
+    session_regenerate_id(true);
+    $_SESSION['user_id'] = $authUser['id'];
+    $_SESSION['role'] = $authUser['role'];
     echo json_encode([
         'success' => true,
         'user' => $authUser,

@@ -207,50 +207,24 @@ bursalimbah/
 
 ---
 
-## ☁️ Integrasi Cloudinary & Supabase
+## 🌐 Deployment InfinityFree (frontend + PHP API + MySQL)
 
-Platform Bursa Limbah CircuLink telah dirancang dengan arsitektur modern terdesentralisasi (*decoupled architecture*):
+InfinityFree menjalankan file statis dan PHP; backend Express di `server/` tidak digunakan pada deployment ini. Frontend memakai URL relatif `/api/...`; `api/.htaccess` meneruskannya ke router PHP agar login, produk, pesanan, penawaran, event, chat, dan pengaturan menggunakan API yang sama-origin.
 
-### 1. Cloudinary (Penyimpanan Media & Optimasi Otomatis)
-- **Direct Unsigned Upload**: Foto eviden wadah limbah, sampel fisik, dan bukti tera timbangan langsung diunggah dari browser pengguna ke Cloudinary CDN tanpa membebani bandwidth web server hosting.
-- **Otomasi Format WebP**: Gambar otomatis dikonversi ke format WebP (`f_auto, q_auto`) dengan resolusi optimal dan pembuatan thumbnail otomatis (`c_fill, w_400, h_300, g_auto`).
-- **Cara Konfigurasi**:
-  1. Masuk ke Dasbor Admin Bursa Limbah -> Menu **Pengaturan**.
-  2. Buka tab **Penyimpanan Cloud & Multimedia (Cloudinary)**.
-  3. Masukkan `Cloud Name` dan `Upload Preset` (Unsigned mode di Cloudinary Settings -> Upload).
-  4. Klik **Simpan Pengaturan**.
+1. Buat database MySQL melalui panel InfinityFree dan impor `database/infinityfree_setup.sql` di phpMyAdmin setelah memilih database yang dibuat. Skrip ini tidak mencoba membuat database atau user.
+2. Salin `api/config.local.php.example` menjadi `api/config.local.php`, lalu isi host, nama database, user, dan password persis dari panel. File rahasia ini diabaikan Git dan diblokir oleh `.htaccess`; unggah file itu secara terpisah melalui File Manager/FTP ke `/htdocs/api/config.local.php` karena skrip deploy sengaja mengecualikannya.
+3. Untuk membuat administrator awal, daftarkan akun biasa melalui aplikasi, lalu ubah `users.role` menjadi `admin` untuk akun itu di phpMyAdmin. Pendaftaran publik hanya mengizinkan buyer/seller.
+4. Atur unsigned upload preset di Cloudinary hanya untuk **foto publik** dan isi Cloud Name/preset pada pengaturan platform. Dokumen KTP/NPWP serta bukti pembayaran memakai signed upload bertipe `authenticated`; isi Cloud Name, API Key, dan API Secret di `api/config.local.php`. Jangan unggah dokumen sensitif melalui preset unsigned.
+5. Unggah file dengan skrip `scripts/deploy_infinityfree.ps1`. Skrip menyertakan folder bersarang dan `hero.jpg`, mengecualikan `config.local.php`, dan berhenti dengan error jika ada file gagal diunggah. Variabel FTP yang dipakai: `INFINITYFREE_FTP_HOST`, `INFINITYFREE_FTP_USER`, dan `INFINITYFREE_FTP_PASS`.
 
-### 2. Supabase (Database PostgreSQL Terkelola & Sinkronisasi Cloud)
-- **Skema Lengkap**: Disediakan pada file [`database/supabase_schema.sql`](database/supabase_schema.sql) mencakup tabel `users`, `categories`, `products`, `orders`, `offers`, `events`, dan `system_settings` beserta Row Level Security (RLS) yang diperketat.
-- **Koneksi REST & SDK**: Menggunakan PostgREST API dan Supabase JS Client resmi via CDN, mendukung uji koneksi latensi langsung dari Admin Panel.
-- **Cara Konfigurasi**:
-  1. Buka project Supabase Anda di [supabase.com](https://supabase.com).
-  2. Di menu **SQL Editor**, buka dan jalankan seluruh query dari [`database/supabase_schema.sql`](database/supabase_schema.sql).
-  3. Salin **Project URL** (`https://xxxx.supabase.co`) dan **Anon Public Key**.
-  4. Masuk ke Admin Panel Bursa Limbah -> **Pengaturan Database Supabase** -> Masukkan URL & Anon Key -> Klik **Uji Koneksi Supabase** -> Aktifkan Sinkronisasi Otomatis.
+Contoh file konfigurasi lokal `scripts/deploy_infinityfree.local.ps1`:
+```powershell
+$ftpHost = 'ftpupload.net'
+$ftpUser = 'akun-ftp-dari-panel'
+$ftpPass = 'kata-sandi-ftp'
+```
 
----
-
-## 🌐 Panduan Deployment InfinityFree Hosting
-
-Aplikasi web CircuLink dapat di-hosting secara langsung pada hosting [InfinityFree](https://infinityfree.com):
-
-1. **Struktur Folder Web**:
-   - Seluruh file statis (`index.html`, `css/`, `js/`, `assets/`, `api/`, `.htaccess`) ditempatkan di dalam folder `/htdocs/`.
-   - File placeholder bawaan `index2.html` telah dibersihkan secara otomatis.
-2. **Kredensial FTP**:
-   - **Host**: `ftpupload.net` (Port 21, Passive Mode)
-   - **Target Root**: `/htdocs/`
-3. **Deployment Otomatis via PowerShell**:
-   Simpan kredensial pada `scripts/deploy_infinityfree.local.ps1`, lalu jalankan dari PowerShell komputer Anda:
-   ```powershell
-   powershell -ExecutionPolicy Bypass -File scripts/deploy_infinityfree.ps1
-   ```
-4. **Apache `.htaccess`**:
-   - Menangani `DirectoryIndex index.html index.php`.
-   - Gzip compression untuk file JavaScript, CSS, dan JSON.
-   - Header keamanan (`X-Content-Type-Options: nosniff`, `X-Frame-Options: SAMEORIGIN`, `X-XSS-Protection`).
-   - Browser caching untuk aset gambar dan script.
+Supabase client/schema dan Express server tetap ada sebagai eksperimen/opsi terpisah; keduanya bukan jalur data yang digunakan konfigurasi InfinityFree ini. Jangan menaruh Service Role Key Supabase atau Cloudinary API Secret pada JavaScript frontend.
 
 ---
 

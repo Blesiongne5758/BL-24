@@ -9,6 +9,16 @@ header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With');
 header('Content-Type: application/json; charset=UTF-8');
 
+if (session_status() !== PHP_SESSION_ACTIVE) {
+    session_set_cookie_params([
+        'httponly' => true,
+        'secure' => !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off',
+        'samesite' => 'Lax',
+        'path' => '/'
+    ]);
+    session_start();
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(200);
     exit;
@@ -18,11 +28,17 @@ if (file_exists(__DIR__ . '/config.php')) {
     require_once __DIR__ . '/config.php';
 }
 
-$host = defined('DB_HOST') ? DB_HOST : (getenv('DB_HOST') ?: '127.0.0.1');
+$host = defined('DB_HOST') ? DB_HOST : (getenv('DB_HOST') ?: '');
 $port = defined('DB_PORT') ? DB_PORT : (getenv('DB_PORT') ?: '3306');
-$dbname = defined('DB_NAME') ? DB_NAME : (getenv('DB_NAME') ?: 'bursalimbahdb');
-$username = defined('DB_USER') ? DB_USER : (getenv('DB_USER') ?: 'root');
+$dbname = defined('DB_NAME') ? DB_NAME : (getenv('DB_NAME') ?: '');
+$username = defined('DB_USER') ? DB_USER : (getenv('DB_USER') ?: '');
 $password = defined('DB_PASSWORD') ? DB_PASSWORD : (getenv('DB_PASSWORD') ?: '');
+
+if (!$host || !$dbname || !$username) {
+    http_response_code(500);
+    echo json_encode(['success' => false, 'message' => 'Konfigurasi database belum diisi. Buat api/config.local.php berdasarkan api/config.local.php.example.']);
+    exit;
+}
 
 try {
     $dsn = "mysql:host={$host};port={$port};dbname={$dbname};charset=utf8mb4";

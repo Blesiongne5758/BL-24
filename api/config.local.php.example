@@ -1,0 +1,15 @@
+<?php
+// Salin sebagai api/config.local.php dan isi nilainya dari panel InfinityFree.
+// Jangan unggah atau commit config.local.php yang berisi kredensial.
+define('DB_HOST', 'sqlXXX.infinityfree.com');
+define('DB_PORT', '3306');
+define('DB_NAME', 'if0_XXXXXXXX_bursalimbah');
+define('DB_USER', 'if0_XXXXXXXX');
+define('DB_PASSWORD', 'GANTI_DENGAN_PASSWORD_DATABASE');
+
+// Opsional: kredensial Cloudinary. Upload preset harus bertipe Unsigned.
+define('CLOUDINARY_CLOUD_NAME', '');
+define('CLOUDINARY_API_KEY', '');
+define('CLOUDINARY_API_SECRET', '');
+define('CLOUDINARY_UPLOAD_PRESET', '');
+define('CLOUDINARY_FOLDER', 'bursalimbah');

@@ -3835,18 +3835,30 @@ class BursaLimbahApp {
     this.showToast(`Pengaturan berhasil disimpan! Fitur DP ${statusText}; ticker harga pasar ${tickerSettings.tickerEnabled ? 'aktif' : 'nonaktif'}.`, "success");
   }
 
-  changeAdminPassword() {
+  async changeAdminPassword() {
     const current = document.getElementById('admin-current-password')?.value || '';
     const next = document.getElementById('admin-new-password')?.value || '';
     const confirm = document.getElementById('admin-confirm-password')?.value || '';
     const admin = this.store.getCurrentUser();
     if (!admin || admin.role !== 'admin') return this.showToast('Sesi admin tidak valid. Masuk kembali.', 'error');
     if (!current || next.length < 8 || next !== confirm) return this.showToast('Sandi baru harus minimal 8 karakter dan kedua isian harus sama.', 'error');
-    if (admin.password !== current) return this.showToast('Sandi saat ini tidak sesuai.', 'error');
-    admin.password = next;
+    if (this.store.isBackendConnected) {
+      try {
+        const response = await fetch(`${this.store.apiBaseUrl}/api/auth/admin/password`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ currentPassword: current, newPassword: next })
+        });
+        const result = await response.json();
+        if (!response.ok || !result.success) return this.showToast(result.message || 'Gagal memperbarui sandi admin.', 'error');
+      } catch (_) { return this.showToast('Server tidak dapat dihubungi. Sandi tidak diubah.', 'error'); }
+    } else if (admin.password !== current) {
+      return this.showToast('Sandi saat ini tidak sesuai.', 'error');
+    }
+    // Jangan menaruh sandi server dalam state/localStorage browser.
+    admin.password = this.store.isBackendConnected ? null : next;
     this.store.save();
     ['admin-current-password', 'admin-new-password', 'admin-confirm-password'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
-    this.showToast('Sandi admin berhasil diganti pada perangkat ini.', 'success');
+    this.showToast(this.store.isBackendConnected ? 'Sandi admin berhasil diganti pada server.' : 'Sandi admin berhasil diganti secara lokal.', 'success');
   }
 
 

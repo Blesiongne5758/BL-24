@@ -11,23 +11,32 @@ class BursaLimbahStore {
     this.apiBaseUrl = this.detectApiBaseUrl();
     this.isBackendConnected = false;
     this.initStore();
-    this.checkSupabaseHealth();
+    this.checkBackendHealth();
   }
 
   detectApiBaseUrl() {
     if (typeof window === 'undefined') return 'http://localhost:5000';
-    if (window.location.port === '5000' || (window.location.protocol.startsWith('http') && window.location.pathname.includes('/bursalimbah'))) {
-      return '';
+    const configured = (window.CIRCULINK_API_BASE_URL || '').trim();
+    if (configured) return configured.replace(/\/$/, '');
+    const host = window.location.hostname;
+    if (host === 'localhost' || host === '127.0.0.1') {
+      return window.location.port === '5000' ? '' : 'http://localhost:5000';
     }
-    return 'http://localhost:5000';
+    // Pada hosting shared (InfinityFree), API PHP ada pada origin yang sama.
+    return '';
   }
 
-  async checkSupabaseHealth() {
+  async checkBackendHealth() {
     try {
-      const status = await window.circulinkSupabase.testConnection();
-      this.isBackendConnected = status.ok;
+      let response = await fetch(`${this.apiBaseUrl}/api/health.php`, { cache: 'no-store' });
+      let health = response.ok ? await response.json().catch(() => null) : null;
+      if (!health?.success) {
+        response = await fetch(`${this.apiBaseUrl}/api/health`, { cache: 'no-store' });
+        health = response.ok ? await response.json().catch(() => null) : null;
+      }
+      this.isBackendConnected = Boolean(response.ok && (health?.success || health?.status === 'ok'));
       if (this.isBackendConnected) {
-        await this.syncWithSupabase();
+        await this.syncWithBackend();
       }
     } catch (e) {
       this.isBackendConnected = false;
@@ -110,6 +119,7 @@ class BursaLimbahStore {
           try { tierFees = remote.handlingFeeByTier ? JSON.parse(remote.handlingFeeByTier) : tierFees; } catch (_) { /* retain local fallback */ }
           this.state.settings = {
             ...this.state.settings,
+            demoContentEnabled: remote.demoContentEnabled === undefined ? this.state.settings.demoContentEnabled : remote.demoContentEnabled === true || remote.demoContentEnabled === 'true',
             dpEnabled: remote.dp_enabled === undefined ? this.state.settings.dpEnabled : remote.dp_enabled === 'true',
             downPaymentPercent: Number(remote.dp_percentage) || this.state.settings.downPaymentPercent,
             handlingFeeByTier: tierFees,
@@ -714,9 +724,11 @@ class BursaLimbahStore {
         const uploaded = [];
         for (const file of files) {
           const res = await window.circulinkStorage.uploadDirect(file, 'public_listing');
+          if (res.provider === 'local_data_url') throw new Error('Cloud media upload is not configured.');
           uploaded.push({
-            url: res.url,
-            thumbnailUrl: res.thumbnailUrl || res.url,
+            url: res.publicUrl || res.url,
+            thumbnailUrl: res.optimizedThumbnailUrl || res.thumbnailUrl || res.publicUrl || res.url,
+            storageKey: res.fileKey || null,
             filename: res.filename || file.name,
             provider: res.provider || 'cloudinary'
           });
@@ -766,6 +778,10 @@ class BursaLimbahStore {
   }
 
   logout() {
+    if (this.isBackendConnected) {
+      fetch(`${this.apiBaseUrl}/api/auth/logout`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' })
+        .catch(e => console.warn('[Logout API Error]', e));
+    }
     this.state.currentRole = "public";
     this.state.adminUserId = null;
     this.state.authenticatedBuyerId = null;
