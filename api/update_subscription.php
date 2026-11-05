@@ -6,6 +6,12 @@
 
 require_once 'db.php';
 
+if (empty($_SESSION['user_id'])) {
+    http_response_code(401);
+    echo json_encode(['success' => false, 'message' => 'Silakan masuk terlebih dahulu.']);
+    exit;
+}
+
 $input = json_decode(file_get_contents('php://input'), true);
 
 if (!$input || !isset($input['userId']) || !isset($input['tierId'])) {
@@ -19,6 +25,17 @@ if (!$input || !isset($input['userId']) || !isset($input['tierId'])) {
 
 $userId = trim($input['userId']);
 $tierId = trim($input['tierId']);
+$tiers = ['tier_starter', 'tier_basic', 'tier_pro', 'tier_enterprise'];
+if (!in_array($tierId, $tiers, true)) {
+    http_response_code(400);
+    echo json_encode(['success' => false, 'message' => 'Paket langganan tidak valid.']);
+    exit;
+}
+if ($userId !== $_SESSION['user_id'] && ($_SESSION['role'] ?? '') !== 'admin') {
+    http_response_code(403);
+    echo json_encode(['success' => false, 'message' => 'Anda tidak dapat mengubah langganan akun lain.']);
+    exit;
+}
 $subscriptionActive = isset($input['subscriptionActive']) ? (bool)$input['subscriptionActive'] : true;
 
 try {

@@ -25,6 +25,16 @@ if (empty($email) || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
     echo json_encode(['success' => false, 'message' => 'Alamat email tidak valid.']);
     exit;
 }
+if (!in_array($role, ['buyer', 'seller'], true)) {
+    http_response_code(400);
+    echo json_encode(['success' => false, 'message' => 'Pendaftaran mandiri hanya tersedia untuk akun pembeli atau penjual.']);
+    exit;
+}
+if (strlen($password) < 8) {
+    http_response_code(400);
+    echo json_encode(['success' => false, 'message' => 'Kata sandi harus minimal 8 karakter.']);
+    exit;
+}
 
 try {
     // 1. Cek email sudah terdaftar
@@ -70,6 +80,9 @@ try {
     $fetchStmt = $pdo->prepare('SELECT * FROM users WHERE id = ?');
     $fetchStmt->execute([$newId]);
     $newUser = mapUserRow($fetchStmt->fetch());
+    session_regenerate_id(true);
+    $_SESSION['user_id'] = $newUser['id'];
+    $_SESSION['role'] = $newUser['role'];
 
     http_response_code(201);
     echo json_encode([

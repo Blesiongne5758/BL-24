@@ -1,5 +1,7 @@
 # 🚀 Panduan Lengkap Backend, Server, Hosting & Keamanan — BURSA LIMBAH (Circulink)
 
+> **Target shared hosting InfinityFree:** gunakan frontend statis + API PHP/MySQL (`api/router.php`) sesuai bagian deployment di README. InfinityFree tidak menjalankan proses Express yang menetap. Panduan PM2/Docker di bawah hanya berlaku untuk VPS/container yang memang menjalankan Node.js, bukan untuk `/htdocs` InfinityFree.
+
 Dokumen ini memuat panduan arsitektur teknis dan instruksi langkah-demi-langkah untuk mengelola **Database**, **Server & Hosting**, **Logika Bisnis**, **API REST**, **Otentikasi & Otorisasi**, **Keamanan Sistem**, **Pencadangan Otomatis**, dan **Optimasi Kinerja**.
 
 ---

@@ -3651,6 +3651,8 @@ class BursaLimbahApp {
 
   populateAdminSettings() {
     const s = this.store.getSettings();
+    const demoToggle = document.getElementById('setting-demo-content-enabled');
+    if (demoToggle) demoToggle.checked = s.demoContentEnabled !== false;
     const handling = document.getElementById('setting-handling');
     const dp = document.getElementById('setting-dp');
     const dpEnabledCheckbox = document.getElementById('setting-dp-enabled');
@@ -3748,6 +3750,53 @@ class BursaLimbahApp {
     if (termsVersion) termsVersion.value = s.termsVersion || '1.0';
     if (termsContent) termsContent.value = s.termsContent || '';
     this.renderAdminFeesList();
+    this.loadAgentAdminSettings();
+  }
+
+  async loadAgentAdminSettings() {
+    const status = document.getElementById('setting-agent-key-status');
+    try {
+      const response = await fetch(`${this.store?.apiBaseUrl || ''}/api/agent/config`, { cache: 'no-store' });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || !data.success) throw new Error(data.message || 'Pengaturan agent belum tersedia.');
+      const config = data.config || {};
+      document.getElementById('setting-agent-base-url').value = config.baseUrl || 'https://model.inferx.net/endpoints/v1';
+      document.getElementById('setting-agent-model').value = config.modelName || 'deepseek-v4.1-flash';
+      document.getElementById('setting-agent-enabled').checked = !!config.enabled;
+      document.getElementById('setting-agent-site-help').checked = config.siteHelpEnabled !== false;
+      document.getElementById('setting-agent-product-search').checked = config.productSearchEnabled !== false;
+      document.getElementById('setting-agent-posting').checked = config.productPostingAssistEnabled !== false;
+      if (status) status.textContent = config.hasApiKey ? 'API key sudah tersimpan aman. Isi field hanya jika ingin menggantinya.' : 'API key belum tersimpan.';
+    } catch (error) {
+      if (status) status.textContent = error.message || 'Pengaturan agent tidak dapat dimuat.';
+    }
+  }
+
+  async saveAgentAdminSettings() {
+    const admin = this.store?.getCurrentUser?.();
+    if (!admin || admin.role !== 'admin') return this.showToast('Masuk sebagai admin untuk mengubah konfigurasi agent.', 'error');
+    const status = document.getElementById('setting-agent-key-status');
+    const payload = {
+      enabled: document.getElementById('setting-agent-enabled')?.checked || false,
+      baseUrl: document.getElementById('setting-agent-base-url')?.value.trim() || '',
+      modelName: document.getElementById('setting-agent-model')?.value.trim() || '',
+      apiKey: document.getElementById('setting-agent-api-key')?.value.trim() || '',
+      siteHelpEnabled: document.getElementById('setting-agent-site-help')?.checked || false,
+      productSearchEnabled: document.getElementById('setting-agent-product-search')?.checked || false,
+      productPostingAssistEnabled: document.getElementById('setting-agent-posting')?.checked || false
+    };
+    try {
+      const response = await fetch(`${this.store?.apiBaseUrl || ''}/api/agent/config`, {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || !data.success) throw new Error(data.message || 'Pengaturan agent gagal disimpan.');
+      document.getElementById('setting-agent-api-key').value = '';
+      if (status) status.textContent = data.hasApiKey ? 'API key tersimpan terenkripsi dan tidak ditampilkan kembali.' : 'API key belum tersimpan.';
+      this.showToast(data.message || 'Pengaturan agent berhasil disimpan.', 'success');
+    } catch (error) {
+      this.showToast(error.message || 'Pengaturan agent gagal disimpan.', 'error');
+    }
   }
 
 
@@ -3773,6 +3822,7 @@ class BursaLimbahApp {
 
     this.store.setDpSettings(dpEnabled, dp);
     this.store.updateSettings({
+      demoContentEnabled: document.getElementById('setting-demo-content-enabled')?.checked !== false,
       handlingFeePerTransaction: handling,
       handlingFeeByTier,
       // Payment Gateway
@@ -3830,6 +3880,32 @@ class BursaLimbahApp {
     this.applyFeatureFlags();
     const statusText = dpEnabled ? `diaktifkan (DP ${dp}%)` : 'dinonaktifkan (SET OFF)';
     this.showToast(`Pengaturan berhasil disimpan! Fitur DP ${statusText}; ticker harga pasar ${tickerSettings.tickerEnabled ? 'aktif' : 'nonaktif'}.`, "success");
+  }
+
+  async changeAdminPassword() {
+    const current = document.getElementById('admin-current-password')?.value || '';
+    const next = document.getElementById('admin-new-password')?.value || '';
+    const confirm = document.getElementById('admin-confirm-password')?.value || '';
+    const admin = this.store.getCurrentUser();
+    if (!admin || admin.role !== 'admin') return this.showToast('Sesi admin tidak valid. Masuk kembali.', 'error');
+    if (!current || next.length < 8 || next !== confirm) return this.showToast('Sandi baru harus minimal 8 karakter dan kedua isian harus sama.', 'error');
+    if (this.store.isBackendConnected) {
+      try {
+        const response = await fetch(`${this.store.apiBaseUrl}/api/auth/admin/password`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ currentPassword: current, newPassword: next })
+        });
+        const result = await response.json();
+        if (!response.ok || !result.success) return this.showToast(result.message || 'Gagal memperbarui sandi admin.', 'error');
+      } catch (_) { return this.showToast('Server tidak dapat dihubungi. Sandi tidak diubah.', 'error'); }
+    } else if (admin.password !== current) {
+      return this.showToast('Sandi saat ini tidak sesuai.', 'error');
+    }
+    // Jangan menaruh sandi server dalam state/localStorage browser.
+    admin.password = this.store.isBackendConnected ? null : next;
+    this.store.save();
+    ['admin-current-password', 'admin-new-password', 'admin-confirm-password'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+    this.showToast(this.store.isBackendConnected ? 'Sandi admin berhasil diganti pada server.' : 'Sandi admin berhasil diganti secara lokal.', 'success');
   }
 
 
@@ -4135,7 +4211,7 @@ class BursaLimbahApp {
     if (addrInput) addrInput.value = s.address || 'Sentra Inovasi Hijau BURSA LIMBAH Lt. 5, Jakarta Timur';
     if (mapsInput) mapsInput.value = s.supportMapsUrl || 'https://maps.google.com/?q=Sentra+Inovasi+Hijau';
     if (btnEnabledInput) btnEnabledInput.checked = s.supportGuideBtnEnabled !== false;
-    if (btnTextInput) btnTextInput.value = s.supportGuideBtnText || 'Panduan Transaksi Aman';
+    if (btnTextInput) btnTextInput.value = s.supportGuideBtnText || 'Tanya Agent AI';
     if (btnActionInput) btnActionInput.value = s.supportGuideBtnAction || 'modal';
     if (btnUrlInput) btnUrlInput.value = s.supportGuideBtnUrl || '';
 
@@ -4170,7 +4246,7 @@ class BursaLimbahApp {
     const address = document.getElementById('support-edit-address')?.value.trim() || s.address || 'Sentra Inovasi Hijau BURSA LIMBAH Lt. 5, Jakarta Timur';
     const maps = document.getElementById('support-edit-maps')?.value.trim() || s.supportMapsUrl || '';
     const btnEnabled = document.getElementById('support-edit-btn-enabled') ? document.getElementById('support-edit-btn-enabled').checked : (s.supportGuideBtnEnabled !== false);
-    const btnText = document.getElementById('support-edit-btn-text')?.value.trim() || s.supportGuideBtnText || 'Panduan Transaksi Aman';
+    const btnText = document.getElementById('support-edit-btn-text')?.value.trim() || s.supportGuideBtnText || 'Tanya Agent AI';
     const btnAction = document.getElementById('support-edit-btn-action')?.value || s.supportGuideBtnAction || 'modal';
     const btnUrl = document.getElementById('support-edit-btn-url')?.value.trim() || s.supportGuideBtnUrl || '';
 
@@ -4180,7 +4256,7 @@ class BursaLimbahApp {
     if (btnEnabled) {
       if (btnAction === 'modal') {
         btnHtml = `
-          <button type="button" onclick="app.showHelpModal()" class="mt-4 inline-flex items-center gap-2 rounded-xl border border-emerald-400/40 bg-emerald-400/10 px-3 py-2 text-[11px] font-bold text-emerald-300 transition hover:bg-emerald-400/20 hover:text-white">
+          <button type="button" onclick="app.toggleHelpAgent(true)" class="mt-4 inline-flex items-center gap-2 rounded-xl border border-emerald-400/40 bg-emerald-400/10 px-3 py-2 text-[11px] font-bold text-emerald-300 transition hover:bg-emerald-400/20 hover:text-white">
             <i class="fa-solid fa-shield-heart"></i>
             <span>${btnText}</span>
           </button>
@@ -4251,7 +4327,7 @@ class BursaLimbahApp {
     const address = document.getElementById('support-edit-address')?.value.trim() || 'Sentra Inovasi Hijau BURSA LIMBAH Lt. 5, Jakarta Timur';
     const maps = document.getElementById('support-edit-maps')?.value.trim() || '';
     const btnEnabled = document.getElementById('support-edit-btn-enabled') ? document.getElementById('support-edit-btn-enabled').checked : true;
-    const btnText = document.getElementById('support-edit-btn-text')?.value.trim() || 'Panduan Transaksi Aman';
+    const btnText = document.getElementById('support-edit-btn-text')?.value.trim() || 'Tanya Agent AI';
     const btnAction = document.getElementById('support-edit-btn-action')?.value || 'modal';
     const btnUrl = document.getElementById('support-edit-btn-url')?.value.trim() || '';
 
@@ -4299,7 +4375,7 @@ class BursaLimbahApp {
     if (addrInput) addrInput.value = 'Sentra Inovasi Hijau BURSA LIMBAH Lt. 5, Jakarta Timur';
     if (mapsInput) mapsInput.value = 'https://maps.google.com/?q=Sentra+Inovasi+Hijau';
     if (btnEnabledInput) btnEnabledInput.checked = true;
-    if (btnTextInput) btnTextInput.value = 'Panduan Transaksi Aman';
+    if (btnTextInput) btnTextInput.value = 'Tanya Agent AI';
     if (btnActionInput) btnActionInput.value = 'modal';
     if (btnUrlInput) btnUrlInput.value = '';
 
@@ -4322,7 +4398,7 @@ class BursaLimbahApp {
     const address = s.address || 'Sentra Inovasi Hijau BURSA LIMBAH Lt. 5, Jakarta Timur';
     const maps = s.supportMapsUrl || '';
     const btnEnabled = s.supportGuideBtnEnabled !== false;
-    const btnText = s.supportGuideBtnText || 'Panduan Transaksi Aman';
+    const btnText = s.supportGuideBtnText || 'Tanya Agent AI';
     const btnAction = s.supportGuideBtnAction || 'modal';
     const btnUrl = s.supportGuideBtnUrl || '';
 
@@ -4333,7 +4409,7 @@ class BursaLimbahApp {
     if (btnEnabled) {
       if (btnAction === 'modal') {
         btnHtml = `
-          <button type="button" onclick="app.showHelpModal()" class="mt-4 inline-flex items-center gap-2 rounded-xl border border-emerald-400/40 bg-emerald-400/10 px-3 py-2 text-[11px] font-bold text-emerald-300 transition hover:bg-emerald-400/20 hover:text-white">
+          <button type="button" onclick="app.toggleHelpAgent(true)" class="mt-4 inline-flex items-center gap-2 rounded-xl border border-emerald-400/40 bg-emerald-400/10 px-3 py-2 text-[11px] font-bold text-emerald-300 transition hover:bg-emerald-400/20 hover:text-white">
             <i class="fa-solid fa-shield-heart"></i>
             <span>${btnText}</span>
           </button>
@@ -4395,11 +4471,7 @@ class BursaLimbahApp {
       ${btnHtml}
     `;
 
-    // Sinkronkan juga tautan WhatsApp pada modal-help dan floating action button jika ada
-    const helpWaBtn = document.querySelector('#modal-help a[href*="wa.me"]');
-    if (helpWaBtn) {
-      helpWaBtn.href = `https://wa.me/${wa || '6281234567890'}?text=${encodeURIComponent(s.contactWaMessage || 'Halo Admin Bursa Limbah, saya butuh bantuan transaksi')}`;
-    }
+    // Sinkronkan tautan bantuan eksternal dan floating action button.
     const floatWaBtn = document.querySelector('.float-action-btn[href*="wa.me"]');
     if (floatWaBtn) {
       floatWaBtn.href = `https://wa.me/${wa || '6281234567890'}?text=${encodeURIComponent(waMsg)}`;
@@ -7289,25 +7361,6 @@ class BursaLimbahApp {
   }
 
   // ================= 11. MODAL & UTILITAS =================
-  showHelpModal() {
-    const modal = document.getElementById('modal-help');
-    if (!modal) return;
-
-    modal.classList.remove('hidden');
-    modal.classList.add('flex');
-  }
-
-  toggleHelpAccordion(answerId, button) {
-    const answer = document.getElementById(answerId);
-    if (!answer || !button) return;
-
-    const willOpen = answer.classList.contains('hidden');
-    answer.classList.toggle('hidden', !willOpen);
-    button.setAttribute('aria-expanded', String(willOpen));
-    const icon = button.querySelector('.fa-chevron-down');
-    if (icon) icon.classList.toggle('rotate-180', willOpen);
-  }
-
   closeModals() {
     const modals = [
       'modal-product-detail',
@@ -7323,7 +7376,6 @@ class BursaLimbahApp {
       'modal-mobile-dp-calculator',
       'modal-admin-event',
       'modal-event-registration',
-      'modal-help',
       'modal-gps-location'
     ];
     modals.forEach(id => {
@@ -8351,6 +8403,76 @@ class BursaLimbahApp {
 
     modal.classList.remove('hidden');
     modal.classList.add('flex');
+  }
+
+  toggleHelpAgent(forceOpen) {
+    const panel = document.getElementById('help-agent-panel');
+    const button = document.querySelector('#help-agent > button');
+    if (!panel) return;
+    const open = typeof forceOpen === 'boolean' ? forceOpen : panel.classList.contains('hidden');
+    panel.classList.toggle('hidden', !open);
+    button?.setAttribute('aria-expanded', String(open));
+    if (open) document.getElementById('help-agent-input')?.focus();
+  }
+
+  startHelpAgentPrompt(prompt) {
+    const input = document.getElementById('help-agent-input');
+    if (!input) return;
+    input.value = prompt;
+    this.toggleHelpAgent(true);
+    this.sendHelpAgentMessage({ preventDefault() {} });
+  }
+
+  async sendHelpAgentMessage(event) {
+    event?.preventDefault();
+    const input = document.getElementById('help-agent-input');
+    const container = document.getElementById('help-agent-messages');
+    const sendButton = document.getElementById('help-agent-send');
+    const content = input?.value.trim();
+    if (!content || !container || !sendButton) return;
+
+    this.helpAgentMessages ||= [];
+    if (this.helpAgentMessages.length >= 12) this.helpAgentMessages = this.helpAgentMessages.slice(-10);
+    this.helpAgentMessages.push({ role: 'user', content });
+    const addBubble = (text, isUser = false) => {
+      const bubble = document.createElement('div');
+      bubble.className = `max-w-[90%] whitespace-pre-wrap rounded-2xl p-3 text-xs leading-relaxed shadow-sm ${isUser ? 'ml-auto rounded-tr-sm bg-emerald-700 text-white' : 'rounded-tl-sm bg-white text-slate-700'}`;
+      bubble.textContent = text;
+      container.appendChild(bubble);
+      container.scrollTop = container.scrollHeight;
+    };
+
+    addBubble(content, true);
+    input.value = '';
+    input.disabled = true;
+    sendButton.disabled = true;
+    const pending = document.createElement('div');
+    pending.className = 'max-w-[90%] rounded-2xl rounded-tl-sm bg-white p-3 text-xs text-slate-500 shadow-sm';
+    pending.textContent = 'Sedang menyiapkan jawaban…';
+    container.appendChild(pending);
+    container.scrollTop = container.scrollHeight;
+
+    try {
+      const baseUrl = this.store?.apiBaseUrl || '';
+      const response = await fetch(`${baseUrl}/api/agent/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages: this.helpAgentMessages })
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || !data.success) throw new Error(data.message || 'Bantuan sedang tidak tersedia. Coba lagi nanti.');
+      this.helpAgentMessages.push({ role: 'assistant', content: data.message });
+      pending.remove();
+      addBubble(data.message);
+    } catch (error) {
+      this.helpAgentMessages.pop();
+      pending.remove();
+      addBubble(error.message || 'Terjadi kendala. Silakan coba lagi.');
+    } finally {
+      input.disabled = false;
+      sendButton.disabled = false;
+      input.focus();
+    }
   }
 
   closeViewRemainingProofModal() {

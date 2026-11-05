@@ -40,6 +40,11 @@ if (!defined('SUPABASE_PUBLISHABLE_KEY')) {
     define('SUPABASE_PUBLISHABLE_KEY', getenv('SUPABASE_PUBLISHABLE_KEY') ?: '');
 }
 
+// Kunci enkripsi untuk kredensial agent yang disimpan di database.
+if (!defined('INFERX_ENCRYPTION_KEY')) {
+    define('INFERX_ENCRYPTION_KEY', getenv('INFERX_ENCRYPTION_KEY') ?: '');
+}
+
 function getCloudinaryConfig() {
     return [
         'cloud_name' => CLOUDINARY_CLOUD_NAME,

@@ -1,118 +1,80 @@
-# ==============================================================================
-# CircuLink Deployment Script for InfinityFree via FTP
-# ==============================================================================
+# Upload the static app and PHP API to InfinityFree /htdocs over FTP.
+$ErrorActionPreference = 'Stop'
+$repoRoot = Split-Path -Parent $PSScriptRoot
+$localCredsFile = Join-Path $PSScriptRoot 'deploy_infinityfree.local.ps1'
+if (Test-Path -LiteralPath $localCredsFile) { . $localCredsFile }
 
-# 1. Muat kredensial lokal jika ada (berkas ini diabaikan oleh .gitignore)
-$localCredsFile = Join-Path $PSScriptRoot "deploy_infinityfree.local.ps1"
-if (Test-Path $localCredsFile) {
-    . $localCredsFile
-}
-
-# 2. Ambil dari Environment Variables jika belum diatur
 if (-not $ftpHost) { $ftpHost = $env:INFINITYFREE_FTP_HOST }
 if (-not $ftpUser) { $ftpUser = $env:INFINITYFREE_FTP_USER }
 if (-not $ftpPass) { $ftpPass = $env:INFINITYFREE_FTP_PASS }
-
-# 3. Validasi Kredensial
 if (-not $ftpHost -or -not $ftpUser -or -not $ftpPass) {
-    Write-Host "[ERROR] Kredensial FTP InfinityFree belum disetel!" -ForegroundColor Red
-    Write-Host "Silakan setel melalui:" -ForegroundColor Yellow
-    Write-Host "  1. Berkas 'scripts/deploy_infinityfree.local.ps1' (direkomendasikan, terabaikan dari Git)"
-    Write-Host "  2. Environment Variables: `$env:INFINITYFREE_FTP_HOST, `$env:INFINITYFREE_FTP_USER, `$env:INFINITYFREE_FTP_PASS"
-    exit 1
+    throw 'Atur INFINITYFREE_FTP_HOST, INFINITYFREE_FTP_USER, INFINITYFREE_FTP_PASS atau scripts/deploy_infinityfree.local.ps1.'
 }
 
 $remoteRoot = "ftp://$ftpHost/htdocs"
+$allowedRoots = @('index.html', '.htaccess', 'hero.jpg', 'css', 'assets', 'js', 'api')
+$excludedNames = @('config.local.php', 'deploy_infinityfree.local.ps1')
+$failed = [System.Collections.Generic.List[string]]::new()
 
-Write-Host "[DEPLOY] Starting CircuLink deployment to InfinityFree ($ftpHost)..." -ForegroundColor Cyan
-
-function Upload-FtpFile {
-    param (
-        [string]$localPath,
-        [string]$remoteUrl
-    )
-    try {
-        $uri = [System.Uri]$remoteUrl
-        $req = [System.Net.FtpWebRequest]::Create($uri)
-        $req.Credentials = New-Object System.Net.NetworkCredential($ftpUser, $ftpPass)
-        $req.Method = [System.Net.WebRequestMethods+Ftp]::UploadFile
-        $req.UseBinary = $true
-        $req.UsePassive = $true
-        $req.KeepAlive = $false
-
-        $bytes = [System.IO.File]::ReadAllBytes($localPath)
-        $req.ContentLength = $bytes.Length
-
-        $stream = $req.GetRequestStream()
-        $stream.Write($bytes, 0, $bytes.Length)
-        $stream.Close()
-
-        $resp = $req.GetResponse()
-        $resp.Close()
-        Write-Host "  [OK] Uploaded: $localPath -> $remoteUrl" -ForegroundColor Green
-    } catch {
-        Write-Host "  [FAIL] Error uploading $localPath : $_" -ForegroundColor Red
-    }
+function Convert-ToFtpPath([string]$RelativePath) {
+    $normalized = $RelativePath -replace '\\', '/'
+    $segments = $normalized -split '/'
+    $escaped = $segments | ForEach-Object { [Uri]::EscapeDataString($_) }
+    return [string]::Join('/', [string[]]$escaped)
 }
 
-function Create-FtpDirectory {
-    param (
-        [string]$remoteDirUrl
-    )
-    try {
-        $uri = [System.Uri]$remoteDirUrl
-        $req = [System.Net.FtpWebRequest]::Create($uri)
-        $req.Credentials = New-Object System.Net.NetworkCredential($ftpUser, $ftpPass)
-        $req.Method = [System.Net.WebRequestMethods+Ftp]::MakeDirectory
-        $req.UsePassive = $true
-        $req.KeepAlive = $false
-        $resp = $req.GetResponse()
-        $resp.Close()
-        Write-Host "  [DIR] Created directory: $remoteDirUrl" -ForegroundColor Yellow
-    } catch {
-        # Directory might already exist, ignore error
+function Invoke-FtpRequest([string]$Url, [string]$Method, [byte[]]$Body = $null) {
+    $request = [System.Net.FtpWebRequest]::Create([Uri]$Url)
+    $request.Credentials = [System.Net.NetworkCredential]::new($ftpUser, $ftpPass)
+    $request.Method = $Method
+    $request.UseBinary = $true
+    $request.UsePassive = $true
+    $request.KeepAlive = $false
+    if ($null -ne $Body) {
+        $request.ContentLength = $Body.Length
+        $stream = $request.GetRequestStream()
+        try { $stream.Write($Body, 0, $Body.Length) } finally { $stream.Dispose() }
     }
+    $response = $request.GetResponse()
+    $response.Dispose()
 }
 
-function Remove-FtpFile {
-    param (
-        [string]$remoteFileUrl
-    )
-    try {
-        $uri = [System.Uri]$remoteFileUrl
-        $req = [System.Net.FtpWebRequest]::Create($uri)
-        $req.Credentials = New-Object System.Net.NetworkCredential($ftpUser, $ftpPass)
-        $req.Method = [System.Net.WebRequestMethods+Ftp]::DeleteFile
-        $req.UsePassive = $true
-        $req.KeepAlive = $false
-        $resp = $req.GetResponse()
-        $resp.Close()
-        Write-Host "  [CLEAN] Deleted old placeholder: $remoteFileUrl" -ForegroundColor DarkGray
-    } catch {
-        # File might not exist, ignore error
-    }
-}
-
-# 1. Clean default InfinityFree placeholder (index2.html)
-Remove-FtpFile "$remoteRoot/index2.html"
-
-# 2. Upload Root Files
-Upload-FtpFile "index.html" "$remoteRoot/index.html"
-Upload-FtpFile ".htaccess" "$remoteRoot/.htaccess"
-Upload-FtpFile "README.md" "$remoteRoot/README.md"
-
-# 3. Create & Upload Directories
-$directories = @("css", "assets", "api", "js")
-foreach ($dir in $directories) {
-    if (Test-Path $dir) {
-        Create-FtpDirectory "$remoteRoot/$dir"
-        $files = Get-ChildItem -Path $dir -File
-        foreach ($file in $files) {
-            $localFilePath = "$dir/$($file.Name)"
-            $remoteFilePath = "$remoteRoot/$dir/$($file.Name)"
-            Upload-FtpFile $localFilePath $remoteFilePath
+function Ensure-FtpDirectory([string]$RelativeDirectory) {
+    $current = $remoteRoot
+    $normalized = $RelativeDirectory -replace '\\', '/'
+    foreach ($segment in ($normalized -split '/')) {
+        if (-not $segment) { continue }
+        $current = "$current/$(Convert-ToFtpPath $segment)"
+        try { Invoke-FtpRequest $current ([System.Net.WebRequestMethods+Ftp]::MakeDirectory) } catch {
+            # A failed MKD is acceptable only when the directory already exists.
+            try { Invoke-FtpRequest $current ([System.Net.WebRequestMethods+Ftp]::ListDirectory); } catch { throw }
         }
     }
 }
 
-Write-Host "[DEPLOY DONE] Deployment ke InfinityFree selesai!" -ForegroundColor Green
+$files = foreach ($root in $allowedRoots) {
+    $path = Join-Path $repoRoot $root
+    if (Test-Path -LiteralPath $path -PathType Leaf) { Get-Item -LiteralPath $path }
+    elseif (Test-Path -LiteralPath $path -PathType Container) { Get-ChildItem -LiteralPath $path -File -Recurse }
+}
+
+# Remove InfinityFree's default placeholder if present.
+try { Invoke-FtpRequest "$remoteRoot/index2.html" ([System.Net.WebRequestMethods+Ftp]::DeleteFile) } catch { }
+
+foreach ($file in $files) {
+    if ($excludedNames -contains $file.Name) { continue }
+    $relative = $file.FullName.Substring($repoRoot.Length).TrimStart('\', '/')
+    $directory = Split-Path -Parent $relative
+    try {
+        if ($directory) { Ensure-FtpDirectory $directory }
+        $remotePath = Convert-ToFtpPath $relative
+        Invoke-FtpRequest "$remoteRoot/$remotePath" ([System.Net.WebRequestMethods+Ftp]::UploadFile) ([System.IO.File]::ReadAllBytes($file.FullName))
+        Write-Host "[OK] $relative"
+    } catch {
+        $failed.Add("$relative : $($_.Exception.Message)")
+        Write-Host "[FAIL] $relative : $($_.Exception.Message)" -ForegroundColor Red
+    }
+}
+
+if ($failed.Count) { throw "Upload gagal untuk $($failed.Count) file(s): $($failed -join '; ')" }
+Write-Host "[DEPLOY DONE] $($files.Count) file(s) diunggah ke $ftpHost/htdocs" -ForegroundColor Green

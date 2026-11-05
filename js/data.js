@@ -622,7 +622,7 @@ const INITIAL_SETTINGS = {
   contactWaNumber: "6281234567890",
   contactWaMessage: "Halo Admin Bursa Limbah, saya ingin konsultasi transaksi",
   address: "Sentra Inovasi Hijau BURSA LIMBAH Lt. 5, Jakarta Timur",
-  supportGuideBtnText: "Panduan Transaksi Aman",
+  supportGuideBtnText: "Tanya Agent AI",
   supportGuideBtnAction: "modal", // 'modal' | 'url'
   supportGuideBtnUrl: "",
   supportGuideBtnEnabled: true,

@@ -13,7 +13,7 @@ const compression = require('compression');
 const { pool, testConnection, ping } = require('./db');
 const { generateAccessToken, generateRefreshToken } = require('./services/jwt.service');
 const { authenticate, optionalAuth, requireRole } = require('./middleware/auth');
-const { authRateLimiter, apiRateLimiter } = require('./middleware/rateLimiter');
+const { authRateLimiter, apiRateLimiter, createRateLimiter } = require('./middleware/rateLimiter');
 const { sanitizeInput } = require('./middleware/sanitizer');
 const { calculateEscrowBreakdown } = require('./services/escrow.service');
 const { validateTierBookingRules, DEFAULT_TIERS } = require('./services/tierRules.service');
@@ -66,6 +66,58 @@ app.use(sanitizeInput);
 
 // Rate Limiting untuk proteksi API
 app.use('/api/', apiRateLimiter);
+
+const agentRateLimiter = createRateLimiter({
+  windowMs: 10 * 60 * 1000,
+  maxRequests: 20,
+  message: 'Batas chat bantuan tercapai. Silakan coba lagi beberapa menit.'
+});
+
+// Bantuan publik Bursa Limbah. Percakapan diteruskan ke InferX untuk menghasilkan jawaban.
+app.post('/api/agent/chat', agentRateLimiter, async (req, res) => {
+  const apiKey = process.env.INFERX_API_KEY;
+  if (!apiKey) return res.status(503).json({ success: false, message: 'Layanan bantuan AI belum dikonfigurasi.' });
+
+  const messages = Array.isArray(req.body?.messages) ? req.body.messages : [];
+  if (!messages.length || messages.length > 12) {
+    return res.status(400).json({ success: false, message: 'Percakapan harus berisi 1 sampai 12 pesan.' });
+  }
+
+  const safeMessages = [];
+  for (const message of messages) {
+    if (!message || !['user', 'assistant'].includes(message.role) || typeof message.content !== 'string' || !message.content.trim() || message.content.length > 4000) {
+      return res.status(400).json({ success: false, message: 'Format pesan tidak valid atau terlalu panjang.' });
+    }
+    safeMessages.push({ role: message.role, content: message.content.trim() });
+  }
+
+  const systemMessage = {
+    role: 'system',
+    content: 'Anda adalah asisten bantuan resmi untuk Bursa Limbah (bursalimbah.com), marketplace perdagangan limbah dan material daur ulang di Indonesia. Jawab dalam Bahasa Indonesia yang ramah, ringkas, dan praktis. Bantu pengguna memahami pendaftaran, peran pembeli/penjual, pemasangan pasokan, pencarian, penawaran, chat, paket, pesanan, pembayaran/escrow, pengiriman, verifikasi, dan navigasi situs. Jangan mengarang kebijakan, biaya, status akun, atau data transaksi yang tidak diberikan. Untuk kasus akun, pembayaran, sengketa, atau data yang perlu diperiksa petugas, arahkan pengguna ke Pusat Layanan/Tim Bursa Limbah di situs. Jangan meminta password, OTP, API key, nomor kartu, atau dokumen identitas lewat chat. Anda tidak dapat mengubah akun atau memproses transaksi.'
+  };
+
+  try {
+    const baseUrl = (process.env.INFERX_BASE_URL || 'https://model.inferx.net/endpoints/v1').replace(/\/$/, '');
+    const model = process.env.INFERX_MODEL || 'deepseek-v4.1-flash';
+    const response = await fetch(`${baseUrl}/chat/completions`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ model, messages: [systemMessage, ...safeMessages] }),
+      signal: AbortSignal.timeout(60000)
+    });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      console.error('[Agent API Error]', response.status, result?.error?.message || 'Upstream request failed');
+      return res.status(502).json({ success: false, message: 'Layanan bantuan sedang bermasalah. Coba lagi nanti.' });
+    }
+    const reply = result?.choices?.[0]?.message?.content;
+    if (typeof reply !== 'string' || !reply.trim()) return res.status(502).json({ success: false, message: 'Respons bantuan tidak valid.' });
+    return res.json({ success: true, message: reply.trim() });
+  } catch (error) {
+    console.error('[Agent API Error]', error.name, error.message);
+    return res.status(502).json({ success: false, message: 'Tidak dapat menghubungi layanan bantuan.' });
+  }
+});
 
 // Helper pencatatan Audit Log Keamanan
 async function logAudit(userId, action, targetType = null, targetId = null, details = null, req = null) {

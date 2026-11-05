@@ -11,23 +11,32 @@ class BursaLimbahStore {
     this.apiBaseUrl = this.detectApiBaseUrl();
     this.isBackendConnected = false;
     this.initStore();
-    this.checkSupabaseHealth();
+    this.checkBackendHealth();
   }
 
   detectApiBaseUrl() {
     if (typeof window === 'undefined') return 'http://localhost:5000';
-    if (window.location.port === '5000' || (window.location.protocol.startsWith('http') && window.location.pathname.includes('/bursalimbah'))) {
-      return '';
+    const configured = (window.CIRCULINK_API_BASE_URL || '').trim();
+    if (configured) return configured.replace(/\/$/, '');
+    const host = window.location.hostname;
+    if (host === 'localhost' || host === '127.0.0.1') {
+      return window.location.port === '5000' ? '' : 'http://localhost:5000';
     }
-    return 'http://localhost:5000';
+    // Pada hosting shared (InfinityFree), API PHP ada pada origin yang sama.
+    return '';
   }
 
-  async checkSupabaseHealth() {
+  async checkBackendHealth() {
     try {
-      const status = await window.circulinkSupabase.testConnection();
-      this.isBackendConnected = status.ok;
+      let response = await fetch(`${this.apiBaseUrl}/api/health.php`, { cache: 'no-store' });
+      let health = response.ok ? await response.json().catch(() => null) : null;
+      if (!health?.success) {
+        response = await fetch(`${this.apiBaseUrl}/api/health`, { cache: 'no-store' });
+        health = response.ok ? await response.json().catch(() => null) : null;
+      }
+      this.isBackendConnected = Boolean(response.ok && (health?.success || health?.status === 'ok'));
       if (this.isBackendConnected) {
-        await this.syncWithSupabase();
+        await this.syncWithBackend();
       }
     } catch (e) {
       this.isBackendConnected = false;
@@ -110,6 +119,7 @@ class BursaLimbahStore {
           try { tierFees = remote.handlingFeeByTier ? JSON.parse(remote.handlingFeeByTier) : tierFees; } catch (_) { /* retain local fallback */ }
           this.state.settings = {
             ...this.state.settings,
+            demoContentEnabled: remote.demoContentEnabled === undefined ? this.state.settings.demoContentEnabled : remote.demoContentEnabled === true || remote.demoContentEnabled === 'true',
             dpEnabled: remote.dp_enabled === undefined ? this.state.settings.dpEnabled : remote.dp_enabled === 'true',
             downPaymentPercent: Number(remote.dp_percentage) || this.state.settings.downPaymentPercent,
             handlingFeeByTier: tierFees,
@@ -477,6 +487,10 @@ class BursaLimbahStore {
       };
     }
 
+    if (user.role !== 'admin' && this.state.settings?.demoContentEnabled === false && (user.demoAccount === true || /^user_(buyer|seller)_/.test(user.id || ''))) {
+      return { success: false, message: 'Akun demo/ujicoba sedang dinonaktifkan oleh administrator.' };
+    }
+
     // Periksa password
     const userPass = user.password || null;
     if (!userPass || (password && password !== userPass)) {
@@ -710,9 +724,11 @@ class BursaLimbahStore {
         const uploaded = [];
         for (const file of files) {
           const res = await window.circulinkStorage.uploadDirect(file, 'public_listing');
+          if (res.provider === 'local_data_url') throw new Error('Cloud media upload is not configured.');
           uploaded.push({
-            url: res.url,
-            thumbnailUrl: res.thumbnailUrl || res.url,
+            url: res.publicUrl || res.url,
+            thumbnailUrl: res.optimizedThumbnailUrl || res.thumbnailUrl || res.publicUrl || res.url,
+            storageKey: res.fileKey || null,
             filename: res.filename || file.name,
             provider: res.provider || 'cloudinary'
           });
@@ -762,6 +778,10 @@ class BursaLimbahStore {
   }
 
   logout() {
+    if (this.isBackendConnected) {
+      fetch(`${this.apiBaseUrl}/api/auth/logout`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' })
+        .catch(e => console.warn('[Logout API Error]', e));
+    }
     this.state.currentRole = "public";
     this.state.adminUserId = null;
     this.state.authenticatedBuyerId = null;
@@ -1066,6 +1086,10 @@ class BursaLimbahStore {
   // ================= PRODUCTS (WASTE LISTINGS) =================
   getProducts(filters = {}) {
     let list = [...this.state.products];
+    if (this.state.settings?.demoContentEnabled === false) {
+      const sampleIds = new Set((typeof INITIAL_PRODUCTS !== 'undefined' ? INITIAL_PRODUCTS : []).map(p => p.id));
+      list = list.filter(p => !sampleIds.has(p.id));
+    }
 
     if (filters.status) {
       list = list.filter(p => p.status === filters.status);
@@ -1296,6 +1320,10 @@ class BursaLimbahStore {
 
   // ================= ORDERS & BOOKING =================
   getOrders() {
+    if (this.state.settings?.demoContentEnabled === false) {
+      const sampleIds = new Set((typeof INITIAL_ORDERS !== 'undefined' ? INITIAL_ORDERS : []).map(o => o.id));
+      return this.state.orders.filter(o => !sampleIds.has(o.id));
+    }
     return this.state.orders;
   }
 
@@ -2145,10 +2173,15 @@ class BursaLimbahStore {
       this.state.events = (typeof INITIAL_EVENTS !== 'undefined' ? [...INITIAL_EVENTS] : []);
       this.save();
     }
-    if (!category || category === 'semua') {
-      return this.state.events;
+    let events = this.state.events;
+    if (this.state.settings?.demoContentEnabled === false) {
+      const sampleIds = new Set((typeof INITIAL_EVENTS !== 'undefined' ? INITIAL_EVENTS : []).map(e => e.id));
+      events = events.filter(e => !sampleIds.has(e.id));
     }
-    return this.state.events.filter(e => e.category === category);
+    if (!category || category === 'semua') {
+      return events;
+    }
+    return events.filter(e => e.category === category);
   }
 
   getEventById(id) {
