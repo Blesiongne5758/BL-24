@@ -2638,6 +2638,20 @@
 
             <form id="admin-settings-form" onsubmit="app.saveAdminSettings(event)" class="space-y-5">
 
+              <section class="bg-white p-5 rounded-2xl border border-slate-200 space-y-4">
+                <div><h4 class="text-sm font-bold text-slate-900">Keamanan Admin</h4><p class="text-xs text-slate-500">Ubah sandi akun admin yang sedang masuk. Akun demo tidak terpengaruh.</p></div>
+                <div class="grid sm:grid-cols-3 gap-3">
+                  <input id="admin-current-password" type="password" autocomplete="current-password" placeholder="Sandi saat ini" class="border border-slate-300 rounded-xl px-3 py-2 text-sm">
+                  <input id="admin-new-password" type="password" autocomplete="new-password" minlength="8" placeholder="Sandi baru (min. 8 karakter)" class="border border-slate-300 rounded-xl px-3 py-2 text-sm">
+                  <input id="admin-confirm-password" type="password" autocomplete="new-password" minlength="8" placeholder="Ulangi sandi baru" class="border border-slate-300 rounded-xl px-3 py-2 text-sm">
+                </div>
+                <button type="button" onclick="app.changeAdminPassword()" class="px-4 py-2 rounded-xl bg-slate-900 text-white text-xs font-bold">Ganti Sandi Admin</button>
+              </section>
+              <section class="bg-amber-50 p-5 rounded-2xl border border-amber-200 flex items-center justify-between gap-4">
+                <div><h4 class="text-sm font-bold text-amber-950">Akun dan Konten Demo/Uji Coba</h4><p class="text-xs text-amber-800">Saat dinonaktifkan, akun demo dan data contoh (produk, transaksi, serta event) disembunyikan.</p></div>
+                <label class="relative inline-flex items-center cursor-pointer shrink-0"><input id="setting-demo-content-enabled" type="checkbox" class="sr-only peer"><span class="w-11 h-6 bg-slate-300 rounded-full peer-checked:bg-emerald-600 after:content-[''] after:absolute after:top-1 after:left-1 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-5"></span></label>
+              </section>
+
               <!-- SECTION 0: PUSAT KONTROL FITUR & SAKELAR MASTER SISTEM (FEATURE FLAGS) -->
               <div class="bg-gradient-to-br from-indigo-950 via-slate-900 to-slate-950 p-6 rounded-2xl border border-indigo-800/40 text-white space-y-4 shadow-lg">
                 <div class="flex items-center justify-between pb-3 border-b border-indigo-800/40 flex-wrap gap-2">

@@ -477,6 +477,10 @@ class BursaLimbahStore {
       };
     }
 
+    if (user.role !== 'admin' && this.state.settings?.demoContentEnabled === false && (user.demoAccount === true || /^user_(buyer|seller)_/.test(user.id || ''))) {
+      return { success: false, message: 'Akun demo/ujicoba sedang dinonaktifkan oleh administrator.' };
+    }
+
     // Periksa password
     const userPass = user.password || null;
     if (!userPass || (password && password !== userPass)) {
@@ -1066,6 +1070,10 @@ class BursaLimbahStore {
   // ================= PRODUCTS (WASTE LISTINGS) =================
   getProducts(filters = {}) {
     let list = [...this.state.products];
+    if (this.state.settings?.demoContentEnabled === false) {
+      const sampleIds = new Set((typeof INITIAL_PRODUCTS !== 'undefined' ? INITIAL_PRODUCTS : []).map(p => p.id));
+      list = list.filter(p => !sampleIds.has(p.id));
+    }
 
     if (filters.status) {
       list = list.filter(p => p.status === filters.status);
@@ -1296,6 +1304,10 @@ class BursaLimbahStore {
 
   // ================= ORDERS & BOOKING =================
   getOrders() {
+    if (this.state.settings?.demoContentEnabled === false) {
+      const sampleIds = new Set((typeof INITIAL_ORDERS !== 'undefined' ? INITIAL_ORDERS : []).map(o => o.id));
+      return this.state.orders.filter(o => !sampleIds.has(o.id));
+    }
     return this.state.orders;
   }
 
@@ -2145,10 +2157,15 @@ class BursaLimbahStore {
       this.state.events = (typeof INITIAL_EVENTS !== 'undefined' ? [...INITIAL_EVENTS] : []);
       this.save();
     }
-    if (!category || category === 'semua') {
-      return this.state.events;
+    let events = this.state.events;
+    if (this.state.settings?.demoContentEnabled === false) {
+      const sampleIds = new Set((typeof INITIAL_EVENTS !== 'undefined' ? INITIAL_EVENTS : []).map(e => e.id));
+      events = events.filter(e => !sampleIds.has(e.id));
     }
-    return this.state.events.filter(e => e.category === category);
+    if (!category || category === 'semua') {
+      return events;
+    }
+    return events.filter(e => e.category === category);
   }
 
   getEventById(id) {

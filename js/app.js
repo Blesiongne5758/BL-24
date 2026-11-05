@@ -3651,6 +3651,8 @@ class BursaLimbahApp {
 
   populateAdminSettings() {
     const s = this.store.getSettings();
+    const demoToggle = document.getElementById('setting-demo-content-enabled');
+    if (demoToggle) demoToggle.checked = s.demoContentEnabled !== false;
     const handling = document.getElementById('setting-handling');
     const dp = document.getElementById('setting-dp');
     const dpEnabledCheckbox = document.getElementById('setting-dp-enabled');
@@ -3773,6 +3775,7 @@ class BursaLimbahApp {
 
     this.store.setDpSettings(dpEnabled, dp);
     this.store.updateSettings({
+      demoContentEnabled: document.getElementById('setting-demo-content-enabled')?.checked !== false,
       handlingFeePerTransaction: handling,
       handlingFeeByTier,
       // Payment Gateway
@@ -3830,6 +3833,20 @@ class BursaLimbahApp {
     this.applyFeatureFlags();
     const statusText = dpEnabled ? `diaktifkan (DP ${dp}%)` : 'dinonaktifkan (SET OFF)';
     this.showToast(`Pengaturan berhasil disimpan! Fitur DP ${statusText}; ticker harga pasar ${tickerSettings.tickerEnabled ? 'aktif' : 'nonaktif'}.`, "success");
+  }
+
+  changeAdminPassword() {
+    const current = document.getElementById('admin-current-password')?.value || '';
+    const next = document.getElementById('admin-new-password')?.value || '';
+    const confirm = document.getElementById('admin-confirm-password')?.value || '';
+    const admin = this.store.getCurrentUser();
+    if (!admin || admin.role !== 'admin') return this.showToast('Sesi admin tidak valid. Masuk kembali.', 'error');
+    if (!current || next.length < 8 || next !== confirm) return this.showToast('Sandi baru harus minimal 8 karakter dan kedua isian harus sama.', 'error');
+    if (admin.password !== current) return this.showToast('Sandi saat ini tidak sesuai.', 'error');
+    admin.password = next;
+    this.store.save();
+    ['admin-current-password', 'admin-new-password', 'admin-confirm-password'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+    this.showToast('Sandi admin berhasil diganti pada perangkat ini.', 'success');
   }
 
 
