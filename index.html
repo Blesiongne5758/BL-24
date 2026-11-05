@@ -323,15 +323,6 @@
             <span class="text-[9px] font-extrabold text-amber-700">Ready</span>
           </button>
 
-          <!-- Story 5: PreLoved Mesin -->
-          <button onclick="app.navigateToSection('preloved')" class="flex flex-col items-center shrink-0 tap-highlight group">
-            <div class="w-12 h-12 rounded-full p-0.5 bg-gradient-to-tr from-pink-500 to-rose-400 shadow-xs">
-              <div class="w-full h-full rounded-full bg-white flex items-center justify-center text-lg overflow-hidden"><i class="fa-solid fa-heart text-pink-500"></i></div>
-            </div>
-            <span class="text-[10px] font-bold text-pink-700 mt-1 truncate max-w-[62px]">PreLoved</span>
-            <span class="text-[9px] font-extrabold text-pink-600">-30%</span>
-          </button>
-
           <!-- Story 6: Event Lelang -->
           <button onclick="app.navigateToSection('event')" class="flex flex-col items-center shrink-0 tap-highlight group">
             <div class="w-12 h-12 rounded-full p-0.5 bg-gradient-to-tr from-indigo-500 to-purple-500 shadow-xs">
@@ -550,10 +541,6 @@
           </button>
           <button onclick="app.filterMobileByCat('cat_tembaga')" class="mobile-chip-filter px-3 py-1.5 rounded-full text-xs font-semibold shrink-0 bg-slate-100 text-slate-700 hover:bg-emerald-50 hover:text-emerald-700 border border-slate-200 transition active:scale-95 flex items-center space-x-1.5">
             <span><i class="fa-solid fa-bolt text-amber-500 mr-1"></i>Tembaga</span>
-          </button>
-          <button onclick="app.navigateToSection('preloved')" class="mobile-chip-filter px-3 py-1.5 rounded-full text-xs font-semibold shrink-0 bg-pink-50 text-pink-700 hover:bg-pink-100 border border-pink-200 transition active:scale-95 flex items-center space-x-1.5">
-            <i class="fa-solid fa-heart text-pink-500 text-[10px]"></i>
-            <span>PreLoved</span>
           </button>
           <button onclick="app.navigateToSection('event')" class="mobile-chip-filter px-3 py-1.5 rounded-full text-xs font-semibold shrink-0 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-200 transition active:scale-95 flex items-center space-x-1.5">
             <i class="fa-solid fa-calendar-star text-indigo-500 text-[10px]"></i>
@@ -4271,7 +4258,7 @@
 
   <!-- ================= FITUR LAYAR CHAT INTERAKTIF (IN-APP CHAT DRAWER) ================= -->
   <!-- Tombol Melayang Buka Chat di Kanan Bawah -->
-  <button id="chat-floating-btn" onclick="app.toggleChatDrawer()" class="fixed bottom-6 right-6 z-40 w-14 h-14 rounded-full bg-gradient-to-tr from-emerald-600 to-teal-500 hover:from-emerald-700 hover:to-teal-600 text-white shadow-2xl flex items-center justify-center text-xl transition transform hover:scale-105 active:scale-95 border-2 border-white">
+  <button id="chat-floating-btn" onclick="app.toggleChatDrawer()" class="fixed bottom-24 right-6 z-40 w-14 h-14 rounded-full bg-gradient-to-tr from-emerald-600 to-teal-500 hover:from-emerald-700 hover:to-teal-600 text-white shadow-2xl flex items-center justify-center text-xl transition transform hover:scale-105 active:scale-95 border-2 border-white lg:bottom-6">
     <i class="fa-solid fa-comments"></i>
     <span id="chat-unread-badge" class="absolute -top-1 -right-1 w-5 h-5 bg-rose-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center border-2 border-white">1</span>
   </button>
