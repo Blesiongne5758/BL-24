@@ -232,3 +232,9 @@ Supabase client/schema dan Express server tetap ada sebagai eksperimen/opsi terp
 
 Platform ini dirilis sebagai perangkat lunak sumber terbuka di bawah ketentuan **[Lisensi MIT](LICENSE)**.  
 Hak Cipta © 2026 **Bursa Limbah Team (Circulink)**.
+
+### Asisten bantuan AI Bursa Limbah
+
+Widget bantuan mendukung pertanyaan seputar situs, pencarian kandidat produk dari katalog publik, dan panduan menyiapkan posting jual. Agent tidak menerbitkan listing; penjual tetap meninjau dan mengirim formulir Jual.
+
+Pada deployment InfinityFree, impor `database/migrations/20261106_ai_agent_config.sql` bila tabel belum tersedia. Buat kunci enkripsi server 32 byte acak (`php -r "echo bin2hex(random_bytes(32)), PHP_EOL;"`) dan isi `INFERX_ENCRYPTION_KEY` pada `api/config.local.php`. Setelah deploy, buka **Admin → Pengaturan → LLM AI Agent**, isi API key, base URL, model, dan sakelar fitur. API key dienkripsi AES-256-GCM di tabel `ai_agent_config`, tidak pernah dikembalikan ke browser, dan pesan chat dikirim ke InferX untuk dijawab. Batasi chat 20 permintaan per sesi setiap 10 menit.

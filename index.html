@@ -3261,6 +3261,30 @@
                 </div>
               </div>
 
+              <!-- Pengaturan LLM agent untuk bantuan, pencarian, dan panduan posting -->
+              <section class="rounded-2xl border border-indigo-200 bg-indigo-50 p-5 space-y-4">
+                <div class="flex items-start gap-3">
+                  <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-700 text-white"><i class="fa-solid fa-robot"></i></span>
+                  <div><h4 class="text-sm font-bold text-indigo-950">LLM AI Agent Bursa Limbah</h4><p class="mt-1 text-xs leading-relaxed text-indigo-900">Atur agent bantuan untuk pertanyaan situs, pencarian produk, dan panduan menyiapkan posting jual. API key disimpan terenkripsi di server dan tidak ditampilkan kembali.</p></div>
+                </div>
+                <div class="grid gap-3 sm:grid-cols-2">
+                  <label class="text-xs font-semibold text-slate-700">Base URL API<input id="setting-agent-base-url" type="url" value="https://model.inferx.net/endpoints/v1" class="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 font-mono text-xs"></label>
+                  <label class="text-xs font-semibold text-slate-700">Nama Model<input id="setting-agent-model" type="text" value="deepseek-v4.1-flash" maxlength="120" class="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 font-mono text-xs"></label>
+                </div>
+                <label class="block text-xs font-semibold text-slate-700">API Key<input id="setting-agent-api-key" type="password" autocomplete="new-password" maxlength="500" placeholder="Kosongkan untuk mempertahankan key tersimpan" class="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 font-mono text-xs"></label>
+                <p id="setting-agent-key-status" class="text-[11px] text-slate-500">Status API key: belum diketahui.</p>
+                <div class="grid gap-2 sm:grid-cols-2">
+                  <label class="flex items-center gap-2 text-xs text-slate-700"><input id="setting-agent-enabled" type="checkbox" class="rounded text-indigo-700"> Aktifkan agent untuk pengunjung</label>
+                  <label class="flex items-center gap-2 text-xs text-slate-700"><input id="setting-agent-site-help" type="checkbox" checked class="rounded text-indigo-700"> Jawab bantuan seputar situs</label>
+                  <label class="flex items-center gap-2 text-xs text-slate-700"><input id="setting-agent-product-search" type="checkbox" checked class="rounded text-indigo-700"> Bantu menemukan produk</label>
+                  <label class="flex items-center gap-2 text-xs text-slate-700"><input id="setting-agent-posting" type="checkbox" checked class="rounded text-indigo-700"> Pandu posting jual produk</label>
+                </div>
+                <div class="flex flex-wrap items-center gap-3 border-t border-indigo-200 pt-3">
+                  <button type="button" onclick="app.saveAgentAdminSettings()" class="rounded-xl bg-indigo-700 px-4 py-2.5 text-xs font-bold text-white hover:bg-indigo-800"><i class="fa-solid fa-floppy-disk mr-1"></i>Simpan Pengaturan Agent</button>
+                  <span class="text-[10px] text-slate-500">Pencarian menampilkan kandidat dari katalog publik. Agent tidak memposting otomatis.</span>
+                </div>
+              </section>
+
               <!-- SECTION 8: INTEGRASI SUPABASE (POSTGRESQL CLOUD DATABASE) -->
               <div class="bg-gradient-to-br from-emerald-950/20 via-slate-50 to-emerald-50/30 p-5 rounded-2xl border border-emerald-300/60 space-y-4">
                 <div class="flex items-center justify-between pb-2 border-b border-emerald-200">
@@ -3505,7 +3529,7 @@
                     </div>
                   </div>
 
-                  <!-- 5. Tombol Panduan Transaksi Aman (CTA Button) -->
+                  <!-- 5. Tombol chat agent terbaru -->
                   <div class="p-4 bg-white rounded-xl border border-slate-200 shadow-2xs space-y-3">
                     <div class="flex items-center justify-between">
                       <div class="flex items-center gap-2 text-slate-800 font-bold text-xs uppercase tracking-wider">
@@ -3520,12 +3544,12 @@
                     <div class="grid sm:grid-cols-2 gap-3">
                       <div>
                         <label class="block text-[11px] font-semibold text-slate-600 mb-1">Teks Tombol</label>
-                        <input type="text" id="support-edit-btn-text" maxlength="50" placeholder="Panduan Transaksi Aman" oninput="app.updateSupportLivePreview()" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                        <input type="text" id="support-edit-btn-text" maxlength="50" placeholder="Tanya Agent AI" oninput="app.updateSupportLivePreview()" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500">
                       </div>
                       <div>
                         <label class="block text-[11px] font-semibold text-slate-600 mb-1">Aksi Ketika Diklik</label>
                         <select id="support-edit-btn-action" onchange="app.handleSupportBtnActionChange()" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500">
-                          <option value="modal">Buka Modal Panduan Transaksi Aman</option>
+                          <option value="modal">Buka Chat Agent AI terbaru</option>
                           <option value="url">Buka Tautan URL Eksternal</option>
                         </select>
                       </div>
@@ -3645,9 +3669,9 @@
             <li><i class="fa-solid fa-envelope mr-1.5 text-emerald-400"></i> kemitraan@bursalimbah.id</li>
             <li><i class="fa-solid fa-location-dot mr-1.5 text-emerald-400"></i> Sentra Inovasi Hijau BURSA LIMBAH Lt. 5, Jakarta Timur</li>
           </ul>
-          <button type="button" onclick="app.showHelpModal()" class="mt-4 inline-flex items-center gap-2 rounded-xl border border-emerald-400/40 bg-emerald-400/10 px-3 py-2 text-[11px] font-bold text-emerald-300 transition hover:bg-emerald-400/20 hover:text-white">
+          <button type="button" onclick="app.toggleHelpAgent(true)" class="mt-4 inline-flex items-center gap-2 rounded-xl border border-emerald-400/40 bg-emerald-400/10 px-3 py-2 text-[11px] font-bold text-emerald-300 transition hover:bg-emerald-400/20 hover:text-white">
             <i class="fa-solid fa-shield-heart"></i>
-            <span>Panduan Transaksi Aman</span>
+            <span>Tanya Agent AI</span>
           </button>
         </div>
 
@@ -4271,12 +4295,6 @@
   </div>
 
   <!-- ================= FITUR LAYAR CHAT INTERAKTIF (IN-APP CHAT DRAWER) ================= -->
-  <!-- Tombol Melayang Buka Chat di Kanan Bawah -->
-  <button id="chat-floating-btn" onclick="app.toggleChatDrawer()" class="fixed bottom-24 right-6 z-40 w-14 h-14 rounded-full bg-gradient-to-tr from-emerald-600 to-teal-500 hover:from-emerald-700 hover:to-teal-600 text-white shadow-2xl flex items-center justify-center text-xl transition transform hover:scale-105 active:scale-95 border-2 border-white lg:bottom-6">
-    <i class="fa-solid fa-comments"></i>
-    <span id="chat-unread-badge" class="absolute -top-1 -right-1 w-5 h-5 bg-rose-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center border-2 border-white">1</span>
-  </button>
-
   <!-- Jendela Layar Chat (Chat Window Drawer) -->
   <div id="chat-drawer" class="fixed bottom-6 right-6 z-50 w-full max-w-sm sm:max-w-md bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden hidden flex-col transition-all duration-300 h-[520px] max-h-[85vh]">
     
@@ -4667,82 +4685,6 @@
     </div>
   </div>
 
-  <!-- ================= MODAL: PANDUAN TRANSAKSI AMAN & FAQ ================= -->
-  <div id="modal-help" class="fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-sm hidden items-center justify-center p-4 overflow-y-auto" role="dialog" aria-modal="true" aria-labelledby="help-modal-title">
-    <div class="bg-white rounded-3xl max-w-2xl w-full max-h-[92vh] overflow-y-auto shadow-2xl border border-slate-200">
-      <div class="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-slate-100 bg-white/95 px-6 py-5 backdrop-blur">
-        <div>
-          <div class="mb-2 inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-emerald-700">
-            <i class="fa-solid fa-shield-halved"></i> Pusat Bantuan
-          </div>
-          <h3 id="help-modal-title" class="text-lg font-extrabold text-slate-900">Panduan Transaksi Aman</h3>
-          <p class="mt-1 text-xs leading-relaxed text-slate-500">Pahami setiap tahap sebelum memesan pasokan limbah.</p>
-        </div>
-        <button type="button" onclick="app.closeModals()" class="rounded-xl p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700" aria-label="Tutup panduan">
-          <i class="fa-solid fa-xmark text-lg"></i>
-        </button>
-      </div>
-
-      <div class="space-y-6 p-6">
-        <div class="rounded-2xl border border-emerald-100 bg-emerald-50 p-4 text-xs leading-relaxed text-emerald-900">
-          <div class="mb-1.5 flex items-center gap-2 font-bold"><i class="fa-solid fa-circle-info text-emerald-600"></i> Prinsip perlindungan transaksi</div>
-          Jangan melakukan pembayaran ke rekening pribadi. Pembayaran hanya diproses melalui rekening bersama Bursa Limbah setelah pesanan tercatat di sistem.
-        </div>
-
-        <section>
-          <h4 class="mb-4 text-xs font-bold uppercase tracking-wider text-slate-700">Perjalanan transaksi Anda</h4>
-          <ol class="space-y-0">
-            <li class="relative flex gap-3 pb-5 before:absolute before:left-4 before:top-8 before:h-full before:w-px before:bg-emerald-200 last:pb-0 last:before:hidden">
-              <span class="relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-600 text-xs font-extrabold text-white">1</span>
-              <div><p class="text-xs font-bold text-slate-800">Tinjau listing terverifikasi</p><p class="mt-0.5 text-[11px] leading-relaxed text-slate-500">Cek foto eviden, grade, volume, jadwal angkut, dan status verifikasi sebelum menghubungi penjual.</p></div>
-            </li>
-            <li class="relative flex gap-3 pb-5 before:absolute before:left-4 before:top-8 before:h-full before:w-px before:bg-emerald-200 last:pb-0 last:before:hidden">
-              <span class="relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-600 text-xs font-extrabold text-white">2</span>
-              <div><p class="text-xs font-bold text-slate-800">Pesan melalui sistem</p><p class="mt-0.5 text-[11px] leading-relaxed text-slate-500">Konfirmasi kuantitas dan detail pengambilan di layar chat, lalu buat pesanan agar nilai transaksi tercatat.</p></div>
-            </li>
-            <li class="relative flex gap-3 pb-5 before:absolute before:left-4 before:top-8 before:h-full before:w-px before:bg-emerald-200 last:pb-0 last:before:hidden">
-              <span class="relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-600 text-xs font-extrabold text-white">3</span>
-              <div><p class="text-xs font-bold text-slate-800">Bayar ke rekening bersama</p><p class="mt-0.5 text-[11px] leading-relaxed text-slate-500">DP atau pelunasan mengikuti pengaturan transaksi. Dana ditahan sampai bukti pengambilan tervalidasi.</p></div>
-            </li>
-            <li class="relative flex gap-3 last:pb-0">
-              <span class="relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-600 text-xs font-extrabold text-white">4</span>
-              <div><p class="text-xs font-bold text-slate-800">Pengambilan dan konfirmasi</p><p class="mt-0.5 text-[11px] leading-relaxed text-slate-500">Unggah surat jalan atau bukti timbang, lalu konfirmasi penerimaan untuk menyelesaikan transaksi.</p></div>
-            </li>
-          </ol>
-        </section>
-
-        <section>
-          <h4 class="mb-3 text-xs font-bold uppercase tracking-wider text-slate-700">Pertanyaan umum</h4>
-          <div class="divide-y divide-slate-200 overflow-hidden rounded-2xl border border-slate-200">
-            <div>
-              <button type="button" onclick="app.toggleHelpAccordion('help-answer-1', this)" class="flex w-full items-center justify-between gap-4 px-4 py-3.5 text-left text-xs font-bold text-slate-800 transition hover:bg-slate-50" aria-expanded="false">
-                <span>Bagaimana cara mengetahui listing sudah terverifikasi?</span><i class="fa-solid fa-chevron-down text-emerald-600 transition-transform"></i>
-              </button>
-              <div id="help-answer-1" class="hidden px-4 pb-4 text-[11px] leading-relaxed text-slate-500">Buka detail pasokan dan periksa dokumentasi eviden, status listing, asal material, serta informasi izin bila material termasuk B3.</div>
-            </div>
-            <div>
-              <button type="button" onclick="app.toggleHelpAccordion('help-answer-2', this)" class="flex w-full items-center justify-between gap-4 px-4 py-3.5 text-left text-xs font-bold text-slate-800 transition hover:bg-slate-50" aria-expanded="false">
-                <span>Kapan alamat dan nomor WhatsApp penjual terlihat?</span><i class="fa-solid fa-chevron-down text-emerald-600 transition-transform"></i>
-              </button>
-              <div id="help-answer-2" class="hidden px-4 pb-4 text-[11px] leading-relaxed text-slate-500">Data kontak dan alamat mengikuti hak akses paket pembeli. Anda tetap dapat memakai layar chat Bursa Limbah untuk menyepakati transaksi dengan aman.</div>
-            </div>
-            <div>
-              <button type="button" onclick="app.toggleHelpAccordion('help-answer-3', this)" class="flex w-full items-center justify-between gap-4 px-4 py-3.5 text-left text-xs font-bold text-slate-800 transition hover:bg-slate-50" aria-expanded="false">
-                <span>Apa yang dilakukan bila material tidak sesuai?</span><i class="fa-solid fa-chevron-down text-emerald-600 transition-transform"></i>
-              </button>
-              <div id="help-answer-3" class="hidden px-4 pb-4 text-[11px] leading-relaxed text-slate-500">Jangan konfirmasi penerimaan. Dokumentasikan kondisi material dan hubungi layanan resmi melalui chat atau WhatsApp agar tim dapat meninjau bukti transaksi.</div>
-            </div>
-          </div>
-        </section>
-
-        <div class="flex flex-col-reverse gap-2 border-t border-slate-100 pt-5 sm:flex-row sm:justify-end">
-          <button type="button" onclick="app.closeModals()" class="rounded-xl border border-slate-300 px-4 py-2.5 text-xs font-bold text-slate-700 transition hover:bg-slate-50">Tutup</button>
-          <a href="https://wa.me/6281234567890?text=Halo%20Admin%20Bursa%20Limbah%2C%20saya%20butuh%20bantuan%20transaksi" target="_blank" class="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-bold text-white shadow-sm transition hover:bg-emerald-700"><i class="fa-brands fa-whatsapp"></i> Hubungi Layanan</a>
-        </div>
-      </div>
-    </div>
-  </div>
-
   <!-- ================= MODAL: PENGIRIMAN & PENYERAHAN BARANG (PENJUAL) ================= -->
   <div id="modal-seller-dispatch" class="fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-sm hidden items-center justify-center p-4 overflow-y-auto">
     <div class="bg-white rounded-3xl max-w-lg w-full shadow-2xl border border-slate-200 overflow-hidden">
@@ -5033,6 +4975,26 @@
     </div>
   </nav>
 
+  <!-- Asisten bantuan Bursa Limbah -->
+  <div id="help-agent" class="fixed bottom-24 right-4 sm:bottom-6 sm:right-6 z-[60]">
+    <section id="help-agent-panel" class="hidden mb-3 w-[min(22rem,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl" role="dialog" aria-label="Asisten Bantuan Bursa Limbah">
+      <header class="flex items-center justify-between bg-emerald-700 px-4 py-3 text-white">
+        <div class="flex items-center gap-2"><span class="flex h-8 w-8 items-center justify-center rounded-full bg-white/15"><i class="fa-solid fa-headset"></i></span><div><div class="text-sm font-bold">Bantuan Bursa Limbah</div><div class="text-[10px] text-emerald-100">Asisten AI · siap membantu</div></div></div>
+        <button type="button" onclick="app.toggleHelpAgent(false)" aria-label="Tutup bantuan" class="rounded-lg p-2 hover:bg-white/10"><i class="fa-solid fa-xmark"></i></button>
+      </header>
+      <div id="help-agent-messages" class="h-72 space-y-3 overflow-y-auto bg-slate-50 p-3" aria-live="polite">
+        <div class="max-w-[90%] rounded-2xl rounded-tl-sm bg-white p-3 text-xs leading-relaxed text-slate-700 shadow-sm">Halo! Saya bisa membantu menjelaskan cara menggunakan Bursa Limbah. Apa yang ingin Anda ketahui?</div>
+        <div class="flex flex-wrap gap-2"><button type="button" onclick="app.startHelpAgentPrompt('Bantu saya menemukan produk. Tanyakan jenis limbah, kota, dan volume yang saya butuhkan.');" class="rounded-full border border-emerald-200 bg-white px-3 py-1.5 text-[10px] font-bold text-emerald-800 hover:bg-emerald-50">Cari produk</button><button type="button" onclick="app.startHelpAgentPrompt('Saya ingin memasang produk untuk dijual. Bantu kumpulkan informasi listing saya dan pandu saya ke formulir jual.'); app.switchAppTab('sell');" class="rounded-full border border-indigo-200 bg-white px-3 py-1.5 text-[10px] font-bold text-indigo-800 hover:bg-indigo-50">Siapkan posting jual</button></div>
+      </div>
+      <form onsubmit="app.sendHelpAgentMessage(event)" class="flex gap-2 border-t border-slate-200 bg-white p-3">
+        <input id="help-agent-input" type="text" maxlength="4000" autocomplete="off" placeholder="Tulis pertanyaan Anda..." aria-label="Pesan untuk asisten" class="min-w-0 flex-1 rounded-xl border border-slate-300 px-3 py-2 text-xs outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100">
+        <button id="help-agent-send" type="submit" aria-label="Kirim pesan" class="rounded-xl bg-emerald-700 px-3 text-white transition hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-50"><i class="fa-solid fa-paper-plane"></i></button>
+      </form>
+      <p class="px-3 pb-2 text-[10px] text-slate-400">Jangan kirim password, OTP, atau dokumen pribadi.</p>
+    </section>
+    <button type="button" onclick="app.toggleHelpAgent()" aria-controls="help-agent-panel" aria-expanded="false" class="flex items-center gap-2 rounded-full bg-emerald-700 px-4 py-3 text-sm font-bold text-white shadow-lg transition hover:bg-emerald-800"><i class="fa-solid fa-comments"></i><span>Bantuan</span></button>
+  </div>
+
   <!-- WADAH TOAST -->
   <div id="toast-container" class="fixed bottom-20 lg:bottom-5 right-5 z-50 flex flex-col space-y-2 pointer-events-none"></div>
 
@@ -5056,10 +5018,10 @@
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 
   <!-- Modul Aplikasi BURSA LIMBAH -->
-  <script src="js/data.js?v=14"></script>
+  <script src="js/data.js?v=15"></script>
   <script src="js/store.js?v=14"></script>
   <script src="js/supabaseClient.js?v=7"></script>
   <script src="js/storageClient.js?v=7"></script>
-  <script src="js/app.js?v=14"></script>
+  <script src="js/app.js?v=15"></script>
 </body>
 </html>

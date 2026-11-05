@@ -57,6 +57,111 @@ if ($path === 'auth/login' && $method === 'POST') require __DIR__ . '/login.php'
 if ($path === 'auth/register' && $method === 'POST') require __DIR__ . '/register.php';
 $input = api_body();
 
+function ai_agent_decrypt_key($row) {
+    if (!defined('INFERX_ENCRYPTION_KEY') || !preg_match('/^[a-fA-F0-9]{64}$/', INFERX_ENCRYPTION_KEY)) return '';
+    if (empty($row['api_key_encrypted']) || empty($row['api_key_iv']) || empty($row['api_key_tag'])) return '';
+    $plain = openssl_decrypt(base64_decode($row['api_key_encrypted'], true), 'aes-256-gcm', hex2bin(INFERX_ENCRYPTION_KEY), OPENSSL_RAW_DATA, base64_decode($row['api_key_iv'], true), base64_decode($row['api_key_tag'], true));
+    return is_string($plain) ? $plain : '';
+}
+
+function ai_agent_config_row($pdo) {
+    $pdo->exec("CREATE TABLE IF NOT EXISTS ai_agent_config (
+        id TINYINT UNSIGNED NOT NULL DEFAULT 1,
+        enabled TINYINT(1) NOT NULL DEFAULT 0,
+        provider VARCHAR(40) NOT NULL DEFAULT 'inferx',
+        base_url VARCHAR(255) NOT NULL DEFAULT 'https://model.inferx.net/endpoints/v1',
+        model_name VARCHAR(120) NOT NULL DEFAULT 'deepseek-v4.1-flash',
+        api_key_encrypted TEXT DEFAULT NULL,
+        api_key_iv VARCHAR(64) DEFAULT NULL,
+        api_key_tag VARCHAR(64) DEFAULT NULL,
+        site_help_enabled TINYINT(1) NOT NULL DEFAULT 1,
+        product_search_enabled TINYINT(1) NOT NULL DEFAULT 1,
+        product_posting_assist_enabled TINYINT(1) NOT NULL DEFAULT 1,
+        updated_by VARCHAR(64) DEFAULT NULL,
+        created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        PRIMARY KEY (id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+    $q = $pdo->query('SELECT * FROM ai_agent_config WHERE id=1 LIMIT 1');
+    $row = $q->fetch();
+    if (!$row) {
+        $pdo->exec('INSERT IGNORE INTO ai_agent_config (id) VALUES (1)');
+        $row = $pdo->query('SELECT * FROM ai_agent_config WHERE id=1 LIMIT 1')->fetch();
+    }
+    return $row ?: [];
+}
+
+if ($path === 'agent/config' && $method === 'GET') {
+    api_require_role(['admin']);
+    $row = ai_agent_config_row($pdo);
+    api_json(['success'=>true,'config'=>[
+        'enabled'=>(bool)($row['enabled']??false), 'provider'=>$row['provider']??'inferx',
+        'baseUrl'=>$row['base_url']??'https://model.inferx.net/endpoints/v1', 'modelName'=>$row['model_name']??'deepseek-v4.1-flash',
+        'hasApiKey'=>!empty($row['api_key_encrypted']), 'siteHelpEnabled'=>(bool)($row['site_help_enabled']??true),
+        'productSearchEnabled'=>(bool)($row['product_search_enabled']??true), 'productPostingAssistEnabled'=>(bool)($row['product_posting_assist_enabled']??true)
+    ]]);
+}
+
+if ($path === 'agent/config' && $method === 'PUT') {
+    api_require_role(['admin']);
+    $baseUrl=trim((string)($input['baseUrl']??'')); $model=trim((string)($input['modelName']??'')); $apiKey=trim((string)($input['apiKey']??''));
+    if (!filter_var($baseUrl,FILTER_VALIDATE_URL) || parse_url($baseUrl,PHP_URL_SCHEME)!=='https' || strlen($baseUrl)>255) api_json(['success'=>false,'message'=>'Base URL harus berupa URL HTTPS yang valid.'],400);
+    if ($model==='' || strlen($model)>120 || strlen($apiKey)>500) api_json(['success'=>false,'message'=>'Nama model atau API key tidak valid.'],400);
+    $old=ai_agent_config_row($pdo); $encrypted=$old['api_key_encrypted']??null; $iv=$old['api_key_iv']??null; $tag=$old['api_key_tag']??null;
+    if ($apiKey!=='') {
+        if (!defined('INFERX_ENCRYPTION_KEY') || !preg_match('/^[a-fA-F0-9]{64}$/', INFERX_ENCRYPTION_KEY)) api_json(['success'=>false,'message'=>'Kunci enkripsi server belum diatur pada api/config.local.php.'],503);
+        $nonce=random_bytes(12); $authTag=''; $cipher=openssl_encrypt($apiKey,'aes-256-gcm',hex2bin(INFERX_ENCRYPTION_KEY),OPENSSL_RAW_DATA,$nonce,$authTag);
+        if ($cipher===false) api_json(['success'=>false,'message'=>'API key tidak dapat dienkripsi.'],500);
+        $encrypted=base64_encode($cipher); $iv=base64_encode($nonce); $tag=base64_encode($authTag);
+    }
+    if (!empty($input['enabled']) && !$encrypted) api_json(['success'=>false,'message'=>'Masukkan API key sebelum mengaktifkan agent.'],400);
+    $q=$pdo->prepare('UPDATE ai_agent_config SET enabled=?,provider=?,base_url=?,model_name=?,api_key_encrypted=?,api_key_iv=?,api_key_tag=?,site_help_enabled=?,product_search_enabled=?,product_posting_assist_enabled=?,updated_by=? WHERE id=1');
+    $q->execute([!empty($input['enabled'])?1:0,'inferx',$baseUrl,$model,$encrypted,$iv,$tag,!empty($input['siteHelpEnabled'])?1:0,!empty($input['productSearchEnabled'])?1:0,!empty($input['productPostingAssistEnabled'])?1:0,$_SESSION['user_id']??null]);
+    api_json(['success'=>true,'message'=>'Pengaturan agent berhasil disimpan.','hasApiKey'=>(bool)$encrypted]);
+}
+
+if ($path === 'agent/chat' && $method === 'POST') {
+    // Rate limit berdasarkan sesi, termasuk pengunjung tanpa akun.
+    $now=time(); $window=600;
+    if (!isset($_SESSION['ai_agent_rate']) || $now-(int)$_SESSION['ai_agent_rate']['start'] >= $window) $_SESSION['ai_agent_rate']=['start'=>$now,'count'=>0];
+    if (++$_SESSION['ai_agent_rate']['count']>20) api_json(['success'=>false,'message'=>'Batas chat bantuan tercapai. Silakan coba lagi beberapa menit.'],429);
+    $row=ai_agent_config_row($pdo);
+    if (empty($row['enabled'])) api_json(['success'=>false,'message'=>'Layanan bantuan AI sedang tidak aktif.'],503);
+    $apiKey=ai_agent_decrypt_key($row);
+    if (!$apiKey) api_json(['success'=>false,'message'=>'Konfigurasi kunci agent belum tersedia.'],503);
+    $messages=$input['messages']??[];
+    if (!is_array($messages)||count($messages)<1||count($messages)>12) api_json(['success'=>false,'message'=>'Percakapan harus berisi 1 sampai 12 pesan.'],400);
+    $safeMessages=[]; $totalChars=0;
+    foreach($messages as $message){
+        if(!is_array($message)||!in_array($message['role']??'', ['user','assistant'],true)||!is_string($message['content']??null)||trim($message['content'])===''||strlen($message['content'])>4000) api_json(['success'=>false,'message'=>'Format pesan tidak valid atau terlalu panjang.'],400);
+        $totalChars+=strlen($message['content']); $safeMessages[]=['role'=>$message['role'],'content'=>trim($message['content'])];
+    }
+    if($totalChars>16000) api_json(['success'=>false,'message'=>'Riwayat chat terlalu panjang. Mulai percakapan baru.'],400);
+
+    $system='Anda adalah asisten Bursa Limbah (bursalimbah.com), marketplace perdagangan limbah dan material daur ulang Indonesia. Jawab dalam Bahasa Indonesia yang ramah, ringkas, dan praktis. Bantu hanya aktivitas yang fiturnya aktif. Jangan mengarang kebijakan atau biaya. Untuk status akun/transaksi atau sengketa, arahkan ke Pusat Layanan Bursa Limbah. Jangan meminta password, OTP, API key, nomor kartu, atau dokumen identitas.';
+    if(!empty($row['site_help_enabled'])) $system.='\n\nBantu pertanyaan pendaftaran, akun, paket, penawaran, chat, pesanan, pembayaran/escrow, pengiriman, verifikasi, serta navigasi situs berdasarkan informasi yang tersedia.';
+    if(!empty($row['product_search_enabled'])) $system.='\n\nBantu pengguna menemukan produk dengan meminta kata kunci/kategori/lokasi/volume lalu merangkum kandidat katalog publik yang disediakan.';
+    if(!empty($row['product_posting_assist_enabled'])) $system.='\n\nBantu penjual menyiapkan posting dengan memandu judul, kategori, kondisi/mutu, volume dan satuan, harga, lokasi, jadwal, serta foto; arahkan mereka ke tombol Jual untuk meninjau dan mengirim formulir. Jangan pernah membuat atau mempublikasikan listing sendiri.';
+    $lastUser=''; foreach(array_reverse($safeMessages) as $m){if($m['role']==='user'){$lastUser=$m['content'];break;}}
+    if(!empty($row['product_search_enabled']) && $lastUser!==''){
+        try {
+            $lower= function_exists('mb_strtolower') ? mb_strtolower($lastUser,'UTF-8') : strtolower($lastUser);
+            $terms=array_values(array_filter(array_unique(preg_split('/[^\p{L}\p{N}]+/u',$lower,-1,PREG_SPLIT_NO_EMPTY)),fn($t)=>function_exists('mb_strlen')?mb_strlen($t,'UTF-8')>=3:strlen($t)>=3));
+            $terms=array_slice($terms,0,4);
+            if($terms){$where=[];$params=[];foreach($terms as $term){$where[]='(LOWER(p.title) LIKE ? OR LOWER(p.description) LIKE ? OR LOWER(c.main_category) LIKE ?)';$like='%'.$term.'%';array_push($params,$like,$like,$like);} $sql='SELECT p.title,p.description,p.asking_price,p.weight,p.unit,p.city,c.main_category FROM products p LEFT JOIN categories c ON c.id=p.category_id WHERE p.status IN (\'approved\',\'tersedia\') AND ('.implode(' OR ',$where).') ORDER BY p.created_at DESC LIMIT 5';$q=$pdo->prepare($sql);$q->execute($params);$hits=$q->fetchAll();if($hits){$system.='\n\nKandidat produk publik dari katalog saat ini (gunakan hanya yang relevan; nyatakan sebagai hasil yang perlu dicek pengguna): '.json_encode(array_map(fn($p)=>['produk'=>$p['title'],'kategori'=>$p['main_category'],'harga'=>$p['asking_price'],'berat'=>$p['weight'],'satuan'=>$p['unit'],'kota'=>$p['city'],'deskripsi'=>function_exists('mb_substr')?mb_substr(strip_tags($p['description']??''),0,240,'UTF-8'):substr(strip_tags($p['description']??''),0,240)],$hits),JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES);}}
+        } catch(Throwable $e) { error_log('[Agent Catalog Search] '.$e->getMessage()); }
+    }
+    $url=rtrim((string)$row['base_url'],'/').'/chat/completions';
+    $payload=json_encode(['model'=>$row['model_name'],'messages'=>array_merge([['role'=>'system','content'=>$system]],$safeMessages)],JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES);
+    if(!function_exists('curl_init')) api_json(['success'=>false,'message'=>'Ekstensi cURL belum aktif pada server.'],503);
+    $ch=curl_init($url);curl_setopt_array($ch,[CURLOPT_POST=>true,CURLOPT_RETURNTRANSFER=>true,CURLOPT_HTTPHEADER=>['Authorization: Bearer '.$apiKey,'Content-Type: application/json'],CURLOPT_POSTFIELDS=>$payload,CURLOPT_CONNECTTIMEOUT=>10,CURLOPT_TIMEOUT=>60]);
+    $body=curl_exec($ch);$status=(int)curl_getinfo($ch,CURLINFO_HTTP_CODE);$curlError=curl_error($ch);curl_close($ch);
+    if($body===false||$status<200||$status>=300){error_log('[Agent API] Upstream HTTP '.$status.' '.$curlError);api_json(['success'=>false,'message'=>'Layanan bantuan sedang bermasalah. Coba lagi nanti.'],502);}
+    $result=json_decode($body,true);$reply=$result['choices'][0]['message']['content']??'';
+    if(!is_string($reply)||trim($reply)==='')api_json(['success'=>false,'message'=>'Respons bantuan tidak valid.'],502);
+    api_json(['success'=>true,'message'=>trim($reply)]);
+}
+
 if ($path === 'auth/logout' && $method === 'POST') { $_SESSION = []; session_regenerate_id(true); api_json(['success'=>true]); }
 if ($path === 'auth/admin/password' && $method === 'POST') {
     api_require_role(['admin']);

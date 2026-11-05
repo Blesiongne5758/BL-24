@@ -70,6 +70,7 @@ mysql -h 108.136.70.118 -u admin -p bursalimbahdb -e "SHOW TABLES;"
 | 17 | `event_registrations` | Peserta event |
 | 18 | `admin_logs` | Log aktivitas admin |
 | 19 | `system_settings` | Konfigurasi platform |
+| 20 | `ai_agent_config` | Konfigurasi agent, fitur, dan API key terenkripsi |
 | 20 | `addresses` | Alamat pengiriman/penjemputan |
 
 ---
