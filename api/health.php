@@ -23,7 +23,6 @@ echo json_encode([
     'timestamp' => date('c'),
     'features' => [
         'cloudinary_storage' => true,
-        'supabase_db' => true,
-        'crypto_wallet' => true
+        'supabase_db' => true
     ]
 ]);
