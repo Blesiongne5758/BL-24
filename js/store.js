@@ -531,7 +531,9 @@ class BursaLimbahStore {
         body: JSON.stringify({ identifier, password })
       });
 
-      const data = await res.json().catch(() => ({}));
+      const responseText = await res.text();
+      let data = {};
+      try { data = responseText ? JSON.parse(responseText) : {}; } catch (_) { /* handled below */ }
 
       if (res.ok && data.success && data.user) {
         const user = data.user;
@@ -566,9 +568,19 @@ class BursaLimbahStore {
       } else if (res.status === 404 && this.canUseLocalRegistrationFallback()) {
         // Local standalone preview may authenticate browser-only demo accounts.
       } else {
+        let message = data.message;
+        if (!message && res.status === 404) {
+          message = 'Endpoint login /api/auth/login tidak ditemukan. Pastikan api/.htaccess dan api/router.php sudah terunggah.';
+        } else if (!message && res.status >= 500) {
+          message = `Server API login bermasalah (HTTP ${res.status}). Periksa konfigurasi PHP/MySQL dan log error hosting.`;
+        } else if (!message && res.ok) {
+          message = 'Endpoint login mengirim respons yang tidak valid. Pastikan versi terbaru api/router.php dan api/login.php sudah terunggah.';
+        } else if (!message) {
+          message = `Login gagal diproses oleh server (HTTP ${res.status}). Silakan coba lagi atau hubungi admin.`;
+        }
         return {
           success: false,
-          message: data.message || "Server tidak dapat memproses login. Silakan coba lagi atau hubungi admin."
+          message
         };
       }
     } catch (netErr) {
