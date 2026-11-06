@@ -599,27 +599,14 @@ class BursaLimbahApp {
     }
 
     try {
-      const { data: user, error } = await window.circulinkSupabase.client.auth.signInWithPassword({
-        email: identifier,
-        password: password,
-      });
-
-      if (error) throw error;
-
-      // Supabase auth doesn't store 'role' in auth.users by default in the same way as our old system.
-      // We need to fetch the user profile from our 'users' table.
-      const { data: profile, error: profileError } = await window.circulinkSupabase.client
-        .from('users')
-        .select('role, name, company')
-        .eq('id', user.user.id)
-        .single();
-
-      if (profileError || !profile) throw new Error('Profil pengguna tidak ditemukan.');
+      const result = await this.store.loginUserAsync(identifier, password);
+      if (!result.success) throw new Error(result.message || 'Email atau kata sandi tidak sesuai.');
 
       if (alertBox) alertBox.classList.add('hidden');
       this.triggerConfetti();
 
-      const role = profile.role || 'buyer';
+      const profile = result.user;
+      const role = result.role || profile.role || 'buyer';
       if (role === 'admin') {
         this.showToast('Berhasil masuk! Selamat datang di Pusat Pengelola (Admin).', 'success');
       } else if (role === 'seller') {
