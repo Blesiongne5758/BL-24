@@ -578,6 +578,10 @@ class BursaLimbahStore {
     return localRes;
   }
 
+  canUseLocalRegistrationFallback() {
+    return typeof window !== 'undefined' && (window.location.protocol === 'file:' || ['localhost', '127.0.0.1'].includes(window.location.hostname));
+  }
+
   async registerSellerAsync(sellerData) {
     try {
       const res = await fetch(`${this.apiBaseUrl}/api/auth/register`, {
@@ -585,8 +589,8 @@ class BursaLimbahStore {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...sellerData, role: 'seller' })
       });
-      const data = await res.json();
-      if (res.ok && data.success) {
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.success && data.user) {
         const user = data.user;
         const existingIdx = this.state.users.findIndex(u => u.id === user.id);
         if (existingIdx !== -1) {
@@ -599,11 +603,17 @@ class BursaLimbahStore {
         this.state.currentRole = "seller";
         this.save();
         return { success: true, user, isNewAccount: true, source: 'mysql' };
-      } else if (data.message) {
-        return { success: false, message: data.message };
+      } else if (res.status === 404 && this.canUseLocalRegistrationFallback()) {
+        // Local standalone preview intentionally supports browser-only accounts.
+      } else {
+        return { success: false, message: data.message || 'Pendaftaran gagal diproses oleh server. Coba lagi atau hubungi admin.' };
       }
     } catch (err) {
-      console.warn('[Store] Gagal register ke MySQL backend, fallback ke lokal:', err.message);
+      if (!this.canUseLocalRegistrationFallback()) {
+        console.error('[Store] Server pendaftaran penjual tidak dapat dihubungi:', err.message);
+        return { success: false, message: 'Server pendaftaran tidak dapat dihubungi. Periksa koneksi lalu coba lagi.' };
+      }
+      console.warn('[Store] Backend tidak tersedia di mode lokal; gunakan penyimpanan browser:', err.message);
     }
 
     const newUser = this.registerSeller(sellerData);
@@ -617,8 +627,8 @@ class BursaLimbahStore {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...buyerData, role: 'buyer' })
       });
-      const data = await res.json();
-      if (res.ok && data.success) {
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.success && data.user) {
         const user = data.user;
         const existingIdx = this.state.users.findIndex(u => u.id === user.id);
         if (existingIdx !== -1) {
@@ -631,11 +641,17 @@ class BursaLimbahStore {
         this.state.currentRole = "buyer";
         this.save();
         return { success: true, user, isNewAccount: true, source: 'mysql' };
-      } else if (data.message) {
-        return { success: false, message: data.message };
+      } else if (res.status === 404 && this.canUseLocalRegistrationFallback()) {
+        // Local standalone preview intentionally supports browser-only accounts.
+      } else {
+        return { success: false, message: data.message || 'Pendaftaran gagal diproses oleh server. Coba lagi atau hubungi admin.' };
       }
     } catch (err) {
-      console.warn('[Store] Gagal register buyer ke MySQL, fallback ke lokal:', err.message);
+      if (!this.canUseLocalRegistrationFallback()) {
+        console.error('[Store] Server pendaftaran pembeli tidak dapat dihubungi:', err.message);
+        return { success: false, message: 'Server pendaftaran tidak dapat dihubungi. Periksa koneksi lalu coba lagi.' };
+      }
+      console.warn('[Store] Backend tidak tersedia di mode lokal; gunakan penyimpanan browser:', err.message);
     }
 
     const newUser = this.registerBuyer(buyerData);
