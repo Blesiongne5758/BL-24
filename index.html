@@ -91,14 +91,8 @@
           </button>
         </nav>
 
-        <!-- Right Quick Actions (Chat, Profile/Login, WhatsApp) -->
+        <!-- Right Quick Actions (Profile/Login, WhatsApp) -->
         <div class="mobile-header-actions flex items-center gap-1.5 sm:gap-2">
-          <!-- Chat Button -->
-          <button onclick="app.toggleChat()" class="relative w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center text-sm active:scale-95 transition cursor-pointer" title="Layar Chat Langsung">
-            <i class="fa-solid fa-comment-dots text-emerald-700"></i>
-            <span id="chat-unread-badge" class="absolute -top-1 -right-1 w-4 h-4 bg-rose-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center border-2 border-white">1</span>
-          </button>
-
           <!-- WhatsApp Konsultasi -->
           <a href="https://wa.me/6281234567890?text=Halo%20Admin%20Bursa%20Limbah%2C%20saya%20ingin%20konsultasi%20transaksi" target="_blank" class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 flex items-center justify-center text-sm active:scale-95 transition cursor-pointer" title="WhatsApp Bantuan">
             <i class="fa-brands fa-whatsapp text-emerald-600 text-base"></i>
@@ -590,13 +584,13 @@
                 <i class="fa-solid fa-user-shield"></i>
               </div>
               <div>
-                <span class="font-bold text-slate-900">Ingin melihat Harga, Peta GPS, Kontak WA, dan Mengirim Pesan Chat?</span>
-                <p class="text-slate-500 mt-0.5">Daftarkan akun Pembeli Anda dan pilih 1 dari 3 Jenis Paket Berlangganan yang sesuai dengan kebutuhan volume usaha Anda.</p>
+                <span class="font-bold text-slate-900">Pilih paket akses yang sesuai dengan kebutuhan Anda</span>
+                <p class="text-slate-500 mt-0.5">Bandingkan tier pembeli untuk membuka harga, lokasi presisi, peta GPS, dan kontak penjual. Pilihan paket berada di halaman Berlangganan.</p>
               </div>
             </div>
-            <button onclick="app.showBuyerRegisterModal()" class="px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-xs font-bold shadow transition shrink-0 flex items-center space-x-1.5">
-              <i class="fa-solid fa-key text-emerald-300"></i>
-              <span>Buka Akses Penuh</span>
+            <button onclick="app.switchAppTab('sub')" class="px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-xs font-bold shadow transition shrink-0 flex items-center space-x-1.5">
+              <i class="fa-solid fa-crown text-amber-300"></i>
+              <span>Lihat Paket Tier</span>
             </button>
           </div>
 
@@ -5022,6 +5016,6 @@
   <script src="js/store.js?v=14"></script>
   <script src="js/supabaseClient.js?v=7"></script>
   <script src="js/storageClient.js?v=7"></script>
-  <script src="js/app.js?v=15"></script>
+  <script src="js/app.js?v=16"></script>
 </body>
 </html>
