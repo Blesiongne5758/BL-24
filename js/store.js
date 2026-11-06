@@ -531,9 +531,9 @@ class BursaLimbahStore {
         body: JSON.stringify({ identifier, password })
       });
 
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
 
-      if (res.ok && data.success) {
+      if (res.ok && data.success && data.user) {
         const user = data.user;
         const existingIdx = this.state.users.findIndex(u => u.id === user.id || (u.email && u.email.toLowerCase() === user.email.toLowerCase()));
         if (existingIdx !== -1) {
@@ -563,14 +563,20 @@ class BursaLimbahStore {
           role,
           source: 'mysql'
         };
-      } else if (res.status === 401 || res.status === 403 || res.status === 409 || res.status === 400 || res.status === 404) {
+      } else if (res.status === 404 && this.canUseLocalRegistrationFallback()) {
+        // Local standalone preview may authenticate browser-only demo accounts.
+      } else {
         return {
           success: false,
-          message: data.message || "Email, username, atau kata sandi tidak valid."
+          message: data.message || "Server tidak dapat memproses login. Silakan coba lagi atau hubungi admin."
         };
       }
     } catch (netErr) {
-      console.warn('[Store] Server MySQL offline, fallback ke penyimpanan lokal:', netErr.message);
+      if (!this.canUseLocalRegistrationFallback()) {
+        console.error('[Store] Server login tidak dapat dihubungi:', netErr.message);
+        return { success: false, message: 'Server login tidak dapat dihubungi. Periksa koneksi lalu coba lagi.' };
+      }
+      console.warn('[Store] Backend tidak tersedia di mode lokal; gunakan login browser:', netErr.message);
     }
 
     const localRes = this.loginUser(identifier, password);
