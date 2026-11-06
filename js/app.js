@@ -1900,156 +1900,61 @@ class BursaLimbahApp {
 
     grid.innerHTML = items.map(item => {
       const isSupply = item.postingType === 'supply';
-      const mainPhoto = isSupply && item.evidences && item.evidences[0] 
-        ? item.evidences[0].url 
-        : 'https://images.unsplash.com/photo-1532996122724-e3c354a0b15b?auto=format&fit=crop&w=600&q=80';
-      const qtyText = isSupply 
-        ? (item.volume > 0 ? `${item.volume.toLocaleString('id-ID')} Liter` : `${item.weight.toLocaleString('id-ID')} Kg`)
-        : `${item.volume.toLocaleString('id-ID')} ${item.unit}`;
+      const mainPhoto = isSupply && item.evidences && item.evidences[0] ? item.evidences[0].url : '';
+      const qtyValue = Number(isSupply ? (item.weight || item.volume) : item.volume) || 0;
+      const qtyUnit = item.unit || (isSupply ? 'Kg' : 'unit');
+      const qtyText = `${qtyValue.toLocaleString('id-ID')} ${qtyUnit}`;
       const partnerName = isSupply ? item.sellerName : item.buyerCompany;
       const itemCity = this.getCity(item);
 
       return `
-        <div class="public-posting-card bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-md transition flex flex-col justify-between" data-category-id="${item.category || item.categoryId || ''}">
-          <div>
-            <!-- Banner Gambar & Label Tipe Postingan -->
-            <div class="relative h-44 bg-slate-100 overflow-hidden">
-              <img src="${mainPhoto}" alt="${esc(item.title)}" class="w-full h-full object-cover">
-
-              <div class="absolute top-2 left-2 flex flex-col gap-1">
-                <span class="px-2.5 py-0.5 rounded-md text-[10px] font-bold bg-slate-900/80 backdrop-blur-sm text-white">
-                  ${esc(item.code)}
-                </span>
-                <a href="https://www.google.com/search?q=harga+${encodeURIComponent(item.category || 'limbah')} +terbaru" target="_blank" class="px-2 py-0.5 rounded-md text-[9px] font-bold bg-blue-600/90 backdrop-blur-sm text-white hover:bg-blue-700 transition flex items-center gap-1">
-                  <i class="fa-brands fa-google"></i> Cek Harga Pasar
-                </a>
-              </div>
+        <article class="public-posting-card h-full overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg flex flex-col" data-category-id="${esc(item.category || item.categoryId || '')}">
+          <div class="relative h-48 shrink-0 overflow-hidden bg-slate-100">
+            ${mainPhoto ? `<img src="${esc(mainPhoto)}" alt="${esc(item.title)}" loading="lazy" decoding="async" class="h-full w-full object-cover" onerror="this.onerror=null;this.classList.add('hidden');this.nextElementSibling.classList.remove('hidden')">` : ''}
+            <div class="${mainPhoto ? 'hidden' : ''} absolute inset-0 flex flex-col items-center justify-center gap-2 bg-gradient-to-br from-emerald-50 to-slate-100 text-slate-400"><i class="fa-solid fa-recycle text-4xl text-emerald-300"></i><span class="text-[10px] font-semibold">Foto pasokan belum tersedia</span></div>
+            <div class="absolute left-3 top-3 flex flex-wrap gap-1.5">
+              <span class="rounded-md bg-slate-900/85 px-2.5 py-1 text-[10px] font-bold text-white backdrop-blur">${esc(item.code || 'Listing')}</span>
+              <span class="rounded-md ${isSupply ? 'bg-emerald-600' : 'bg-blue-600'} px-2.5 py-1 text-[10px] font-semibold text-white">${isSupply ? 'Pasokan Penjual' : 'Permintaan Pembeli'}</span>
             </div>
-                <span class="px-2 py-0.5 rounded-md text-[10px] font-semibold ${isSupply ? 'bg-emerald-600/90 text-white' : 'bg-blue-600/90 text-white'} backdrop-blur-sm">
-                  ${isSupply ? 'Pasokan Penjual' : 'Permintaan Pembeli'}
-                </span>
-              </div>
-
-              <div class="absolute top-2 right-2">
-                <span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-500 text-slate-950 shadow flex items-center">
-                  <i class="fa-solid fa-lock mr-1 text-[9px]"></i>Data Terproteksi
-                </span>
-              </div>
-
-              <div class="absolute bottom-2 left-2 right-2 bg-slate-900/85 backdrop-blur-md px-2.5 py-1.5 rounded-xl text-[11px] text-white flex items-center justify-between">
-                <span class="truncate"><i class="fa-solid fa-location-dot text-emerald-400 mr-1"></i>Kota: ${itemCity}</span>
-                <span class="shrink-0 text-amber-300 font-mono text-[10px]">Akses Publik</span>
-              </div>
-            </div>
-
-            <!-- Konten Postingan Publik -->
-            <div class="p-4 space-y-3">
-              <div>
-                <h4 class="font-bold text-slate-900 text-sm leading-snug line-clamp-2">${esc(item.title)}</h4>
-                <div class="flex items-center space-x-2 text-xs text-slate-500 mt-1">
-                  <span><i class="fa-solid fa-scale-balanced mr-1 text-slate-400"></i>Volume:</span>
-                  <span class="font-bold text-slate-800">${qtyText}</span>
-                  ${item.pickupSchedule ? `<span>â€¢ <i class="fa-solid fa-calendar-check mr-1 text-slate-400"></i>${item.pickupSchedule}</span>` : ''}
-                </div>
-
-                <!-- 10 Atribut Wajib Listing Badges -->
-                <div class="flex flex-wrap gap-1 mt-2">
-                  ${item.isB3 ? `
-                    <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-100 text-rose-800 border border-rose-300 flex items-center">
-                      <i class="fa-solid fa-triangle-exclamation mr-1 text-rose-600"></i>Limbah B3 (Izin KLHK)
-                    </span>
-                  ` : ''}
-                  <span class="px-2 py-0.5 rounded text-[10px] font-medium bg-slate-100 text-slate-700">
-                    <i class="fa-solid fa-box-open mr-1 text-slate-400"></i>Kondisi: ${esc(item.condition || 'Bersih')}
-                  </span>
-                  <span class="px-2 py-0.5 rounded text-[10px] font-medium bg-slate-100 text-slate-700">
-                    <i class="fa-solid fa-certificate mr-1 text-slate-400"></i>${esc(item.grade || 'Standar')}
-                  </span>
-                  ${item.minimumOrder ? `
-                    <span class="px-2 py-0.5 rounded text-[10px] font-medium bg-slate-100 text-slate-700">
-                      Min: ${item.minimumOrder} ${item.minimumOrderUnit || item.unit || 'Kg'}
-                    </span>
-                  ` : ''}
-                  <span class="px-2 py-0.5 rounded text-[10px] font-bold ${item.listingStatus === 'Tersedia' ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-700'}">
-                    ${esc(item.listingStatus || 'Tersedia')}
-                  </span>
-                </div>
-              </div>
-
-              <!-- 4 Kriteria Terproteksi Sesuai Permintaan Pengguna: Harga, Alamat, GPS Map, No WA -->
-              <div class="p-3 rounded-xl bg-amber-50/70 border border-amber-200/80 space-y-2 text-xs">
-                
-                <!-- 1. Kriteria Harga Disembunyikan -->
-                <div class="flex items-center justify-between">
-                  <span class="text-slate-500 flex items-center">
-                    <i class="fa-solid fa-tag text-amber-600 mr-1.5 text-[11px]"></i>Harga:
-                  </span>
-                  <span class="font-bold text-amber-800 bg-amber-100/90 border border-amber-300 px-2 py-0.5 rounded text-[11px] flex items-center">
-                    <i class="fa-solid fa-lock mr-1 text-[9px]"></i>Disembunyikan untuk Publik
-                  </span>
-                </div>
-
-                <!-- 2. Kriteria Alamat Presisi Disembunyikan: HANYA TAMPIL NAMA KOTA SAJA -->
-                <div class="flex items-center justify-between">
-                  <span class="text-slate-500 flex items-center">
-                    <i class="fa-solid fa-location-dot text-emerald-600 mr-1.5 text-[11px]"></i>Kota:
-                  </span>
-                  <span class="font-bold text-slate-900 text-[11px] flex items-center bg-white px-2 py-0.5 rounded border border-slate-200 shadow-2xs">
-                    <i class="fa-solid fa-city mr-1.5 text-emerald-600 text-[10px]"></i>${itemCity}
-                  </span>
-                </div>
-
-                <!-- 3. Kriteria GPS Map Disembunyikan -->
-                <div class="flex items-center justify-between">
-                  <span class="text-slate-500 flex items-center">
-                    <i class="fa-solid fa-map-location-dot text-amber-600 mr-1.5 text-[11px]"></i>Peta GPS:
-                  </span>
-                  <span class="text-slate-600 font-medium text-[11px] flex items-center">
-                    <i class="fa-solid fa-lock mr-1 text-slate-400 text-[10px]"></i>Peta GPS Terkunci
-                  </span>
-                </div>
-
-                <!-- 4. Kriteria Nomor WhatsApp Disembunyikan -->
-                <div class="flex items-center justify-between border-t border-amber-200/60 pt-1.5">
-                  <span class="text-slate-500 flex items-center">
-                    <i class="fa-brands fa-whatsapp text-amber-600 mr-1.5 text-[11px]"></i>Kontak WA:
-                  </span>
-                  <span class="font-mono text-slate-500 text-[11px] flex items-center">
-                    <i class="fa-solid fa-lock mr-1 text-slate-400 text-[10px]"></i>08xx-****-****
-                  </span>
-                </div>
-
-              </div>
-
-              <!-- Identitas Mitra -->
-              <div class="flex items-center justify-between text-xs text-slate-500 pt-0.5">
-                <span class="truncate"><i class="fa-solid fa-building mr-1 text-slate-400"></i>${partnerName}</span>
-                <span class="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 shrink-0 font-medium">Terverifikasi</span>
-              </div>
+            <span class="absolute right-3 top-3 inline-flex items-center gap-1 rounded-md bg-amber-400 px-2 py-1 text-[10px] font-bold text-amber-950 shadow"><i class="fa-solid fa-lock text-[9px]"></i> Data terlindungi</span>
+            <div class="absolute inset-x-3 bottom-3 flex items-center justify-between gap-2 rounded-xl bg-slate-950/80 px-3 py-2 text-[11px] text-white backdrop-blur">
+              <span class="min-w-0 truncate"><i class="fa-solid fa-location-dot mr-1 text-emerald-300"></i>${esc(itemCity)}</span>
+              <span class="shrink-0 text-[10px] font-semibold text-amber-200">Akses publik</span>
             </div>
           </div>
 
-          <!-- Tombol Aksi: Simulasi DP & Buka Akses -->
-          <div class="p-4 pt-0 space-y-2">
-            <div class="grid ${this.store.isDpEnabled() ? 'grid-cols-2' : 'grid-cols-1'} gap-1.5">
-              ${this.store.isDpEnabled() ? `
-              <button onclick="app.openMobileDpSimulator({ category: '${item.category || item.categoryId || 'jelantah'}', qty: ${item.volume || item.weight || 2500}, title: '${(item.title || '').replace(/'/g, "\\'")}' })" class="py-2 px-2.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 text-[11px] font-bold transition flex items-center justify-center space-x-1 active:scale-95 shadow-2xs">
-                <i class="fa-solid fa-calculator text-amber-600"></i>
-                <span>Simulasi DP</span>
-              </button>
-              ` : ''}
-              <button onclick="app.showProductDetail('${item.id}')" class="py-2 px-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200 text-[11px] font-bold transition flex items-center justify-center space-x-1 active:scale-95">
-                <i class="fa-solid fa-eye text-emerald-600"></i>
-                <span>Detail Pasokan</span>
-              </button>
+          <div class="flex flex-1 flex-col gap-4 p-4">
+            <div>
+              <h3 class="line-clamp-2 min-h-[2.75rem] text-sm font-bold leading-snug text-slate-900">${esc(item.title || 'Pasokan limbah')}</h3>
+              <div class="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500">
+                <span><i class="fa-solid fa-scale-balanced mr-1 text-slate-400"></i><strong class="text-slate-800">${qtyText}</strong></span>
+                ${item.pickupSchedule ? `<span><i class="fa-solid fa-calendar-check mr-1 text-slate-400"></i>${esc(item.pickupSchedule)}</span>` : ''}
+              </div>
+              <div class="mt-3 flex flex-wrap gap-1.5">
+                ${item.isB3 ? '<span class="rounded-md border border-rose-200 bg-rose-50 px-2 py-1 text-[10px] font-bold text-rose-700"><i class="fa-solid fa-triangle-exclamation mr-1"></i>Limbah B3</span>' : ''}
+                <span class="rounded-md bg-slate-100 px-2 py-1 text-[10px] font-medium text-slate-700">${esc(item.condition || 'Bersih')}</span>
+                <span class="rounded-md bg-slate-100 px-2 py-1 text-[10px] font-medium text-slate-700">${esc(item.grade || 'Standar')}</span>
+                ${item.minimumOrder ? `<span class="rounded-md bg-slate-100 px-2 py-1 text-[10px] font-medium text-slate-700">Minimum ${Number(item.minimumOrder).toLocaleString('id-ID')} ${esc(item.minimumOrderUnit || item.unit || 'Kg')}</span>` : ''}
+                <span class="rounded-md bg-emerald-50 px-2 py-1 text-[10px] font-bold text-emerald-700">${esc(item.listingStatus || 'Tersedia')}</span>
+              </div>
             </div>
-            <button onclick="app.showBuyerRegisterModal()" class="w-full py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white text-xs font-bold shadow-xs transition flex items-center justify-center space-x-1.5 active:scale-95">
-              <i class="fa-solid fa-crown text-amber-300"></i>
-              <span>Daftar &amp; Buka Akses (3 Paket)</span>
-            </button>
-          </div>
 
-        </div>
+            <div class="rounded-xl border border-amber-200 bg-amber-50/70 p-3 text-xs">
+              <div class="flex items-start justify-between gap-3"><span class="text-slate-600"><i class="fa-solid fa-tag mr-1.5 text-amber-600"></i>Harga</span><span class="text-right font-semibold text-amber-800"><i class="fa-solid fa-lock mr-1 text-[10px]"></i>Tersedia untuk tier pembeli</span></div>
+              <div class="mt-2 flex items-center justify-between gap-3 border-t border-amber-200/70 pt-2"><span class="text-slate-600"><i class="fa-solid fa-map-location-dot mr-1.5 text-emerald-600"></i>Lokasi &amp; kontak</span><span class="text-right text-[11px] text-slate-600">Dibuka sesuai paket</span></div>
+            </div>
+
+            <div class="mt-auto flex items-center justify-between gap-3 border-t border-slate-100 pt-3 text-xs text-slate-500">
+              <span class="min-w-0 truncate"><i class="fa-solid fa-building mr-1 text-slate-400"></i>${esc(partnerName || 'Mitra Bursa Limbah')}</span>
+              <span class="shrink-0 rounded-full bg-emerald-50 px-2 py-1 text-[10px] font-semibold text-emerald-700"><i class="fa-solid fa-circle-check mr-1"></i>Terverifikasi</span>
+            </div>
+
+            <div class="grid ${this.store.isDpEnabled() ? 'grid-cols-2' : 'grid-cols-1'} gap-2">
+              ${this.store.isDpEnabled() ? `<button type="button" onclick="app.openMobileDpSimulator({ category: '${String(item.category || item.categoryId || 'jelantah').replace(/'/g, "\\'")}', qty: ${Number(item.volume || item.weight) || 2500}, title: '${String(item.title || '').replace(/'/g, "\\'")}' })" class="inline-flex items-center justify-center gap-1.5 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-[11px] font-bold text-amber-900 transition hover:bg-amber-100"><i class="fa-solid fa-calculator text-amber-600"></i>Simulasi DP</button>` : ''}
+              <button type="button" onclick="app.showProductDetail('${esc(item.id)}')" class="inline-flex items-center justify-center gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2.5 text-[11px] font-bold text-emerald-800 transition hover:bg-emerald-100"><i class="fa-solid fa-eye"></i>Detail Pasokan</button>
+            </div>
+          </div>
+        </article>
       `;
     }).join('');
   }
