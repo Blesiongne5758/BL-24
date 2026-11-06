@@ -195,17 +195,18 @@ try {
             $products = array_map(function($p) use ($pdo) {
                 $status = strtolower((string)$p['status']);
                 $img=$pdo->prepare('SELECT image_url,caption,is_evidence FROM product_images WHERE product_id=? ORDER BY sort_order,created_at');$img->execute([$p['id']]);
-                $evidences=array_map(function($r){return ['url'=>$r['image_url'],'thumbnailUrl'=>$r['image_url'],'filename'=>$r['caption']??'','provider'=>'cloudinary'];},$img->fetchAll());
+                $evidences=array_map(function($r){$caption=$r['caption']??'Foto eviden';return ['url'=>$r['image_url'],'thumbnailUrl'=>$r['image_url'],'type'=>$caption,'notes'=>$caption,'filename'=>$caption,'provider'=>'cloudinary'];},$img->fetchAll());
                 return [
                     'id'=>$p['id'],'code'=>$p['code'],'title'=>$p['title'],'categoryId'=>!empty($p['is_b3'])?'cat_limbah_b3':api_category_group_id($p['category_name']??''),
                     'categoryName'=>$p['category_name'] ?? 'Lainnya','sellerId'=>$p['seller_id'],'sellerName'=>$p['seller_name'] ?? '',
                     'sellerType'=>$p['seller_type'] ?? '','sellerWhatsapp'=>preg_replace('/\D+/', '', $p['seller_phone'] ?? ''),
-                    'sourceType'=>$p['origin_source'] ?? '','origin'=>$p['origin_source'] ?? '',
+                    'sourceType'=>$p['source_type'] ?? '','origin'=>$p['origin_source'] ?? '',
                     'volume'=>(float)$p['volume'],'weight'=>(float)$p['weight'],'unit'=>$p['unit'],
                     'offerPrice'=>(float)$p['asking_price'],'totalPrice'=>(float)$p['asking_price'] * max(1,(float)$p['weight']),
-                    'minimumOrder'=>(float)$p['minimum_order'],'containerType'=>$p['container_type'],'condition'=>$p['condition'],
+                    'minimumOrder'=>(float)$p['minimum_order'],'containerType'=>$p['container_type'],'containerQty'=>(int)($p['container_qty'] ?? 1),'condition'=>$p['condition']==='sudah_dipilah'?'Sudah Dipilah':$p['condition'],
                     'grade'=>$p['grade'],'description'=>$p['description'],'address'=>$p['location'],'location'=>$p['location'],
                     'city'=>$p['city'],'latitude'=>$p['latitude'],'longitude'=>$p['longitude'],'isB3'=>(bool)$p['is_b3'],
+                    'nib'=>$p['nib'] ?? null,'tpsPermit'=>$p['tps_permit'] ?? null,'b3PermitNumber'=>$p['b3_permit_number'] ?? null,
                     'evidences'=>$evidences,'status'=>$status,'listingStatus'=>$status === 'approved' || $status === 'tersedia' ? 'Tersedia' : $status,
                     'createdAt'=>$p['created_at']
                 ];
@@ -218,13 +219,17 @@ try {
             $sellerId=(string)($input['sellerId'] ?? $_SESSION['user_id']);
             if (($_SESSION['role'] ?? '') !== 'admin' && $sellerId !== $_SESSION['user_id']) api_json(['success'=>false,'message'=>'Tidak boleh membuat pasokan atas nama akun lain.'],403);
             $city=(string)($input['city'] ?? 'Indonesia');
+            $condition=str_replace(' ','_',strtolower(trim((string)($input['condition']??''))));
+            if(!in_array($condition,['bersih','campur','terpress','cacah','baled','sudah_dipilah'],true))$condition='bersih';
             $cat=$pdo->prepare('SELECT id FROM categories WHERE id=?');$cat->execute([$input['categoryId']??'']);$catId=$cat->fetchColumn();
             if(!$catId){$main=api_category_name_for_group($input['categoryId']??'',(string)($input['categoryName']??''));$cat=$pdo->prepare('SELECT id FROM categories WHERE main_category=? OR sub_category LIKE ? ORDER BY is_b3 ASC LIMIT 1');$cat->execute([$main,'%'.$main.'%']);$catId=$cat->fetchColumn();}
             if(!$catId)$catId=$pdo->query('SELECT id FROM categories ORDER BY id LIMIT 1')->fetchColumn();
             if(!$catId)api_json(['success'=>false,'message'=>'Kategori database belum diimpor.'],503);
-            $q=$pdo->prepare("INSERT INTO products (id,code,seller_id,category_id,title,description,`condition`,grade,container_type,weight,volume,unit,origin_source,location,city,latitude,longitude,asking_price,minimum_order,pickup_schedule,status,is_b3,b3_permit_number) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
-            $q->execute([$id,$input['code']??$id,$sellerId,$catId,$input['title']??'Pasokan baru',$input['description']??'',in_array(strtolower($input['condition']??''), ['bersih','campur','terpress','cacah','baled'],true)?strtolower($input['condition']):'bersih',$input['grade']??'Grade A',$input['containerType']??'Jerigen / Drum / Bal',(float)($input['weight']??$input['volume']??0),(float)($input['volume']??$input['weight']??0),$input['unit']??'Kg',$input['origin']??$input['sourceType']??'', $input['address']??$input['location']??$city,$city,$input['lat']??$input['latitude']??null,$input['lng']??$input['longitude']??null,(float)($input['offerPrice']??$input['price']??0),(float)($input['minimumOrder']??1),$input['pickupSchedule']??'Siap Angkut Segera','pending',!empty($input['isB3'])?1:0,$input['b3PermitNumber']??null]);
-            foreach(($input['evidences']??[]) as $idx=>$evidence){$url=is_array($evidence)?($evidence['url']??''):(string)$evidence;if(!$url)continue;$img=$pdo->prepare('INSERT INTO product_images (id,product_id,image_url,caption,is_evidence,sort_order) VALUES (?,?,?,?,1,?)');$img->execute(['img_'.bin2hex(random_bytes(8)),$id,$url,is_array($evidence)?($evidence['filename']??null):null,$idx]);}
+            $pdo->beginTransaction();
+            $q=$pdo->prepare("INSERT INTO products (id,code,seller_id,category_id,title,description,`condition`,grade,container_type,container_qty,weight,volume,unit,origin_source,source_type,nib,tps_permit,location,city,latitude,longitude,asking_price,minimum_order,pickup_schedule,status,is_b3,b3_permit_number) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
+            $q->execute([$id,$input['code']??$id,$sellerId,$catId,$input['title']??'Pasokan baru',$input['description']??'',$condition,$input['grade']??'Grade A',$input['containerType']??'Jerigen / Drum / Bal',max(1,(int)($input['containerQty']??1)),(float)($input['weight']??$input['volume']??0),(float)($input['volume']??$input['weight']??0),$input['unit']??'Kg',$input['origin']??'',$input['sourceType']??null,$input['nib']??null,$input['tpsPermit']??null,$input['address']??$input['location']??$city,$city,$input['lat']??$input['latitude']??null,$input['lng']??$input['longitude']??null,(float)($input['offerPrice']??$input['price']??0),(float)($input['minimumOrder']??1),$input['pickupSchedule']??'Siap Angkut Segera','pending',!empty($input['isB3'])?1:0,$input['b3PermitNumber']??null]);
+            foreach(($input['evidences']??[]) as $idx=>$evidence){$url=is_array($evidence)?($evidence['url']??''):(string)$evidence;if(!$url)continue;$caption=is_array($evidence)?($evidence['type']??$evidence['filename']??'Foto eviden'):'Foto eviden';$img=$pdo->prepare('INSERT INTO product_images (id,product_id,image_url,caption,is_evidence,sort_order) VALUES (?,?,?,?,1,?)');$img->execute(['img_'.bin2hex(random_bytes(8)),$id,$url,$caption,$idx]);}
+            $pdo->commit();
             api_json(['success'=>true,'id'=>$id],201);
         }
         if ($method === 'PATCH' && count($parts) === 3 && $parts[2] === 'status') {
@@ -351,6 +356,7 @@ try {
 
     api_json(['success'=>false,'message'=>'Endpoint PHP belum tersedia untuk rute ini: '.$path],404);
 } catch (Throwable $e) {
+    if ($pdo->inTransaction()) $pdo->rollBack();
     error_log('[PHP API] '.$path.' '.$e->getMessage());
     api_json(['success'=>false,'message'=>'Permintaan API gagal diproses. Periksa skema database dan konfigurasi hosting.'],500);
 }

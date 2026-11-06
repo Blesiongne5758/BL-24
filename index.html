@@ -831,7 +831,7 @@
 
         <!-- Card Container Formulir -->
         <div class="bg-white rounded-3xl p-5 sm:p-8 shadow-xl border border-slate-200">
-      <form id="form-upload-product" onsubmit="app.handleUploadProduct(event)" class="space-y-4">
+      <form id="form-upload-product" novalidate onsubmit="app.handleUploadProduct(event)" class="space-y-4">
         <!-- STEP 1: Pemilih Sumber Limbah (3 Kartu) -->
         <div>
           <label class="block text-xs font-bold uppercase text-slate-600 mb-2">
@@ -885,13 +885,13 @@
         <div class="grid grid-cols-2 gap-3">
           <div>
             <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Kategori Komoditas *</label>
-            <select id="up-category" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none">
+            <select id="up-category" required onchange="app.handleUploadCategoryChange()" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none">
               <!-- Diisi otomatis oleh JavaScript -->
             </select>
           </div>
           <div>
             <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Jenis Wadah Kemasan *</label>
-            <select id="up-container-type" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none">
+            <select id="up-container-type" required class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none">
               <option value="IBC Tank (1000L)">IBC Tank (1000L)</option>
               <option value="Drum Besi (200L)">Drum Besi (200L)</option>
               <option value="Jerigen (20L - 30L)">Jerigen (20L - 30L)</option>
@@ -904,11 +904,11 @@
 
         <div class="grid grid-cols-3 gap-3">
           <div>
-            <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Jumlah Wadah</label>
-            <input type="number" id="up-container-qty" value="1" min="1" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none">
+            <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Jumlah Wadah *</label>
+            <input type="number" id="up-container-qty" value="1" min="1" required class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none">
           </div>
           <div>
-            <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Kuantitas Total</label>
+            <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Kuantitas Total *</label>
             <input type="number" id="up-qty" required value="1000" min="1" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none" oninput="app.calculateUploadTotal()">
           </div>
           <div>
@@ -924,7 +924,7 @@
         <div class="grid grid-cols-2 gap-3">
           <div>
             <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Kondisi Fisik Pasokan *</label>
-            <select id="up-condition" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-brand-500 focus:outline-none">
+            <select id="up-condition" required class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-brand-500 focus:outline-none">
               <option value="Bersih">Bersih (Tanpa Campuran / Siap Olah)</option>
               <option value="Campur">Campur (Perlu Pemilahan / Sortir)</option>
               <option value="Terpress">Terpress (Bal Padat Siap Muat)</option>
@@ -942,13 +942,13 @@
           <div>
             <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Minimal Beli (MOQ) *</label>
             <div class="flex">
-              <input type="number" id="up-min-order" value="100" min="1" class="w-full bg-slate-50 border border-slate-300 rounded-l-xl px-3 py-2 text-xs focus:outline-none">
+              <input type="number" id="up-min-order" value="100" min="1" required class="w-full bg-slate-50 border border-slate-300 rounded-l-xl px-3 py-2 text-xs focus:outline-none">
               <span id="up-min-order-unit" class="bg-slate-200 border border-l-0 border-slate-300 rounded-r-xl px-2.5 py-2 text-xs font-semibold text-slate-700 flex items-center">Kg</span>
             </div>
           </div>
           <div>
             <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Jadwal Pengambilan *</label>
-            <select id="up-pickup-schedule" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-brand-500 focus:outline-none">
+            <select id="up-pickup-schedule" required class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-brand-500 focus:outline-none">
               <option value="Siap Angkut Segera (H+0 s/d H+1)">Siap Angkut Segera (H+0 - H+1)</option>
               <option value="Terjadwal (H+2 s/d H+3)">Terjadwal (H+2 - H+3)</option>
               <option value="Pengambilan Rutin Mingguan">Pengambilan Rutin Mingguan</option>
@@ -957,7 +957,7 @@
           </div>
           <div>
             <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Status Ketersediaan *</label>
-            <select id="up-listing-status" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-brand-500 focus:outline-none">
+            <select id="up-listing-status" required class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-brand-500 focus:outline-none">
               <option value="Tersedia">Tersedia (Ready Stock)</option>
               <option value="Kontrak">Kontrak (Pemasok Rutin)</option>
               <option value="Terjual">Terjual (Arsip)</option>
@@ -981,14 +981,14 @@
         <!-- Klasifikasi Limbah B3 KLHK (tersembunyi untuk Rumah Tangga) -->
         <div id="up-b3-section" class="p-3 bg-amber-50 rounded-2xl border border-amber-200 space-y-2">
           <div class="flex items-center space-x-2">
-            <input type="checkbox" id="up-is-b3" class="w-4 h-4 text-rose-600 rounded focus:ring-rose-500 border-slate-300" onchange="document.getElementById('up-b3-permit-box').classList.toggle('hidden', !this.checked)">
+            <input type="checkbox" id="up-is-b3" class="w-4 h-4 text-rose-600 rounded focus:ring-rose-500 border-slate-300" onchange="app.handleUploadB3Toggle()">
             <label for="up-is-b3" class="text-xs font-bold text-slate-800 cursor-pointer flex items-center gap-1">
               <i class="fa-solid fa-triangle-exclamation text-rose-600"></i>
               <span>Limbah B3 (Bahan Berbahaya & Beracun) &mdash; Memerlukan Izin Khusus KLHK</span>
             </label>
           </div>
           <div id="up-b3-permit-box" class="hidden pl-6">
-            <label class="block text-[11px] font-semibold text-slate-600 mb-1">Nomor Izin Pengelolaan / Rekomendasi Pengangkutan B3 KLHK</label>
+            <label class="block text-[11px] font-semibold text-slate-600 mb-1">Nomor Izin Pengelolaan / Rekomendasi Pengangkutan B3 KLHK *</label>
             <input type="text" id="up-b3-permit" placeholder="Contoh: SK.KLHK/PLB3/2026/8912" class="w-full bg-white border border-amber-300 rounded-xl px-3 py-2 text-xs focus:outline-none font-mono">
           </div>
         </div>
@@ -998,13 +998,13 @@
           <div class="grid grid-cols-2 gap-3">
             <div id="up-nib-box">
               <label class="block text-xs font-bold uppercase text-slate-600 mb-1">
-                <i class="fa-solid fa-id-card-clip text-blue-500 mr-1"></i>Nomor Induk Berusaha (NIB)
+                <i class="fa-solid fa-id-card-clip text-blue-500 mr-1"></i>Nomor Induk Berusaha (NIB) *
               </label>
               <input type="text" id="up-nib" placeholder="Contoh: 9120003847291" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-mono focus:ring-2 focus:ring-blue-500 focus:outline-none">
             </div>
             <div id="up-tps-box" class="hidden">
               <label class="block text-xs font-bold uppercase text-slate-600 mb-1">
-                <i class="fa-solid fa-file-shield text-amber-600 mr-1"></i>No. Izin TPS Limbah / Manifes KLHK
+                <i class="fa-solid fa-file-shield text-amber-600 mr-1"></i>No. Izin TPS Limbah / Manifes KLHK *
               </label>
               <input type="text" id="up-tps-permit" placeholder="Contoh: SK.KLHK/TPS/2026/..." class="w-full bg-slate-50 border border-amber-300 rounded-xl px-3 py-2 text-xs font-mono focus:ring-2 focus:ring-amber-500 focus:outline-none">
             </div>
@@ -1018,21 +1018,21 @@
             <span id="up-evidence-heading">3 Foto Eviden Fisik & Tera Digital (Wajib)</span>
           </label>
           <div id="up-evidence-grid" class="grid grid-cols-3 gap-2 text-xs">
-            <div id="up-evidence-slot-2" class="p-2 rounded-xl bg-slate-50 border border-slate-200 text-center space-y-1">
+            <div id="up-evidence-slot-1" class="p-2 rounded-xl bg-slate-50 border border-slate-200 text-center space-y-1">
               <i class="fa-solid fa-boxes-stacked text-emerald-600 text-lg"></i>
               <div class="font-bold text-[11px] text-slate-700">1. Wadah Utuh</div>
               <p class="text-[10px] text-slate-400">Drum/IBC/bal tersegel</p>
               <input type="file" id="up-foto-1" accept="image/jpeg,image/png,image/webp" class="hidden" onchange="app.handleEvidenceFileSelect(this, 1)">
               <button type="button" onclick="document.getElementById('up-foto-1').click()" id="up-foto-1-label" class="text-[10px] text-emerald-600 font-semibold hover:underline"><i class="fa-solid fa-cloud-arrow-up"></i> Pilih gambar</button>
             </div>
-            <div id="up-evidence-slot-3" class="p-2 rounded-xl bg-slate-50 border border-slate-200 text-center space-y-1">
+            <div id="up-evidence-slot-2" class="p-2 rounded-xl bg-slate-50 border border-slate-200 text-center space-y-1">
               <i class="fa-solid fa-flask text-blue-600 text-lg"></i>
               <div class="font-bold text-[11px] text-slate-700">2. Sampel Material</div>
               <p class="text-[10px] text-slate-400">Detail kebersihan fisik</p>
               <input type="file" id="up-foto-2" accept="image/jpeg,image/png,image/webp" class="hidden" onchange="app.handleEvidenceFileSelect(this, 2)">
               <button type="button" onclick="document.getElementById('up-foto-2').click()" id="up-foto-2-label" class="text-[10px] text-emerald-600 font-semibold hover:underline"><i class="fa-solid fa-cloud-arrow-up"></i> Pilih gambar</button>
             </div>
-            <div class="p-2 rounded-xl bg-slate-50 border border-slate-200 text-center space-y-1">
+            <div id="up-evidence-slot-3" class="p-2 rounded-xl bg-slate-50 border border-slate-200 text-center space-y-1">
               <i class="fa-solid fa-scale-balanced text-amber-600 text-lg"></i>
               <div class="font-bold text-[11px] text-slate-700">3. Struk Timbangan</div>
               <p class="text-[10px] text-slate-400">Bukti tera kalibrasi sah</p>
@@ -1057,9 +1057,9 @@
             <input type="text" id="up-address" required placeholder="Jl. Raya Pasar Minggu No. 45" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-brand-500 focus:outline-none">
           </div>
           <div id="up-coords-box">
-            <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Titik GPS (Lat, Lng)</label>
+            <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Titik GPS (Lat, Lng) *</label>
             <div class="flex gap-2">
-              <input type="text" id="up-coords" value="" placeholder="Tekan tombol GPS untuk mengisi otomatis" readonly class="min-w-0 flex-1 bg-slate-50 border border-slate-300 rounded-xl px-2 py-2 text-xs font-mono focus:outline-none">
+              <input type="text" id="up-coords" value="" placeholder="Tekan tombol GPS untuk mengisi otomatis" readonly required class="min-w-0 flex-1 bg-slate-50 border border-slate-300 rounded-xl px-2 py-2 text-xs font-mono focus:outline-none">
               <button type="button" onclick="app.requestGpsLocation()" class="shrink-0 rounded-xl bg-emerald-600 px-3 py-2 text-xs font-bold text-white shadow-sm transition hover:bg-emerald-700" title="Ambil titik GPS saat ini"><i class="fa-solid fa-location-crosshairs mr-1"></i>GPS</button>
             </div>
           </div>
@@ -1068,7 +1068,7 @@
         </div><!-- /up-form-fields -->
 
         <div class="flex justify-end space-x-3 pt-2">
-          <button type="button" onclick="app.closeModals()" class="px-5 py-2.5 rounded-xl border border-slate-300 text-slate-700 text-xs font-bold hover:bg-slate-50 transition">
+          <button type="button" onclick="app.cancelUploadProduct()" class="px-5 py-2.5 rounded-xl border border-slate-300 text-slate-700 text-xs font-bold hover:bg-slate-50 transition">
             Batal
           </button>
           <button type="submit" class="px-6 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold shadow-md transition flex items-center space-x-1.5">
@@ -5013,9 +5013,9 @@
 
   <!-- Modul Aplikasi BURSA LIMBAH -->
   <script src="js/data.js?v=15"></script>
-  <script src="js/store.js?v=18"></script>
+  <script src="js/store.js?v=19"></script>
   <script src="js/supabaseClient.js?v=7"></script>
   <script src="js/storageClient.js?v=7"></script>
-  <script src="js/app.js?v=18"></script>
+  <script src="js/app.js?v=21"></script>
 </body>
 </html>

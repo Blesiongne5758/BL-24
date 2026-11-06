@@ -217,6 +217,8 @@ InfinityFree menjalankan file statis dan PHP; backend Express di `server/` tidak
 4. Atur unsigned upload preset di Cloudinary hanya untuk **foto publik** dan isi Cloud Name/preset pada pengaturan platform. Dokumen KTP/NPWP serta bukti pembayaran memakai signed upload bertipe `authenticated`; isi Cloud Name, API Key, dan API Secret di `api/config.local.php`. Jangan unggah dokumen sensitif melalui preset unsigned.
 5. Unggah file dengan skrip `scripts/deploy_infinityfree.ps1`. Skrip menyertakan folder bersarang dan `hero.jpg`, mengecualikan `config.local.php`, dan berhenti dengan error jika ada file gagal diunggah. Variabel FTP yang dipakai: `INFINITYFREE_FTP_HOST`, `INFINITYFREE_FTP_USER`, dan `INFINITYFREE_FTP_PASS`.
 
+Untuk database yang sudah dibuat sebelum pembaruan form **Mulai Jual**, jalankan sekali `database/migrations/20261107_product_submission_fields.sql` di phpMyAdmin. Migrasi ini menambahkan kolom sumber pasokan, jumlah wadah, NIB, dan izin TPS yang dipakai API produk.
+
 Contoh file konfigurasi lokal `scripts/deploy_infinityfree.local.ps1`:
 ```powershell
 $ftpHost = 'ftpupload.net'

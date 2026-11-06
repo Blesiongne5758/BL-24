@@ -459,6 +459,12 @@ class BursaLimbahStore {
     return !!sellerUser;
   }
 
+  getAuthenticatedSellerUser() {
+    const sellerId = this.state.authenticatedSellerId;
+    if (!sellerId) return null;
+    return (this.state.users || []).find(u => u.id === sellerId && u.role === 'seller') || null;
+  }
+
   isAdminAuthenticated() {
     if (!this.state.adminUserId) return false;
     const adminUser = (this.state.users || []).find(u => u.id === this.state.adminUserId && u.role === "admin");
@@ -776,7 +782,7 @@ class BursaLimbahStore {
     const formData = new FormData();
     files.forEach(file => formData.append('files', file));
 
-    const response = await fetch(`${this.apiBaseUrl}/api/uploads/product-evidence`, {
+    const response = await fetch(`${this.apiBaseUrl}/api/router.php?path=uploads/product-evidence`, {
       method: 'POST',
       body: formData
     });
@@ -1162,9 +1168,9 @@ class BursaLimbahStore {
     return this.state.products.find(p => p.id === id);
   }
 
-  addProduct(productData) {
-    const id = "PRD-2026-" + String(Math.floor(100 + Math.random() * 900));
-    const code = "CIR-" + (productData.categoryCode || "WST") + "-" + String(Math.floor(10 + Math.random() * 90));
+  async addProduct(productData) {
+    const id = productData.id || `prd_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 10)}`;
+    const code = productData.code || `CIR-${productData.categoryCode || 'WST'}-${Date.now().toString(36).slice(-6).toUpperCase()}`;
     
     const now = new Date();
     const formattedDate = now.toISOString().replace("T", " ").substring(0, 16);
@@ -1216,16 +1222,27 @@ class BursaLimbahStore {
       verifiedBy: null
     };
 
-    this.state.products.unshift(newProduct);
-    this.save();
-
-    if (this.isBackendConnected) {
-      fetch(`${this.apiBaseUrl}/api/products`, {
+    if (!this.canUseLocalRegistrationFallback()) {
+      let response;
+      try {
+        response = await fetch(`${this.apiBaseUrl}/api/router.php?path=products`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newProduct)
-      }).catch(e => console.warn('[Add Product API Error]', e));
+        });
+      } catch (error) {
+        throw new Error('Server pasokan tidak dapat dihubungi. Periksa koneksi lalu coba lagi.');
+      }
+
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok || !result.success) {
+        throw new Error(result.message || `Pasokan gagal disimpan ke server (HTTP ${response.status}).`);
+      }
+      if (result.id) newProduct.id = result.id;
     }
+
+    this.state.products.unshift(newProduct);
+    this.save();
 
     return newProduct;
   }

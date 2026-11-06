@@ -37,6 +37,7 @@ class BursaLimbahApp {
     this.currentAdminTab = 'verification';
     this.currentLoginTab = 'buyer';
     this.currentAppTab = 'home'; // 'home', 'sell', 'sub', 'sim'
+    this.uploadReturnRole = null;
     this.currentAdminSubFilter = 'all'; // 'all', 'pending', 'approved'
     this.publicPostingFilter = 'all'; // 'all', 'supply', 'demand'
     this.selectedRegisterTier = 'tier_pro'; // Default dipilih di modal registrasi
@@ -801,8 +802,7 @@ class BursaLimbahApp {
   }
 
   handleMobileSellAction() {
-    const role = this.store.getCurrentRole();
-    if (role === 'seller' && this.store.isSellerAuthenticated()) {
+    if (this.store.isSellerAuthenticated()) {
       this.showUploadModal();
     } else {
       this.showLoginPage('seller');
@@ -825,6 +825,11 @@ class BursaLimbahApp {
     };
     const activeTabId = tabMap[key] || 'tab-home';
     const normalizedKey = key === 'subscription' ? 'sub' : (key === 'simulation' ? 'sim' : (key === 'solution' ? 'solutions' : key));
+    if (normalizedKey === 'sell') {
+      this.uploadReturnRole = this.store.getCurrentRole();
+    } else if (this.currentAppTab === 'sell') {
+      this.uploadReturnRole = null;
+    }
     this.currentAppTab = normalizedKey;
 
     // Pastikan view-public aktif jika sedang di peran lain
@@ -6929,33 +6934,31 @@ class BursaLimbahApp {
     }
 
     // Toggle Kondisional: Limbah B3
-    const b3Section = document.getElementById('up-b3-section');
     const b3Check = document.getElementById('up-is-b3');
-    const b3PermitBox = document.getElementById('up-b3-permit-box');
-    if (b3Section) {
-      if (tier.showFields.b3) {
-        b3Section.classList.remove('hidden');
-      } else {
-        b3Section.classList.add('hidden');
-        if (b3Check) b3Check.checked = false;
-        if (b3PermitBox) b3PermitBox.classList.add('hidden');
-      }
-    }
+    const selectedCategory = this.store.getCategoryById(document.getElementById('up-category')?.value);
+    if (b3Check && !tier.showFields.b3 && !selectedCategory?.isB3) b3Check.checked = false;
 
     // Toggle Kondisional: NIB & TPS (Industri)
     const indFields = document.getElementById('up-industry-fields');
     const nibBox = document.getElementById('up-nib-box');
     const tpsBox = document.getElementById('up-tps-box');
+    const nibInput = document.getElementById('up-nib');
+    const tpsPermitInput = document.getElementById('up-tps-permit');
     if (indFields) {
       const showAnyInd = tier.showFields.nib || tier.showFields.tpsPermit;
       indFields.classList.toggle('hidden', !showAnyInd);
       if (nibBox) nibBox.classList.toggle('hidden', !tier.showFields.nib);
       if (tpsBox) tpsBox.classList.toggle('hidden', !tier.showFields.tpsPermit);
     }
+    if (nibInput) nibInput.required = Boolean(tier.showFields.nib);
+    if (tpsPermitInput) tpsPermitInput.required = Boolean(tier.showFields.tpsPermit);
+    if (gradeInput) gradeInput.required = Boolean(tier.showFields.grade);
 
     // Toggle Kondisional: GPS
     const coordsBox = document.getElementById('up-coords-box');
+    const coordsInput = document.getElementById('up-coords');
     const locGrid = document.getElementById('up-location-grid');
+    if (coordsInput) coordsInput.required = Boolean(tier.showFields.gps);
     if (coordsBox) {
       if (tier.showFields.gps) {
         coordsBox.classList.remove('hidden');
@@ -6971,9 +6974,46 @@ class BursaLimbahApp {
         }
       }
     }
+    this.handleUploadCategoryChange();
+  }
+
+  handleUploadCategoryChange() {
+    const sourceType = document.getElementById('up-source-type')?.value;
+    const tier = (typeof WASTE_SOURCE_TIERS !== 'undefined' ? WASTE_SOURCE_TIERS : []).find(t => t.id === sourceType);
+    const category = this.store.getCategoryById(document.getElementById('up-category')?.value);
+    const checkbox = document.getElementById('up-is-b3');
+    const section = document.getElementById('up-b3-section');
+    const permitBox = document.getElementById('up-b3-permit-box');
+    const permit = document.getElementById('up-b3-permit');
+    const categoryRequiresPermit = Boolean(category?.isB3);
+    const b3Available = Boolean(tier?.showFields.b3 || categoryRequiresPermit);
+
+    if (checkbox) {
+      checkbox.disabled = categoryRequiresPermit;
+      if (categoryRequiresPermit) checkbox.checked = true;
+      else if (!tier?.showFields.b3) checkbox.checked = false;
+    }
+    if (section) section.classList.toggle('hidden', !b3Available);
+    if (permitBox) permitBox.classList.toggle('hidden', !checkbox?.checked);
+    if (permit) permit.required = Boolean(checkbox?.checked);
+  }
+
+  handleUploadB3Toggle() {
+    const checkbox = document.getElementById('up-is-b3');
+    const permitBox = document.getElementById('up-b3-permit-box');
+    const permit = document.getElementById('up-b3-permit');
+    if (!checkbox || checkbox.disabled) return;
+    if (permitBox) permitBox.classList.toggle('hidden', !checkbox.checked);
+    if (permit) {
+      permit.required = checkbox.checked;
+      if (!checkbox.checked) permit.value = '';
+    }
   }
 
   resetUploadForm() {
+    const form = document.getElementById('form-upload-product');
+    if (form) form.reset();
+
     const sourceInput = document.getElementById('up-source-type');
     if (sourceInput) sourceInput.value = '';
 
@@ -6986,10 +7026,58 @@ class BursaLimbahApp {
     });
 
     const hint = document.getElementById('up-source-hint');
-    if (hint) hint.classList.add('hidden');
+    if (hint) {
+      hint.className = 'mt-2 text-center text-[11px] text-amber-600 font-semibold hidden';
+    }
+    const hintText = document.getElementById('up-source-hint-text');
+    if (hintText) hintText.textContent = 'Silakan pilih sumber limbah';
 
     const formFields = document.getElementById('up-form-fields');
     if (formFields) formFields.classList.add('hidden');
+
+    ['up-evidence-slot-1', 'up-evidence-slot-2', 'up-evidence-slot-3'].forEach(id => {
+      document.getElementById(id)?.classList.remove('hidden');
+    });
+    const evidenceHeading = document.getElementById('up-evidence-heading');
+    if (evidenceHeading) evidenceHeading.textContent = '3 Foto Eviden Fisik & Tera Digital (Wajib)';
+    const evidenceGrid = document.getElementById('up-evidence-grid');
+    if (evidenceGrid) {
+      evidenceGrid.classList.remove('grid-cols-1', 'grid-cols-2');
+      evidenceGrid.classList.add('grid-cols-3');
+    }
+    [1, 2, 3].forEach(slot => {
+      const label = document.getElementById(`up-foto-${slot}-label`);
+      if (label) label.innerHTML = '<i class="fa-solid fa-cloud-arrow-up"></i> Pilih gambar';
+    });
+    document.getElementById('up-industry-fields')?.classList.add('hidden');
+    document.getElementById('up-nib-box')?.classList.remove('hidden');
+    document.getElementById('up-tps-box')?.classList.add('hidden');
+    document.getElementById('up-b3-section')?.classList.remove('hidden');
+    document.getElementById('up-b3-permit-box')?.classList.add('hidden');
+    const b3Check = document.getElementById('up-is-b3');
+    if (b3Check) { b3Check.checked = false; b3Check.disabled = false; }
+    const b3Permit = document.getElementById('up-b3-permit');
+    if (b3Permit) { b3Permit.value = ''; b3Permit.required = false; }
+    document.getElementById('up-coords-box')?.classList.remove('hidden');
+    const locationGrid = document.getElementById('up-location-grid');
+    if (locationGrid) {
+      locationGrid.classList.remove('grid-cols-2');
+      locationGrid.classList.add('grid-cols-3');
+    }
+    const categorySelect = document.getElementById('up-category');
+    if (categorySelect) categorySelect.selectedIndex = 0;
+    const totalDisplay = document.getElementById('up-total-display');
+    if (totalDisplay) this.calculateUploadTotal();
+  }
+
+  cancelUploadProduct() {
+    this.resetUploadForm();
+    const returnRole = this.uploadReturnRole;
+    this.uploadReturnRole = null;
+    if (returnRole === 'seller' && this.store.isSellerAuthenticated()) return this.setRole('seller', false);
+    if (returnRole === 'buyer' && this.store.isBuyerAuthenticated()) return this.setRole('buyer', false);
+    if (returnRole === 'admin' && this.store.isAdminAuthenticated()) return this.setRole('admin', false);
+    this.switchAppTab('home');
   }
 
   showUploadModal() {
@@ -7119,11 +7207,18 @@ class BursaLimbahApp {
 
   async handleUploadProduct(event) {
     event.preventDefault();
+    if (!this.store.isSellerAuthenticated()) {
+      this.showLoginPage('seller');
+      this.showToast('Masuk atau daftar sebagai penjual sebelum mengirim pasokan.', 'warning');
+      return;
+    }
+
     const sourceType = document.getElementById('up-source-type') ? document.getElementById('up-source-type').value : null;
     if (!sourceType) {
       this.showToast("Pilih salah satu Sumber Limbah terlebih dahulu (Rumah Tangga, Industri Menengah, atau Industri Besar).", "warning");
       return;
     }
+    if (!event.currentTarget.reportValidity()) return;
 
     const title = document.getElementById('up-title').value;
     const catId = document.getElementById('up-category').value;
@@ -7149,8 +7244,27 @@ class BursaLimbahApp {
     const pickupSchedule = document.getElementById('up-pickup-schedule') ? document.getElementById('up-pickup-schedule').value : 'Siap Angkut Segera (H+0 s/d H+1)';
     const listingStatus = document.getElementById('up-listing-status') ? document.getElementById('up-listing-status').value : 'Tersedia';
     const isB3Check = document.getElementById('up-is-b3');
-    const isB3 = isB3Check ? isB3Check.checked : false;
+    const cat = this.store.getCategoryById(catId);
+    const isB3 = Boolean(isB3Check?.checked || cat?.isB3);
     const b3Permit = document.getElementById('up-b3-permit') ? document.getElementById('up-b3-permit').value.trim() : null;
+    if (isB3 && !b3Permit) {
+      this.showToast('Nomor izin KLHK wajib diisi untuk pasokan limbah B3.', 'warning');
+      document.getElementById('up-b3-permit')?.focus();
+      return;
+    }
+
+    const user = this.store.getAuthenticatedSellerUser();
+    if (!user) {
+      this.showToast('Sesi penjual tidak ditemukan. Silakan masuk kembali.', 'error');
+      this.showLoginPage('seller');
+      return;
+    }
+    const lat = Number.parseFloat(coords[0]?.trim());
+    const lng = Number.parseFloat(coords[1]?.trim());
+    if (!Number.isFinite(lat) || !Number.isFinite(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+      this.showToast('Titik GPS tidak valid. Ambil ulang lokasi menggunakan tombol GPS.', 'warning');
+      return;
+    }
 
     const requiredEvidenceSlots = sourceType === 'source_household'
       ? [1]
@@ -7167,74 +7281,77 @@ class BursaLimbahApp {
       return;
     }
 
-    let uploadedEvidences;
+    const submitButton = event.submitter || event.currentTarget.querySelector('button[type="submit"]');
+    const originalButtonHtml = submitButton?.innerHTML;
+    if (submitButton) {
+      submitButton.disabled = true;
+      submitButton.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i><span>Mengunggah dan menyimpan...</span>';
+    }
+
     try {
-      uploadedEvidences = await this.store.uploadProductEvidences(evidenceFiles);
+      const uploadedEvidences = await this.store.uploadProductEvidences(evidenceFiles);
+      await this.store.addProduct({
+        title,
+        categoryId: catId,
+        categoryName: cat ? cat.name : "Limbah Industri",
+        sellerId: user.id,
+        sellerName: user.name,
+        sellerType: user.verifiedBadge || 'Pemasok Baru',
+        sellerPhone: user.phone,
+        sellerWhatsapp: String(user.phone || '').replace(/\D/g, ''),
+        containerType,
+        containerQty,
+        weight: unit === 'Liter' ? 0 : qty,
+        volume: unit === 'Liter' ? qty : 0,
+        unit,
+        sourceType,
+        nib,
+        tpsPermit,
+        condition,
+        grade,
+        minimumOrder: minOrder,
+        minimumOrderUnit: minOrderUnit,
+        pickupSchedule,
+        listingStatus,
+        isB3: Boolean(isB3 || (cat && cat.isB3)),
+        b3PermitNumber: b3Permit,
+        origin,
+        city: city || this.store.extractCity(address || origin),
+        address,
+        lat,
+        lng,
+        offerPrice: price,
+        totalPrice: qty * price,
+        evidences: sourceType === 'source_household'
+          ? [{ type: "Wadah Keseluruhan", url: uploadedEvidences[0].url, notes: "Eviden wadah limbah rumah tangga" }]
+          : sourceType === 'source_medium_industry'
+            ? [
+                { type: "Fisik Keseluruhan", url: uploadedEvidences[0].url, notes: "Kondisi fisik keseluruhan material dan wadah" },
+                { type: "Kualitas Sampel", url: uploadedEvidences[1].url, notes: "Sampel fisik material" }
+              ]
+            : [
+                { type: "Wadah Keseluruhan", url: uploadedEvidences[0].url, notes: "Wadah penyimpanan tersegel baik" },
+                { type: "Kualitas Sampel", url: uploadedEvidences[1].url, notes: "Sampel fisik material" },
+                { type: "Tera Timbangan", url: uploadedEvidences[2].url, notes: "Slip kalibrasi timbangan tera digital" }
+              ]
+      });
+
+      this.resetUploadForm();
+      this.showToast('Pasokan limbah berhasil dikirim dan menunggu verifikasi tim pengelola.', 'success');
+      if (this.store.isSellerAuthenticated()) {
+        this.setRole('seller', false);
+      } else {
+        this.switchAppTab('home');
+      }
+      this.updateAdminPendingBadge();
     } catch (error) {
-      this.showToast(error.message, 'error');
-      return;
+      this.showToast(error.message || 'Pasokan gagal disimpan. Data formulir tetap tersedia untuk dicoba kembali.', 'error');
+    } finally {
+      if (submitButton) {
+        submitButton.disabled = false;
+        submitButton.innerHTML = originalButtonHtml;
+      }
     }
-
-    const cat = this.store.getCategoryById(catId);
-    const user = this.store.getCurrentUser();
-
-    this.store.addProduct({
-      title,
-      categoryId: catId,
-      categoryName: cat ? cat.name : "Limbah Industri",
-      sellerId: user ? user.id : 'user_seller_1',
-      sellerName: user ? user.name : "Sentra Jelantah Sejahtera",
-      sellerType: "Pemasok Terverifikasi",
-      sellerPhone: user ? user.phone : "+62 813-8822-1100",
-      sellerWhatsapp: "6281388221100",
-      containerType,
-      containerQty,
-      weight: unit === 'Liter' ? 0 : qty,
-      volume: unit === 'Liter' ? qty : 0,
-      unit,
-      // Sumber Limbah & Atribut:
-      sourceType,
-      nib,
-      tpsPermit,
-      condition,
-      grade,
-      minimumOrder: minOrder,
-      minimumOrderUnit: minOrderUnit,
-      pickupSchedule,
-      listingStatus,
-      isB3: Boolean(isB3 || (cat && cat.isB3)),
-      b3PermitNumber: b3Permit,
-      origin,
-      city: city || this.store.extractCity(address || origin),
-      address,
-      lat: (coords && coords[0]) ? parseFloat(coords[0].trim()) : -6.2088,
-      lng: (coords && coords[1]) ? parseFloat(coords[1].trim()) : 106.8456,
-      offerPrice: price,
-      totalPrice: qty * price,
-      evidences: sourceType === 'source_household'
-        ? [{ type: "Wadah Keseluruhan", url: uploadedEvidences[0].url, notes: "Eviden wadah limbah rumah tangga" }]
-        : sourceType === 'source_medium_industry'
-          ? [
-              { type: "Fisik Keseluruhan", url: uploadedEvidences[0].url, notes: "Kondisi fisik keseluruhan material dan wadah" },
-              { type: "Kualitas Sampel", url: uploadedEvidences[1].url, notes: "Sampel fisik material" }
-            ]
-          : [
-            { type: "Wadah Keseluruhan", url: uploadedEvidences[0].url, notes: "Wadah penyimpanan tersegel baik" },
-            { type: "Kualitas Sampel", url: uploadedEvidences[1].url, notes: "Sampel fisik bersih bebas pengotor" },
-            { type: "Tera Timbangan", url: uploadedEvidences[2].url, notes: "Slip kalibrasi timbangan tera digital sah" }
-          ]
-    });
-
-    this.closeModals();
-    this.resetUploadForm();
-    this.showToast("Pasokan limbah berhasil didaftarkan! Menunggu verifikasi tim pengelola.", "success");
-    if (this.store.isSellerAuthenticated()) {
-      this.renderSellerDashboard();
-      this.setRole('seller', false);
-    } else {
-      this.switchAppTab('home');
-    }
-    this.updateAdminPendingBadge();
   }
 
   calculateUploadTotal() {
