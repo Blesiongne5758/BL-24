@@ -34,6 +34,7 @@ class BursaLimbahApp {
     this.esc = esc;
     this.activeModalMap = null;
     this.currentBuyerTab = 'market';
+    this.buyerTierPreviewId = null;
     this.currentAdminTab = 'verification';
     this.currentLoginTab = 'buyer';
     this.currentAppTab = 'home'; // 'home', 'sell', 'sub', 'sim'
@@ -244,6 +245,8 @@ class BursaLimbahApp {
       this.showToast("Akses Terbatas: Masuk sebagai Pengelola (Admin) terlebih dahulu.", "warning");
       return;
     }
+
+    if (role !== 'buyer') this.buyerTierPreviewId = null;
 
     this.store.setCurrentRole(role);
 
@@ -825,6 +828,9 @@ class BursaLimbahApp {
     };
     const activeTabId = tabMap[key] || 'tab-home';
     const normalizedKey = key === 'subscription' ? 'sub' : (key === 'simulation' ? 'sim' : (key === 'solution' ? 'solutions' : key));
+    // Form unggah dipindahkan ke dashboard penjual selama sesi unggah.
+    // Kembalikan ke halaman publik sebelum navigasi tab publik.
+    this.restorePublicUploadForm();
     if (normalizedKey === 'sell') {
       this.uploadReturnRole = this.store.getCurrentRole();
     } else if (this.currentAppTab === 'sell') {
@@ -2039,6 +2045,10 @@ class BursaLimbahApp {
   // ================= 3. MODAL PENDAFTARAN PEMBELI & PILIHAN 3-TIER =================
   showBuyerRegisterModal(preferredTierId = null, termsApproved = false) {
     const currentUser = this.store.getCurrentUser();
+    if (currentUser && currentUser.role === 'buyer') {
+      this.showToast('Paket akun tidak dapat diubah dari formulir pendaftaran. Hubungi pengelola untuk pengajuan upgrade.', 'info');
+      return;
+    }
     if (!termsApproved && !(currentUser && currentUser.role === 'buyer')) {
       this.showRegistrationTerms('buyer', preferredTierId);
       return;
@@ -2177,12 +2187,13 @@ class BursaLimbahApp {
 
   switchBuyerTierSim(tierId) {
     const user = this.store.getCurrentUser();
-    if (user && user.role === 'buyer') {
-      this.store.setBuyerTier(user.id, tierId);
-      const tier = this.store.getSubscriptionTierById(tierId);
-      this.renderBuyerMarketplace();
-      this.showToast(`Simulasi: Beralih ke ${esc(tier.name)}`, 'success');
-    }
+    const tier = this.store.getSubscriptionTierById(tierId);
+    if (!user || user.role !== 'buyer' || !tier) return;
+    // Tombol ini hanya pratinjau batas akses. Mengubah paket akun tanpa alur
+    // pembayaran/persetujuan membuka akses berbayar secara gratis.
+    this.buyerTierPreviewId = tierId;
+    this.renderBuyerMarketplace();
+    this.showToast(`Pratinjau ${esc(tier.name)} aktif. Paket akun Anda tidak berubah.`, 'info');
   }
 
   renderBuyerMarketplace() {
@@ -2190,7 +2201,11 @@ class BursaLimbahApp {
     if (!grid) return;
 
     const user = this.store.getCurrentUser();
-    const tier = this.store.getUserSubscriptionTier(user) || this.store.getSubscriptionTiers()[1];
+    const tier = (this.buyerTierPreviewId && this.store.getSubscriptionTierById(this.buyerTierPreviewId))
+      || this.store.getUserSubscriptionTier(user) || this.store.getSubscriptionTiers()[1];
+    const accessUser = user && this.buyerTierPreviewId
+      ? { ...user, subscriptionTier: this.buyerTierPreviewId, subscriptionActive: true }
+      : user;
 
     // Perbarui badge tier di atas
     const tierBadge = document.getElementById('buyer-tier-name');
@@ -2209,7 +2224,7 @@ class BursaLimbahApp {
       const mainPhoto = (p.evidences && p.evidences[0]) ? p.evidences[0].url : 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?auto=format&fit=crop&w=600&q=80';
 
       // Evaluasi akses tier
-      const access = this.store.checkProductAccess(p, user, 'buyer');
+      const access = this.store.checkProductAccess(p, accessUser, 'buyer');
 
       return `
         <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-md transition flex flex-col justify-between ${isBooked ? 'opacity-75' : ''}">
@@ -2855,7 +2870,7 @@ class BursaLimbahApp {
 
     if (tab === 'verification') this.renderAdminPendingTable();
     if (tab === 'orders') this.renderAdminOrdersTable();
-    if (tab === 'financial') this.renderAdminFinancialReport();
+    if (tab === 'financial') { this.renderAdminFinancialReport(); this.renderAdminPaymentReviews(); }
     if (tab === 'reports') this.renderAdminSalesPurchaseReport();
     if (tab === 'subscriptions') this.renderAdminSubscriptionRequestsTable();
     if (tab === 'events') this.renderAdminEventsTable();
@@ -3595,8 +3610,8 @@ class BursaLimbahApp {
 
     // Expedition courier checkboxes
     const couriers = s.expeditionApiCouriers || [];
-    ['jne', 'jnt', 'sicepat', 'anteraja', 'pos', 'ninja', 'tiki', 'wahana'].forEach(c => {
-      const chk = document.getElementById(`setting-expedition-courier-${c}`);
+    ['jne', 'jnt', 'sicepat', 'lalamove', 'anteraja', 'wahana', 'kargo', 'mandiri'].forEach(c => {
+      const chk = document.getElementById(`expedition-courier-${c}`);
       if (chk) chk.checked = couriers.includes(c);
     });
 
@@ -3640,6 +3655,63 @@ class BursaLimbahApp {
     if (termsContent) termsContent.value = s.termsContent || '';
     this.renderAdminFeesList();
     this.loadAgentAdminSettings();
+    this.loadPaymentAdminSettings();
+  }
+
+  async loadPaymentAdminSettings() {
+    const status = document.getElementById('setting-static-qris-status');
+    try {
+      const response = await fetch(`${this.store?.apiBaseUrl || ''}/api/admin/payment-config`, { cache: 'no-store' });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || !data.success) throw new Error(data.message || 'Konfigurasi pembayaran tidak dapat dimuat.');
+      const c = data.config || {};
+      const assign = (id, value) => { const el = document.getElementById(id); if (el && value !== undefined) el.value = value; };
+      const check = (id, value) => { const el = document.getElementById(id); if (el) el.checked = !!value; };
+      check('setting-gateway-enabled', c.enabled);
+      assign('setting-gateway-provider', c.provider || 'midtrans');
+      assign('setting-gateway-environment', c.environment || 'sandbox');
+      assign('setting-gateway-merchant-id', c.merchantId || '');
+      assign('setting-gateway-client-key', c.clientKey || '');
+      assign('setting-gateway-server-key', '');
+      check('setting-expedition-enabled', c.expeditionEnabled);
+      assign('setting-expedition-provider', c.expeditionProvider || 'manual');
+      assign('setting-expedition-origin', c.expeditionOrigin || '');
+      assign('setting-expedition-api-key', '');
+      assign('setting-static-qris-url', c.staticQrisUrl || '');
+      assign('setting-static-qris-label', c.staticQrisLabel || 'QRIS BURSA LIMBAH');
+      assign('setting-manual-shipping-options', JSON.stringify(c.manualShippingOptions || [], null, 2));
+      ['qris', 'va', 'ewallet', 'cc'].forEach(channel => {
+        const checkbox = document.getElementById(`gateway-channel-${channel}`);
+        if (checkbox) checkbox.checked = (c.paymentChannels || []).includes(channel);
+      });
+      ['jne', 'jnt', 'sicepat', 'lalamove', 'anteraja', 'wahana', 'kargo', 'mandiri'].forEach(courier => {
+        const checkbox = document.getElementById(`expedition-courier-${courier}`);
+        if (checkbox) checkbox.checked = (c.expeditionCouriers || []).includes(courier);
+      });
+      const qris = document.getElementById('setting-static-qris-preview');
+      const empty = document.getElementById('setting-static-qris-empty');
+      if (qris && c.staticQrisUrl) { qris.src = c.staticQrisUrl; qris.classList.remove('hidden'); empty?.classList.add('hidden'); }
+      if (status) status.textContent = `Kunci gateway ${c.hasServerKey ? 'tersimpan terenkripsi' : 'belum diisi'}; kunci ekspedisi ${c.hasExpeditionKey ? 'tersimpan terenkripsi' : 'belum diisi'}.`;
+    } catch (error) { if (status) status.textContent = error.message; }
+  }
+
+  async uploadAdminPaymentQris(input) {
+    const file = input?.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) { this.showToast('Ukuran gambar QRIS maksimal 5 MB.', 'error'); input.value = ''; return; }
+    const status = document.getElementById('setting-static-qris-status');
+    const body = new FormData(); body.append('file', file);
+    try {
+      if (status) status.textContent = 'Mengunggah gambar QRIS…';
+      const response = await fetch(`${this.store?.apiBaseUrl || ''}/api/uploads/payment-qris`, { method: 'POST', body });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || !data.success) throw new Error(data.message || 'Gambar QRIS gagal diunggah.');
+      document.getElementById('setting-static-qris-url').value = data.url;
+      document.getElementById('setting-static-qris-preview').src = data.url;
+      document.getElementById('setting-static-qris-preview').classList.remove('hidden');
+      document.getElementById('setting-static-qris-empty')?.classList.add('hidden');
+      if (status) status.textContent = 'QRIS diunggah. Simpan pengaturan untuk menerbitkannya ke checkout.';
+    } catch (error) { if (status) status.textContent = error.message; this.showToast(error.message, 'error'); }
   }
 
   async loadAgentAdminSettings() {
@@ -3689,7 +3761,7 @@ class BursaLimbahApp {
   }
 
 
-  saveAdminSettings(event) {
+  async saveAdminSettings(event) {
     event.preventDefault();
     const handling = Number(document.getElementById('setting-handling').value) || 10000;
     const dp = Number(document.getElementById('setting-dp').value) || 30;
@@ -3702,34 +3774,18 @@ class BursaLimbahApp {
     };
 
     // Collect payment channel checkboxes
-    const paymentGatewayChannels = ['qris', 'va', 'ewallet', 'cc', 'retail', 'paylater']
-      .filter(ch => document.getElementById(`setting-gateway-ch-${ch}`)?.checked);
+    const paymentGatewayChannels = ['qris', 'va', 'ewallet', 'cc']
+      .filter(ch => document.getElementById(`gateway-channel-${ch}`)?.checked);
 
     // Collect expedition courier checkboxes
-    const expeditionApiCouriers = ['jne', 'jnt', 'sicepat', 'anteraja', 'pos', 'ninja', 'tiki', 'wahana']
-      .filter(c => document.getElementById(`setting-expedition-courier-${c}`)?.checked);
+    const expeditionApiCouriers = ['jne', 'jnt', 'sicepat', 'lalamove', 'anteraja', 'wahana', 'kargo', 'mandiri']
+      .filter(c => document.getElementById(`expedition-courier-${c}`)?.checked);
 
     this.store.setDpSettings(dpEnabled, dp);
     this.store.updateSettings({
       demoContentEnabled: document.getElementById('setting-demo-content-enabled')?.checked !== false,
       handlingFeePerTransaction: handling,
       handlingFeeByTier,
-      // Payment Gateway
-      paymentGatewayEnabled: document.getElementById('setting-gateway-enabled')?.checked || false,
-      paymentGatewayProvider: document.getElementById('setting-gateway-provider')?.value || 'midtrans',
-      paymentGatewayEnvironment: document.getElementById('setting-gateway-environment')?.value || 'sandbox',
-      paymentGatewayClientKey: document.getElementById('setting-gateway-client-key')?.value.trim() || '',
-      paymentGatewayMerchantId: document.getElementById('setting-gateway-merchant-id')?.value.trim() || '',
-      paymentGatewayServerKey: document.getElementById('setting-gateway-server-key')?.value.trim() || '',
-      paymentGatewayWebhookUrl: document.getElementById('setting-gateway-webhook-url')?.value.trim() || '',
-      paymentGatewayChannels,
-      // Expedition API
-      expeditionApiEnabled: document.getElementById('setting-expedition-enabled')?.checked || false,
-      expeditionApiProvider: document.getElementById('setting-expedition-provider')?.value || 'rajaongkir',
-      expeditionApiKey: document.getElementById('setting-expedition-api-key')?.value.trim() || '',
-      expeditionApiOrigin: document.getElementById('setting-expedition-origin')?.value.trim() || '',
-      expeditionApiWebhookUrl: document.getElementById('setting-expedition-webhook-url')?.value.trim() || '',
-      expeditionApiCouriers,
       // Cloudinary Storage
       cloudinaryConfig: {
         enabled: document.getElementById('setting-cloudinary-enabled')?.checked || false,
@@ -3754,6 +3810,36 @@ class BursaLimbahApp {
       termsVersion: document.getElementById('setting-terms-version')?.value.trim() || '1.0',
       termsContent: document.getElementById('setting-terms-content')?.value.trim() || this.store.getSettings().termsContent
     });
+
+    try {
+      const manualShippingOptions = JSON.parse(document.getElementById('setting-manual-shipping-options')?.value || '[]');
+      if (!Array.isArray(manualShippingOptions)) throw new Error('Opsi pengantaran harus berupa JSON array.');
+      const config = {
+        enabled: document.getElementById('setting-gateway-enabled')?.checked || false,
+        provider: document.getElementById('setting-gateway-provider')?.value || 'midtrans',
+        environment: document.getElementById('setting-gateway-environment')?.value || 'sandbox',
+        merchantId: document.getElementById('setting-gateway-merchant-id')?.value.trim() || '',
+        clientKey: document.getElementById('setting-gateway-client-key')?.value.trim() || '',
+        serverKey: document.getElementById('setting-gateway-server-key')?.value.trim() || '',
+        staticQrisUrl: document.getElementById('setting-static-qris-url')?.value || '',
+        staticQrisLabel: document.getElementById('setting-static-qris-label')?.value.trim() || 'QRIS BURSA LIMBAH',
+        paymentChannels: paymentGatewayChannels,
+        expeditionEnabled: document.getElementById('setting-expedition-enabled')?.checked || false,
+        expeditionProvider: document.getElementById('setting-expedition-provider')?.value || 'manual',
+        expeditionKey: document.getElementById('setting-expedition-api-key')?.value.trim() || '',
+        expeditionOrigin: document.getElementById('setting-expedition-origin')?.value.trim() || '',
+        expeditionCouriers: expeditionApiCouriers,
+        manualShippingOptions
+      };
+      const response = await fetch(`${this.store?.apiBaseUrl || ''}/api/admin/payment-config`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(config) });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || !data.success) throw new Error(data.message || 'Konfigurasi gateway dan pengantaran gagal disimpan.');
+      document.getElementById('setting-gateway-server-key').value = '';
+      document.getElementById('setting-expedition-api-key').value = '';
+    } catch (error) {
+      this.showToast(error.message || 'Konfigurasi gateway dan pengantaran gagal disimpan.', 'error');
+      return;
+    }
 
     const tickerSettings = this.store.getSettings();
     this.renderPriceTicker();
@@ -3838,31 +3924,26 @@ class BursaLimbahApp {
     }
   }
 
-  testPaymentGatewayConnection() {
-    const provider = document.getElementById('setting-gateway-provider')?.value || 'midtrans';
-    const serverKey = document.getElementById('setting-gateway-server-key')?.value.trim() || '';
-    const merchantId = document.getElementById('setting-gateway-merchant-id')?.value.trim() || '';
-    if (!serverKey && !merchantId) {
-      this.showToast('Isi Merchant ID dan Server Key terlebih dahulu sebelum menguji koneksi.', 'error');
-      return;
-    }
-    this.showToast(`Menguji koneksi ke ${provider.charAt(0).toUpperCase() + provider.slice(1)}...`, 'info');
-    setTimeout(() => {
-      this.showToast(`Koneksi ${provider} berhasil diuji (mode simulasi). Pastikan kunci valid di lingkungan produksi.`, 'success');
-    }, 1500);
+  async testPaymentGatewayConnection() {
+    try {
+      const response = await fetch(`${this.store?.apiBaseUrl || ''}/api/admin/payment-config/test`, { method: 'POST' });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || !data.success) throw new Error(data.message || 'Uji Midtrans gagal.');
+      this.showToast(data.message, 'success');
+    } catch (error) { this.showToast(error.message || 'Uji Midtrans gagal.', 'error'); }
   }
 
   testExpeditionConnection() {
-    const provider = document.getElementById('setting-expedition-provider')?.value || 'rajaongkir';
-    const apiKey = document.getElementById('setting-expedition-api-key')?.value.trim() || '';
-    if (!apiKey) {
-      this.showToast('Masukkan API Key ekspedisi terlebih dahulu.', 'error');
+    const provider = document.getElementById('setting-expedition-provider')?.value || 'manual';
+    if (provider !== 'custom' && provider !== 'manual') {
+      this.showToast(`Integrasi API live ${provider} belum terpasang. Gunakan daftar ongkir manual untuk menerima pesanan pengiriman.`, 'warning');
       return;
     }
-    this.showToast(`Menguji koneksi ke ${provider}...`, 'info');
-    setTimeout(() => {
-      this.showToast(`Koneksi API ekspedisi ${provider} berhasil diuji (mode simulasi). Verifikasi di dasbor provider.`, 'success');
-    }, 1500);
+    try {
+      const options = JSON.parse(document.getElementById('setting-manual-shipping-options')?.value || '[]');
+      if (!Array.isArray(options) || !options.some(o => o.enabled && o.name)) throw new Error('Tambahkan setidaknya satu opsi pengantaran aktif.');
+      this.showToast('Opsi kurir dan ongkir manual valid.', 'success');
+    } catch (error) { this.showToast(error.message || 'Format opsi ongkir tidak valid.', 'error'); }
   }
 
   async testSupabaseConnection() {
@@ -4942,37 +5023,72 @@ class BursaLimbahApp {
       return;
     }
     if (!product) return;
+    if (!this.store.checkProductAccess(product, buyer, 'buyer').canViewPrice) {
+      this.showToast('Produk ini berada di luar batas harga paket Anda. Ajukan upgrade tier untuk mengirim penawaran.', 'warning');
+      return;
+    }
     const modal = document.getElementById('modal-checkout');
     const container = document.getElementById('modal-checkout-content');
-    container.innerHTML = `<div class="p-6 border-b border-slate-100 flex items-center justify-between"><div><h3 class="text-lg font-bold text-slate-900">Tawar Harga ke Penjual</h3><p class="text-xs text-slate-500">Penjual akan menerima notifikasi dan dapat menerima atau menolak tawaran Anda.</p></div><button onclick="app.closeModals()" class="text-slate-400 p-2"><i class="fa-solid fa-xmark text-lg"></i></button></div><form onsubmit="app.submitOffer(event, '${product.id}')" class="p-6 space-y-4"><div class="bg-slate-50 rounded-xl border border-slate-200 p-4"><div class="font-bold text-slate-900">${esc(product.title)}</div><div class="mt-1 text-xs text-slate-500">Harga penjual: <strong class="font-mono text-emerald-700">${this.formatRupiah(product.offerPrice)} / ${product.unit}</strong></div></div><label class="block text-xs font-bold text-slate-700">Harga penawaran per ${product.unit}<input id="offer-price" type="number" min="1" required value="${product.offerPrice}" class="mt-1.5 w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm font-mono font-bold focus:ring-2 focus:ring-amber-500 focus:outline-none"></label><label class="block text-xs font-bold text-slate-700">Kuantitas (${product.unit})<input id="offer-quantity" type="number" min="${product.minimumOrder || 1}" required value="${product.minimumOrder || 1}" class="mt-1.5 w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm font-mono font-bold focus:ring-2 focus:ring-amber-500 focus:outline-none"></label><label class="block text-xs font-bold text-slate-700">Catatan untuk penjual (opsional)<textarea id="offer-note" rows="3" class="mt-1.5 w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 text-xs focus:ring-2 focus:ring-amber-500 focus:outline-none" placeholder="Contoh: Armada kami siap mengambil pada minggu depan."></textarea></label><div class="flex justify-end gap-2 pt-2"><button type="button" onclick="app.closeModals()" class="px-4 py-2.5 rounded-xl border border-slate-300 text-xs font-bold">Batal</button><button type="submit" class="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 text-xs font-bold"><i class="fa-solid fa-paper-plane mr-1"></i>Kirim Penawaran</button></div></form>`;
+    container.innerHTML = `<div class="p-6 border-b border-slate-100 flex items-center justify-between"><div><h3 class="text-lg font-bold text-slate-900">Tawar Harga ke Penjual</h3><p class="text-xs text-slate-500">Penjual akan menerima notifikasi dan dapat menerima atau menolak tawaran Anda.</p></div><button onclick="app.closeModals()" class="text-slate-400 p-2"><i class="fa-solid fa-xmark text-lg"></i></button></div><form onsubmit="app.submitOffer(event, '${product.id}')" class="p-6 space-y-4"><div class="bg-slate-50 rounded-xl border border-slate-200 p-4"><div class="font-bold text-slate-900">${esc(product.title)}</div><div class="mt-1 text-xs text-slate-500">Harga penjual: <strong class="font-mono text-emerald-700">${this.formatRupiah(product.offerPrice)} / ${product.unit}</strong></div></div><label class="block text-xs font-bold text-slate-700">Harga penawaran per ${product.unit}<input id="offer-price" type="number" min="1" required value="${product.offerPrice}" class="mt-1.5 w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm font-mono font-bold focus:ring-2 focus:ring-amber-500 focus:outline-none"></label><label class="block text-xs font-bold text-slate-700">Kuantitas (${product.unit})<input id="offer-quantity" type="number" min="${product.minimumOrder || 1}" required value="${product.minimumOrder || 1}" class="mt-1.5 w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm font-mono font-bold focus:ring-2 focus:ring-amber-500 focus:outline-none"></label><label class="block text-xs font-bold text-slate-700">Catatan untuk penjual (opsional)<textarea id="offer-note" rows="3" class="mt-1.5 w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 text-xs focus:ring-2 focus:ring-amber-500 focus:outline-none" placeholder="Contoh: Armada kami siap mengambil pada minggu depan."></textarea></label><div class="flex justify-end gap-2 pt-2"><button type="button" onclick="app.closeModals()" class="px-4 py-2.5 rounded-xl border border-slate-300 text-xs font-bold">Batal</button><button id="offer-submit-button" type="submit" class="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 text-xs font-bold"><i class="fa-solid fa-paper-plane mr-1"></i>Kirim Penawaran</button></div></form>`;
     modal.classList.remove('hidden');
     modal.classList.add('flex');
   }
 
-  submitOffer(event, productId) {
+  async submitOffer(event, productId) {
     event.preventDefault();
     const buyer = this.store.getCurrentUser();
+    const submitButton = document.getElementById('offer-submit-button');
+    if (!buyer || buyer.role !== 'buyer') {
+      this.closeModals();
+      this.showLoginPage('buyer');
+      this.showToast('Masuk sebagai pembeli untuk mengirim penawaran.', 'warning');
+      return;
+    }
+    if (submitButton) {
+      submitButton.disabled = true;
+      submitButton.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Mengirim…';
+    }
     try {
       const offerPrice = document.getElementById('offer-price')?.value;
       const quantity = document.getElementById('offer-quantity')?.value;
       const note = document.getElementById('offer-note')?.value || '';
-      this.store.createOffer({ productId, buyerId: buyer?.id, offerPrice, quantity, note });
+      await this.store.createOffer({ productId, buyerId: buyer.id, offerPrice, quantity, note });
       this.closeModals();
       this.showToast('Penawaran dikirim ke penjual. Anda akan diberi notifikasi setelah diputuskan.', 'success');
     } catch (error) { this.showToast(error.message, 'error'); }
+    finally {
+      if (submitButton?.isConnected) {
+        submitButton.disabled = false;
+        submitButton.innerHTML = '<i class="fa-solid fa-paper-plane mr-1"></i>Kirim Penawaran';
+      }
+    }
   }
 
   // ================= 9. TRANSAKSI CHECKOUT DP / REKENING BERSAMA =================
-  initiateCheckout(productId) {
+  async initiateCheckout(productId) {
     const p = this.store.getProductById(productId);
     if (!p) return;
 
     const buyer = this.store.getCurrentUser();
-    if (!buyer || !buyer.subscriptionActive) {
-      this.showBuyerRegisterModal();
-      this.showToast("Daftar dan aktifkan paket langganan terlebih dahulu untuk memesan limbah.", "warning");
+    if (!buyer || buyer.role !== 'buyer') {
+      this.showLoginPage('buyer');
+      this.showToast('Masuk sebagai pembeli untuk membuat pesanan.', 'warning');
       return;
     }
+    if (!buyer.subscriptionActive) {
+      this.showToast('Paket langganan Anda belum aktif. Hubungi pengelola untuk aktivasi sebelum membuat pesanan.', 'warning');
+      return;
+    }
+    if (!this.store.checkProductAccess(p, buyer, 'buyer').canViewPrice) {
+      this.showToast('Produk ini berada di luar batas harga paket Anda. Ajukan upgrade tier sebelum memesan.', 'warning');
+      return;
+    }
+
+    try {
+      const response = await fetch(`${this.store?.apiBaseUrl || ''}/api/public/payment-config`, { cache: 'no-store' });
+      const data = await response.json().catch(() => ({}));
+      this.publicPaymentConfig = response.ok && data.success ? data.config : { enabled: false, manualShippingOptions: [] };
+    } catch (_) { this.publicPaymentConfig = { enabled: false, manualShippingOptions: [] }; }
 
     const isDp = this.store.isDpEnabled();
     const settings = this.store.getSettings();
@@ -4980,18 +5096,25 @@ class BursaLimbahApp {
     const dpPercent = settings.downPaymentPercent || 30;
     const dpAmount = isDp ? Math.round(totalPrice * (dpPercent / 100)) : totalPrice;
     const handlingFee = this.store.getHandlingFeeForUser(buyer);
-    const totalPaidNow = dpAmount + handlingFee;
+    const appFee = settings.appFeePerTransaction || 5000;
+    const shippingOptions = (this.publicPaymentConfig.manualShippingOptions || []).filter(option => option.enabled);
+    const initialShippingFee = Number(shippingOptions[0]?.fee) || 0;
+    const totalPaidNow = dpAmount + handlingFee + appFee + initialShippingFee;
     const remaining = isDp ? totalPrice - dpAmount : 0;
 
     const modal = document.getElementById('modal-checkout');
     const container = document.getElementById('modal-checkout-content');
     const defaultPickup = new Date(Date.now() + 3 * 86400000).toISOString().split('T')[0];
+    const shippingChoices = shippingOptions.length
+      ? shippingOptions.map(option => `<option value="${esc(option.id)}" data-name="${esc(option.name)}" data-fee="${Number(option.fee)||0}">${esc(option.name)} — ${this.formatRupiah(Number(option.fee)||0)}</option>`).join('')
+      : '<option value="pickup" data-name="Ambil sendiri" data-fee="0">Ambil sendiri — Gratis</option>';
+    this.currentCheckoutFees = { dpAmount, handlingFee, appFee };
 
     container.innerHTML = `
       <div class="p-6 border-b border-slate-100 flex items-center justify-between">
         <div>
           <h3 class="text-lg font-bold text-slate-900">${isDp ? `Pemesanan Pasokan Limbah (DP ${dpPercent}%)` : 'Pemesanan Pasokan Limbah'}</h3>
-          <p class="text-xs text-slate-500">Rekening bersama BURSA LIMBAH mengunci pasokan hingga armada Anda tiba.</p>
+          <p class="text-xs text-slate-500">Dana escrow baru dikunci setelah pembayaran tercatat dan diverifikasi.</p>
         </div>
         <button onclick="app.closeModals()" class="text-slate-400 hover:text-slate-600 p-2 rounded-xl hover:bg-slate-100">
           <i class="fa-solid fa-xmark text-lg"></i>
@@ -5027,9 +5150,17 @@ class BursaLimbahApp {
             <span>Biaya Penanganan Sistem (Flat):</span>
             <span class="font-bold text-slate-900">${this.formatRupiah(handlingFee)}</span>
           </div>
+          <div class="flex justify-between items-center text-slate-600">
+            <span>Biaya Layanan:</span>
+            <span class="font-bold text-slate-900">${this.formatRupiah(appFee)}</span>
+          </div>
+          <div class="flex justify-between items-center text-slate-600">
+            <span>Estimasi Ongkir:</span>
+            <span class="font-bold text-slate-900" id="checkout-shipping-fee">${this.formatRupiah(initialShippingFee)}</span>
+          </div>
           <div class="flex justify-between items-center text-emerald-700 pt-2 border-t border-slate-100 text-sm">
-            <span class="font-sans font-bold">Total Pembayaran Sekarang:</span>
-            <span class="font-extrabold text-base">${this.formatRupiah(totalPaidNow)}</span>
+            <span class="font-sans font-bold">Estimasi Tagihan Awal:</span>
+            <span class="font-extrabold text-base" id="checkout-total-due">${this.formatRupiah(totalPaidNow)}</span>
           </div>
           ${isDp ? `
           <div class="flex justify-between items-center text-slate-500 text-[11px] pt-1">
@@ -5049,18 +5180,30 @@ class BursaLimbahApp {
           <input type="date" id="checkout-pickup-date" value="${defaultPickup}" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-brand-500">
         </div>
 
+        <div class="grid sm:grid-cols-2 gap-3">
+          <label class="block text-xs font-bold text-slate-700">Metode Pengantaran
+            <select id="checkout-shipping-option" onchange="app.updateCheckoutShippingEstimate()" class="mt-1 w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-xs">${shippingChoices}</select>
+          </label>
+          <label class="block text-xs font-bold text-slate-700">Metode Pembayaran
+            <select id="checkout-payment-method" class="mt-1 w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-xs">
+              ${this.publicPaymentConfig.enabled && this.publicPaymentConfig.clientKey ? '<option value="gateway">Midtrans Snap</option>' : ''}
+              <option value="manual">QRIS / Transfer Manual + Bukti Bayar</option>
+            </select>
+          </label>
+        </div>
+
         <div class="p-3 bg-emerald-50 rounded-xl border border-emerald-200 text-[11px] text-emerald-800 flex items-start space-x-2">
           <i class="fa-solid fa-shield-halved text-emerald-600 mt-0.5"></i>
-          <span>Dana tersimpan di Rekening Bersama Escrow BURSA LIMBAH. Tiket timbang digital diterbitkan otomatis.${settings.paymentGatewayEnabled ? ` Pembayaran DP diproses melalui ${String(settings.paymentGatewayProvider || 'gateway').toUpperCase()} (${settings.paymentGatewayEnvironment || 'sandbox'}).` : ''}</span>
+          <span>Pesanan tercatat setelah konfirmasi. Dana escrow baru dikunci setelah pembayaran tercatat dan diverifikasi.</span>
         </div>
 
         <div class="flex justify-end space-x-3 pt-2">
           <button type="button" onclick="app.closeModals()" class="px-5 py-2.5 rounded-xl border border-slate-300 text-slate-700 text-xs font-bold hover:bg-slate-50 transition">
             Batal
           </button>
-          <button onclick="app.confirmBooking('${p.id}')" class="px-6 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold shadow-md transition flex items-center space-x-1.5">
+          <button id="checkout-confirm-button" onclick="app.confirmBooking('${p.id}')" class="px-6 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold shadow-md transition flex items-center space-x-1.5">
             <i class="fa-solid fa-lock"></i>
-            <span>${isDp ? 'Bayar DP & Kunci Pasokan' : 'Bayar & Kunci Pasokan'}</span>
+            <span>Buat Pesanan</span>
           </button>
         </div>
       </div>
@@ -5070,26 +5213,147 @@ class BursaLimbahApp {
     modal.classList.add('flex');
   }
 
-  confirmBooking(productId) {
-    const pickupDate = document.getElementById('checkout-pickup-date').value;
+  updateCheckoutShippingEstimate() {
+    const select = document.getElementById('checkout-shipping-option');
+    const fee = Number(select?.selectedOptions?.[0]?.dataset?.fee) || 0;
+    const feeLabel = document.getElementById('checkout-shipping-fee');
+    const totalLabel = document.getElementById('checkout-total-due');
+    if (feeLabel) feeLabel.textContent = this.formatRupiah(fee);
+    if (totalLabel) totalLabel.textContent = this.formatRupiah((this.currentCheckoutFees?.dpAmount || 0) + (this.currentCheckoutFees?.handlingFee || 0) + (this.currentCheckoutFees?.appFee || 0) + fee);
+  }
+
+  async confirmBooking(productId) {
+    const pickupDate = document.getElementById('checkout-pickup-date')?.value;
+    const shippingSelect = document.getElementById('checkout-shipping-option');
+    const selectedShipping = shippingSelect?.selectedOptions?.[0];
+    const shippingMethod = selectedShipping?.dataset?.name || 'Armada Mandiri Pembeli';
+    const shippingFee = Number(selectedShipping?.dataset?.fee) || 0;
+    const paymentMethod = document.getElementById('checkout-payment-method')?.value || 'manual';
     const buyer = this.store.getCurrentUser();
+    const submitButton = document.getElementById('checkout-confirm-button');
+    if (!buyer || buyer.role !== 'buyer') {
+      this.closeModals();
+      this.showLoginPage('buyer');
+      this.showToast('Masuk sebagai pembeli untuk membuat pesanan.', 'warning');
+      return;
+    }
+    if (submitButton) {
+      submitButton.disabled = true;
+      submitButton.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i><span>Menyimpan pesanan…</span>';
+    }
 
     try {
-      const order = this.store.createBooking({
+      const order = await this.store.createBooking({
         productId,
         buyerId: buyer.id,
         pickupDate,
+        shippingMethod,
+        shippingFee,
         notes: "Pemesanan berhasil via Rekening Bersama Escrow."
       });
-
-      this.closeModals();
       this.triggerConfetti();
-      this.showToast(`Booking ${esc(order.bookingCode)} berhasil! Pasokan terkunci.`, 'success');
       this.renderBuyerMarketplace();
       this.renderBuyerOrders();
       this.updateOrderCountBadge();
+      if (paymentMethod === 'gateway') await this.startGatewayPayment(order);
+      else await this.startManualPayment(order);
     } catch (e) {
       this.showToast(e.message, 'error');
+    } finally {
+      if (submitButton?.isConnected) {
+        submitButton.disabled = false;
+        submitButton.innerHTML = '<i class="fa-solid fa-lock"></i><span>Buat Pesanan</span>';
+      }
+    }
+  }
+
+  async startManualPayment(order) {
+    const response = await fetch(`${this.store?.apiBaseUrl || ''}/api/payments/manual/create`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ orderId: order.id })
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok || !data.success) throw new Error(data.message || 'Tagihan manual gagal dibuat.');
+    const qris = data.qrisUrl ? `<img src="${esc(data.qrisUrl)}" alt="QRIS Pembayaran" class="mx-auto max-h-56 rounded-xl border border-slate-200 bg-white p-2 object-contain">` : '';
+    const settings = this.store.getSettings();
+    document.getElementById('modal-checkout-content').innerHTML = `
+      <div class="border-b border-slate-100 p-5"><h3 class="text-lg font-bold text-slate-900">Pembayaran Manual</h3><p class="mt-1 text-xs text-slate-500">Pesanan ${esc(order.bookingCode)}. Upload bukti transfer untuk divalidasi admin.</p></div>
+      <div class="space-y-4 p-5">
+        <div class="rounded-xl bg-amber-50 p-4 text-center"><div class="text-xs text-amber-800">Tagihan awal</div><strong class="font-mono text-xl text-amber-900">${this.formatRupiah(data.amount)}</strong></div>
+        ${qris ? `<div class="text-center"><p class="mb-2 text-xs font-bold">${esc(data.qrisLabel || 'QRIS Merchant')}</p>${qris}</div>` : ''}
+        <div class="rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs"><div>Transfer ke ${esc(settings.escrowBankName || 'rekening admin')} a.n. ${esc(settings.escrowAccountHolder || 'Bursa Limbah')}.</div><div class="mt-1 font-mono font-bold">${esc(settings.escrowAccountNumber || 'Hubungi admin untuk nomor rekening')}</div></div>
+        <label class="block text-xs font-bold text-slate-700">Nomor referensi transfer (opsional)<input id="manual-payment-reference" class="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs"></label>
+        <label class="block text-xs font-bold text-slate-700">Bukti transfer *<input id="manual-payment-proof" type="file" accept="image/jpeg,image/png,image/webp,application/pdf" class="mt-1 block w-full text-xs"></label>
+        <div class="flex justify-end gap-2"><button type="button" onclick="app.closeModals()" class="rounded-xl border border-slate-300 px-4 py-2 text-xs font-bold">Nanti</button><button type="button" onclick="app.submitManualPaymentProof('${data.paymentId}')" class="rounded-xl bg-emerald-700 px-4 py-2 text-xs font-bold text-white">Kirim Bukti Bayar</button></div>
+      </div>`;
+    this.showToast(`Pesanan tercatat. Silakan bayar ${this.formatRupiah(data.amount)} dan unggah bukti pembayaran.`, 'info');
+  }
+
+  async reopenManualPayment(orderId) {
+    const order = this.store.getOrderById(orderId);
+    if (!order || order.buyerId !== this.store.getCurrentUser()?.id) return this.showToast('Pesanan tidak ditemukan untuk akun ini.', 'error');
+    if (!/^menunggu pembayaran/i.test(String(order.paymentStatus || ''))) return this.showToast('Pesanan ini tidak lagi menunggu pembayaran.', 'warning');
+    try { await this.startManualPayment(order); }
+    catch (error) { this.showToast(error.message || 'Form pembayaran tidak dapat dibuka.', 'error'); }
+  }
+
+  async submitManualPaymentProof(paymentId) {
+    const file = document.getElementById('manual-payment-proof')?.files?.[0];
+    if (!file) { this.showToast('Pilih bukti pembayaran terlebih dahulu.', 'warning'); return; }
+    if (file.size > 15 * 1024 * 1024) { this.showToast('Bukti pembayaran maksimal 15 MB.', 'error'); return; }
+    try {
+      const form = new FormData(); form.append('file', file);
+      const uploadResponse = await fetch(`${this.store?.apiBaseUrl || ''}/api/uploads/weighing-proof`, { method: 'POST', body: form });
+      const upload = await uploadResponse.json().catch(() => ({}));
+      if (!uploadResponse.ok || !upload.success || !upload.file?.storageKey) throw new Error(upload.message || 'Bukti gagal diunggah.');
+      const response = await fetch(`${this.store?.apiBaseUrl || ''}/api/payments/manual`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ paymentId, proofStorageKey: upload.file.storageKey, reference: document.getElementById('manual-payment-reference')?.value.trim() || '' })
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || !data.success) throw new Error(data.message || 'Bukti pembayaran gagal dikirim.');
+      this.closeModals();
+      this.showToast('Bukti pembayaran dikirim. Pesanan aktif setelah admin memvalidasi pembayaran.', 'success');
+      this.renderBuyerOrders();
+    } catch (error) { this.showToast(error.message || 'Bukti pembayaran gagal dikirim.', 'error'); }
+  }
+
+  async startGatewayPayment(order) {
+    const response = await fetch(`${this.store?.apiBaseUrl || ''}/api/payments/snap-token`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ orderId: order.id })
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok || !data.success) throw new Error(data.message || 'Sesi pembayaran gateway gagal dibuat.');
+    const snapUrl = data.environment === 'production' ? 'https://app.midtrans.com/snap/snap.js' : 'https://app.sandbox.midtrans.com/snap/snap.js';
+    let script = document.querySelector(`script[data-midtrans-client="${CSS.escape(data.clientKey)}"]`);
+    if (!script) {
+      script = document.createElement('script'); script.src = snapUrl; script.dataset.clientKey = data.clientKey; script.dataset.midtransClient = data.clientKey;
+      script.onload = () => this.openGatewaySnap(data, order);
+      script.onerror = () => this.showToast('Library Midtrans tidak dapat dimuat.', 'error');
+      document.head.appendChild(script);
+    } else this.openGatewaySnap(data, order);
+  }
+
+  openGatewaySnap(payment, order) {
+    if (!window.snap) { this.showToast('Midtrans Snap belum siap. Coba kembali.', 'error'); return; }
+    window.snap.pay(payment.token, {
+      onSuccess: () => { this.showToast('Pembayaran diterima gateway. Menunggu konfirmasi server.', 'success'); this.closeModals(); this.pollPaymentStatus(payment.paymentId); },
+      onPending: () => { this.showToast('Pembayaran sedang diproses Midtrans.', 'info'); this.closeModals(); this.pollPaymentStatus(payment.paymentId); },
+      onError: result => this.showToast(result?.status_message || 'Pembayaran gateway gagal.', 'error'),
+      onClose: () => this.showToast(`Pesanan ${esc(order.bookingCode)} menunggu pembayaran. Anda dapat melanjutkannya dari dashboard.`, 'info')
+    });
+  }
+
+  async pollPaymentStatus(paymentId) {
+    for (let attempt=0; attempt<8; attempt++) {
+      await new Promise(resolve => setTimeout(resolve, 2500));
+      try {
+        const response = await fetch(`${this.store?.apiBaseUrl || ''}/api/payments/${encodeURIComponent(paymentId)}`, { cache: 'no-store' });
+        const data = await response.json();
+        if (data.success && data.payment?.status === 'paid') {
+          this.showToast('Pembayaran terverifikasi. Pasokan siap diproses.', 'success');
+          await this.store.syncWithBackend(); this.setRole('buyer', false); this.switchBuyerTab('orders'); return;
+        }
+      } catch (_) { /* Webhook remains authoritative; user can refresh the order list. */ }
     }
   }
 
@@ -5119,7 +5383,7 @@ class BursaLimbahApp {
             <th class="p-3">Komoditas &amp; Produk</th>
             <th class="p-3">Volume</th>
             <th class="p-3">Total Nilai</th>
-            <th class="p-3">DP Escrow</th>
+            <th class="p-3">Tagihan Awal</th>
             <th class="p-3">Status Pengiriman</th>
             <th class="p-3 text-right">Aksi &amp; Validasi</th>
           </tr>
@@ -5152,6 +5416,14 @@ class BursaLimbahApp {
                 </span>
                 <div class="text-[10px] text-amber-800 font-medium mt-0.5">Menunggu konfirmasi penerimaan</div>
               `;
+            } else if (/^menunggu pembayaran/i.test(String(o.paymentStatus || ''))) {
+              statusBadge = `
+                <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200">
+                  <i class="fa-solid fa-hourglass-half"></i> Menunggu Pembayaran
+                </span>
+                <div class="text-[10px] text-slate-500 mt-0.5">${o.paymentReviewStatus === 'review' ? 'Bukti diterima, menunggu validasi admin' : 'Pesanan belum masuk tahap pengiriman'}</div>
+                ${o.paymentReviewStatus === 'review' ? '' : `<button onclick="app.reopenManualPayment('${o.id}')" class="mt-1 rounded-lg bg-emerald-700 px-2.5 py-1.5 text-[10px] font-bold text-white">Bayar / Unggah Bukti</button>`}
+              `;
             } else {
               statusBadge = `
                 <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-200">
@@ -5177,13 +5449,14 @@ class BursaLimbahApp {
                 </td>
                 <td class="p-3 font-mono font-bold text-slate-900">${this.formatRupiah(o.totalPrice)}</td>
                 <td class="p-3 font-mono">
-                  <div class="font-bold text-emerald-600">${this.formatRupiah(o.totalPaidNow)}</div>
+                  <div class="font-bold text-amber-700">${this.formatRupiah(o.totalPaidNow)}</div>
                   ${o.remainingPayment > 0 ? `<div class="text-[10px] text-slate-400">Sisa: ${this.formatRupiah(o.remainingPayment)}</div>` : ''}
                 </td>
                 <td class="p-3">${statusBadge}</td>
                 <td class="p-3 text-right space-y-1">
                   ${!isCompleted ? `
                     <div class="flex items-center justify-end gap-1 flex-wrap">
+                      ${isDispatched ? `
                       <button onclick="app.openBuyerReceiveModal('${o.id}')" class="px-2.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] shadow-xs flex items-center gap-1 transition" title="Konfirmasi barang telah diterima dengan input berat aktual">
                         <i class="fa-solid fa-clipboard-check"></i>
                         <span>Validasi Diterima</span>
@@ -5192,7 +5465,8 @@ class BursaLimbahApp {
                         <i class="fa-solid fa-qrcode text-emerald-400"></i>
                         <span>Scan QR</span>
                       </button>
-                      ${(o.remainingPayment > 0 && !['paid', 'completed', 'verified_by_admin'].includes(o.remainingPaymentStatus)) ? `
+                      ` : `<span class="text-[10px] text-slate-500">Menunggu penjual mencatat pengiriman / serah terima.</span>`}
+                      ${(isDispatched && o.remainingPayment > 0 && !['paid', 'completed', 'verified_by_seller', 'verified_by_admin'].includes(o.remainingPaymentStatus)) ? `
                         ${['submitted', 'proof_submitted'].includes(o.remainingPaymentStatus) ? `
                           <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-amber-50 border border-amber-200 text-amber-700 text-[11px] font-semibold">
                             <i class="fa-solid fa-clock-rotate-left"></i> Bukti Dikirim
@@ -5446,6 +5720,10 @@ class BursaLimbahApp {
   openBuyerReceiveModal(orderId) {
     const order = this.store.getOrderById(orderId);
     if (!order) return;
+    if (!['shipped_third_party', 'handed_over'].includes(order.shippingStatus)) {
+      this.showToast('Validasi penerimaan tersedia setelah penjual mencatat pengiriman atau serah terima.', 'warning');
+      return;
+    }
 
     document.getElementById('receive-order-id').value = order.id;
     document.getElementById('receive-weight-unit').textContent = order.unit;
@@ -5471,7 +5749,7 @@ class BursaLimbahApp {
     }
   }
 
-  submitBuyerReceiveValidation(event) {
+  async submitBuyerReceiveValidation(event) {
     event.preventDefault();
     const orderId = document.getElementById('receive-order-id').value;
     const actualWeight = Number(document.getElementById('receive-actual-weight').value) || 0;
@@ -5480,7 +5758,7 @@ class BursaLimbahApp {
     const user = this.store.getCurrentUser();
 
     try {
-      this.store.validateOrderDelivery({
+      await this.store.validateOrderDelivery({
         orderId,
         buyerId: user ? user.id : 'user_buyer_1',
         actualWeight,
@@ -5501,6 +5779,10 @@ class BursaLimbahApp {
   openBuyerQrScannerModal(orderId) {
     const order = this.store.getOrderById(orderId);
     if (!order) return;
+    if (!['shipped_third_party', 'handed_over'].includes(order.shippingStatus)) {
+      this.showToast('QR serah terima aktif setelah penjual mencatat pengiriman atau serah terima.', 'warning');
+      return;
+    }
 
     document.getElementById('scanner-target-order-id').value = order.id;
     const input = document.getElementById('manual-handover-qr-input');
@@ -5533,7 +5815,7 @@ class BursaLimbahApp {
     if (quickBtnsContainer) {
       const user = this.store.getCurrentUser();
       const orders = (user && user.role === 'buyer') ? this.store.getOrdersForBuyer(user.id) : this.store.getOrders();
-      const pendingOrders = orders.filter(o => o.shippingStatus !== 'delivered' && o.escrowStatus !== 'completed');
+      const pendingOrders = orders.filter(o => ['shipped_third_party', 'handed_over'].includes(o.shippingStatus) && o.shippingStatus !== 'delivered' && o.escrowStatus !== 'completed');
       if (pendingOrders.length > 0) {
         quickBtnsContainer.innerHTML = `
           <span class="text-slate-400 w-full mb-1">Pilih Cepat Kode QR Pesanan:</span>
@@ -5554,7 +5836,7 @@ class BursaLimbahApp {
     }
   }
 
-  submitScannedHandoverQr(event) {
+  async submitScannedHandoverQr(event) {
     event.preventDefault();
     const qrInput = document.getElementById('manual-handover-qr-input').value.trim();
     let targetOrderId = document.getElementById('scanner-target-order-id').value;
@@ -5573,7 +5855,7 @@ class BursaLimbahApp {
     }
 
     try {
-      this.store.validateOrderDelivery({
+      await this.store.validateOrderDelivery({
         orderId: targetOrderId,
         buyerId: user ? user.id : 'user_buyer_1',
         handoverQrCode: qrInput
@@ -5635,11 +5917,11 @@ class BursaLimbahApp {
 
         <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
           <div class="text-slate-400 text-xs font-semibold mb-1 flex items-center justify-between">
-            <span>Escrow DP Aktif</span>
+            <span>Pesanan Belum Selesai</span>
             <i class="fa-solid fa-shield-halved text-amber-500"></i>
           </div>
           <div class="text-2xl font-extrabold text-amber-600 font-mono">${report.pendingOrdersCount} Pesanan</div>
-          <div class="text-[11px] text-slate-500 mt-1">Dana aman tertahan di rekening bersama</div>
+          <div class="text-[11px] text-slate-500 mt-1">Menunggu pembayaran, pengiriman, atau validasi</div>
         </div>
       `;
     }
@@ -5664,7 +5946,7 @@ class BursaLimbahApp {
             <th class="p-3">Penjual &amp; Komoditas</th>
             <th class="p-3">Volume Dipesan / Tera</th>
             <th class="p-3">Nilai Bruto</th>
-            <th class="p-3">DP Terbayar</th>
+            <th class="p-3">Tagihan Awal</th>
             <th class="p-3">Status Logistik</th>
             <th class="p-3">Status Escrow</th>
           </tr>
@@ -5687,7 +5969,7 @@ class BursaLimbahApp {
                   ${o.actualReceivedWeight ? `<div class="text-[10px] text-emerald-700 font-bold">Aktual: ${Number(o.actualReceivedWeight).toLocaleString('id-ID')} ${o.unit}</div>` : ''}
                 </td>
                 <td class="p-3 font-mono font-bold text-slate-900">${this.formatRupiah(o.totalPrice)}</td>
-                <td class="p-3 font-mono font-bold text-emerald-600">${this.formatRupiah(o.totalPaidNow)}</td>
+                <td class="p-3 font-mono font-bold text-amber-700">${this.formatRupiah(o.totalPaidNow)}</td>
                 <td class="p-3">
                   <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${
                     isCompleted ? 'bg-emerald-100 text-emerald-800' :
@@ -5719,8 +6001,12 @@ class BursaLimbahApp {
 
   printBuyerPurchaseReport() {
     const user = this.store.getCurrentUser();
-    if (!user) return;
-    const report = this.store.getBuyerPurchaseReport(user.id);
+    if (!user || user.role !== 'buyer') return;
+    const report = this.store.getBuyerPurchaseReport(user.id, {
+      status: document.getElementById('buyer-report-filter-status')?.value || 'all',
+      startDate: document.getElementById('buyer-report-filter-start')?.value || '',
+      endDate: document.getElementById('buyer-report-filter-end')?.value || ''
+    });
 
     const kpis = [
       { label: 'Total Belanja Pasokan', value: this.formatRupiah(report.totalSpend) },
@@ -5729,7 +6015,7 @@ class BursaLimbahApp {
       { label: 'Transaksi Berjalan', value: `${report.pendingOrdersCount} Pesanan` }
     ];
 
-    const headers = ['Kode Booking', 'Tanggal', 'Penjual', 'Komoditas Limbah', 'Volume', 'Total Nilai (Rp)', 'DP Terbayar', 'Status Transaksi'];
+    const headers = ['Kode Booking', 'Tanggal', 'Penjual', 'Komoditas Limbah', 'Volume', 'Total Nilai (Rp)', 'Tagihan Awal', 'Status Transaksi'];
     const rows = report.orders.map(o => [
       o.bookingCode,
       (o.createdAt || '').substring(0, 10),
@@ -6050,7 +6336,7 @@ class BursaLimbahApp {
     }
   }
 
-  submitSellerDispatch(event) {
+  async submitSellerDispatch(event) {
     event.preventDefault();
     const orderId = document.getElementById('dispatch-order-id').value;
     const seller = this.store.getCurrentUser();
@@ -6077,7 +6363,7 @@ class BursaLimbahApp {
     }
 
     try {
-      this.store.dispatchOrder({
+      await this.store.dispatchOrder({
         orderId,
         sellerId: seller ? seller.id : 'user_seller_1',
         dispatchType,
@@ -6259,6 +6545,54 @@ class BursaLimbahApp {
   }
 
   // ================= 11. LAPORAN ADMIN: KEUANGAN & JUAL-BELI =================
+  async renderAdminPaymentReviews() {
+    const container = document.getElementById('admin-payment-review-list');
+    if (!container) return;
+    try {
+      const response = await fetch(`${this.store?.apiBaseUrl || ''}/api/admin/payment-reviews`, { cache: 'no-store' });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || !data.success) throw new Error(data.message || 'Bukti pembayaran tidak dapat dimuat.');
+      if (!data.payments?.length) { container.innerHTML = '<p class="text-xs text-slate-500">Tidak ada bukti pembayaran yang menunggu validasi.</p>'; return; }
+      container.innerHTML = data.payments.map(payment => `
+        <div class="grid gap-3 rounded-xl border border-slate-200 bg-white p-4 sm:grid-cols-[1fr_auto] sm:items-center">
+          <div class="space-y-1 text-xs"><div class="font-bold text-slate-900">${esc(payment.order_code)} · ${esc(payment.buyer_name)}</div>
+            <div class="text-slate-600">${this.formatRupiah(payment.amount)} · ${esc(payment.payment_reference || 'Tanpa referensi')}</div>
+            <div class="text-[10px] text-slate-500">Dikirim ${esc(payment.created_at || '')}</div>
+          </div>
+          <div class="flex flex-wrap gap-2">
+            <button type="button" onclick="app.openPaymentProof('${esc(payment.id)}','${esc(payment.proof_storage_key || '')}')" class="rounded-lg border border-slate-300 px-3 py-2 text-xs font-bold">Lihat Bukti</button>
+            <button type="button" onclick="app.reviewManualPayment('${esc(payment.id)}','approve')" class="rounded-lg bg-emerald-700 px-3 py-2 text-xs font-bold text-white">Setujui</button>
+            <button type="button" onclick="app.reviewManualPayment('${esc(payment.id)}','reject')" class="rounded-lg bg-rose-600 px-3 py-2 text-xs font-bold text-white">Tolak</button>
+          </div>
+        </div>`).join('');
+    } catch (error) { container.innerHTML = `<p class="text-xs text-rose-700">${esc(error.message || 'Gagal memuat bukti.')}</p>`; }
+  }
+
+  async openPaymentProof(paymentId, storageKey) {
+    const preview = window.open('about:blank', '_blank');
+    try {
+      const response = await fetch(`${this.store?.apiBaseUrl || ''}/api/storage/private-url?key=${encodeURIComponent(storageKey)}`, { cache: 'no-store' });
+      const data = await response.json();
+      if (!response.ok || !data.success) throw new Error(data.message || 'Bukti pembayaran tidak dapat dibuka.');
+      if (preview) preview.location = data.signedUrl;
+    } catch (error) { preview?.close(); this.showToast(error.message || 'Bukti gagal dibuka.', 'error'); }
+  }
+
+  async reviewManualPayment(paymentId, decision) {
+    const promptText = decision === 'approve' ? 'Setujui pembayaran ini?' : 'Tolak bukti pembayaran ini?';
+    if (!window.confirm(promptText)) return;
+    try {
+      const response = await fetch(`${this.store?.apiBaseUrl || ''}/api/admin/payment-reviews/${encodeURIComponent(paymentId)}`, {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ decision })
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || !data.success) throw new Error(data.message || 'Validasi pembayaran gagal.');
+      this.showToast(decision === 'approve' ? 'Pembayaran disetujui dan pesanan diaktifkan.' : 'Bukti pembayaran ditolak.', 'success');
+      await this.renderAdminPaymentReviews();
+      this.renderAdminOrders();
+    } catch (error) { this.showToast(error.message || 'Validasi pembayaran gagal.', 'error'); }
+  }
+
   renderAdminFinancialReport() {
     const filters = {
       startDate: document.getElementById('admin-fin-filter-start')?.value || '',
@@ -7074,6 +7408,7 @@ class BursaLimbahApp {
     this.resetUploadForm();
     const returnRole = this.uploadReturnRole;
     this.uploadReturnRole = null;
+    this.restorePublicUploadForm();
     if (returnRole === 'seller' && this.store.isSellerAuthenticated()) return this.setRole('seller', false);
     if (returnRole === 'buyer' && this.store.isBuyerAuthenticated()) return this.setRole('buyer', false);
     if (returnRole === 'admin' && this.store.isAdminAuthenticated()) return this.setRole('admin', false);
@@ -7081,7 +7416,34 @@ class BursaLimbahApp {
   }
 
   showUploadModal() {
+    if (this.store.isSellerAuthenticated()) {
+      const form = document.getElementById('tab-sell');
+      const sellerView = document.getElementById('view-seller');
+      if (!form || !sellerView) return;
+      this.uploadReturnRole = 'seller';
+      this.setRole('seller', false);
+      // Letakkan form dalam dashboard agar navigasi/header tetap menunjukkan akun penjual.
+      sellerView.insertBefore(form, sellerView.children[1] || null);
+      form.classList.remove('hidden');
+      form.classList.add('seller-upload-form');
+      this.currentAppTab = 'sell';
+      this.populateSelectCategories();
+      const source = document.getElementById('up-source-type');
+      if (source && !source.value) this.selectSourceTier('source_household');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
     this.switchAppTab('sell');
+  }
+
+  restorePublicUploadForm() {
+    const form = document.getElementById('tab-sell');
+    const publicView = document.getElementById('view-public');
+    const subscriptionTab = document.getElementById('tab-subscription');
+    if (!form || !publicView || form.parentElement === publicView) return;
+    form.classList.remove('seller-upload-form');
+    form.classList.add('hidden');
+    publicView.insertBefore(form, subscriptionTab || null);
   }
 
   requestGpsLocation() {
@@ -7338,6 +7700,8 @@ class BursaLimbahApp {
 
       this.resetUploadForm();
       this.showToast('Pasokan limbah berhasil dikirim dan menunggu verifikasi tim pengelola.', 'success');
+      this.restorePublicUploadForm();
+      this.uploadReturnRole = null;
       if (this.store.isSellerAuthenticated()) {
         this.setRole('seller', false);
       } else {
@@ -8010,13 +8374,17 @@ class BursaLimbahApp {
 
     const grid = document.getElementById('buyer-products-grid');
     const user = this.store.getCurrentUser();
-    const tier = this.store.getUserSubscriptionTier(user) || this.store.getSubscriptionTiers()[1];
+    const tier = (this.buyerTierPreviewId && this.store.getSubscriptionTierById(this.buyerTierPreviewId))
+      || this.store.getUserSubscriptionTier(user) || this.store.getSubscriptionTiers()[1];
+    const accessUser = user && this.buyerTierPreviewId
+      ? { ...user, subscriptionTier: this.buyerTierPreviewId, subscriptionActive: true }
+      : user;
 
     grid.innerHTML = products.map(p => {
       const qtyDisplay = p.volume > 0 ? `${p.volume.toLocaleString('id-ID')} Liter` : `${p.weight.toLocaleString('id-ID')} Kg`;
       const isBooked = p.status === 'booked';
       const mainPhoto = (p.evidences && p.evidences[0]) ? p.evidences[0].url : 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?auto=format&fit=crop&w=600&q=80';
-      const access = this.store.checkProductAccess(p, user, 'buyer');
+      const access = this.store.checkProductAccess(p, accessUser, 'buyer');
 
       return `
         <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-md transition flex flex-col justify-between ${isBooked ? 'opacity-75' : ''}">
@@ -8260,7 +8628,7 @@ class BursaLimbahApp {
             <div class="flex justify-between"><span class="text-slate-500">Produk:</span><span class="font-semibold text-slate-800" id="rem-pay-product">-</span></div>
             <div class="flex justify-between"><span class="text-slate-500">Penjual:</span><span class="font-semibold text-slate-800" id="rem-pay-seller">-</span></div>
             <div class="flex justify-between border-t border-violet-200 pt-2 mt-2"><span class="text-slate-500">Total Nilai:</span><span class="font-mono font-bold text-slate-900" id="rem-pay-total">-</span></div>
-            <div class="flex justify-between"><span class="text-slate-500">Sudah Dibayar (DP):</span><span class="font-mono font-bold text-emerald-600" id="rem-pay-dp-paid">-</span></div>
+            <div class="flex justify-between"><span class="text-slate-500">Tagihan Awal:</span><span class="font-mono font-bold text-amber-700" id="rem-pay-dp-paid">-</span></div>
             <div class="flex justify-between text-sm"><span class="font-bold text-slate-700">Sisa Pelunasan:</span><span class="font-mono font-extrabold text-red-600" id="rem-pay-remaining">-</span></div>
           </div>
           <form id="form-remaining-payment-proof" onsubmit="app.submitRemainingPaymentProofForm(event)" class="space-y-4">
@@ -8334,7 +8702,7 @@ class BursaLimbahApp {
             <div class="flex justify-between"><span class="text-slate-500">Nama Pembeli:</span><span class="font-semibold text-slate-800">${this._escHtml ? this._escHtml(o.buyerName) : o.buyerName}</span></div>
             <div class="flex justify-between"><span class="text-slate-500">Nama Penjual:</span><span class="font-semibold text-slate-800">${this._escHtml ? this._escHtml(o.sellerName) : o.sellerName}</span></div>
             <div class="flex justify-between border-t border-slate-200 pt-2"><span class="text-slate-500">Total Nilai Pesanan:</span><span class="font-mono font-bold text-slate-900">${this.formatRupiah(o.totalPrice)}</span></div>
-            <div class="flex justify-between"><span class="text-slate-500">DP Terbayar:</span><span class="font-mono font-bold text-emerald-600">${this.formatRupiah(o.totalPaidNow || o.downPaymentAmount || 0)}</span></div>
+            <div class="flex justify-between"><span class="text-slate-500">Tagihan Awal:</span><span class="font-mono font-bold text-amber-700">${this.formatRupiah(o.totalPaidNow || o.downPaymentAmount || 0)}</span></div>
             <div class="flex justify-between border-t border-slate-200 pt-2 text-sm"><span class="font-bold text-slate-700">Sisa yang Dilunasi:</span><span class="font-mono font-extrabold text-red-600">${this.formatRupiah(o.remainingPayment || 0)}</span></div>
           </div>
 

@@ -2047,6 +2047,13 @@
 
         <!-- Konten 2B: LAPORAN TRANSAKSI KEUANGAN -->
         <div id="admin-content-financial" class="p-6 hidden space-y-6">
+          <div class="rounded-2xl border border-amber-200 bg-amber-50/50 p-5 shadow-sm">
+            <div class="mb-3 flex items-center justify-between gap-3">
+              <div><h3 class="text-sm font-bold text-slate-900">Validasi Bukti Pembayaran Pembeli</h3><p class="text-xs text-slate-600">Pembayaran QRIS/transfer manual baru mengaktifkan pesanan setelah disetujui.</p></div>
+              <button type="button" onclick="app.renderAdminPaymentReviews()" class="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-bold">Muat Ulang</button>
+            </div>
+            <div id="admin-payment-review-list" class="space-y-3"><p class="text-xs text-slate-500">Memuat bukti pembayaran…</p></div>
+          </div>
           <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-4">
             <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div>
@@ -2985,10 +2992,6 @@
                       <label class="text-[11px] font-semibold text-slate-600 block mb-1">Provider Gateway</label>
                       <select id="setting-gateway-provider" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-xs font-medium focus:ring-2 focus:ring-emerald-500 focus:outline-none">
                         <option value="midtrans">Midtrans (Snap &amp; Core API)</option>
-                        <option value="xendit">Xendit (Invoice &amp; XenPlatform)</option>
-                        <option value="tripay">Tripay Payment Gateway</option>
-                        <option value="duitku">Duitku Payment Gateway</option>
-                        <option value="faspay">Faspay B2B</option>
                       </select>
                     </div>
                     <div>
@@ -3015,15 +3018,30 @@
                     </div>
                   </div>
 
+                  <div class="grid sm:grid-cols-2 gap-3 rounded-xl border border-emerald-200 bg-white p-3">
+                    <div>
+                      <label class="text-[11px] font-semibold text-slate-600 block mb-1">QRIS statis untuk pembayaran manual</label>
+                      <input id="setting-static-qris-file" type="file" accept="image/jpeg,image/png,image/webp" onchange="app.uploadAdminPaymentQris(this)" class="block w-full text-xs text-slate-600 file:mr-2 file:rounded-lg file:border-0 file:bg-emerald-50 file:px-3 file:py-2 file:text-xs file:font-bold file:text-emerald-700">
+                      <input id="setting-static-qris-url" type="hidden">
+                      <input id="setting-static-qris-label" type="text" placeholder="Nama merchant QRIS" class="mt-2 w-full rounded-lg border border-slate-300 px-3 py-2 text-xs">
+                      <p id="setting-static-qris-status" class="mt-1 text-[10px] text-slate-500">Unggah QRIS milik merchant Bursa Limbah.</p>
+                    </div>
+                    <div class="flex items-center justify-center rounded-xl border border-slate-200 bg-slate-50 p-2">
+                      <img id="setting-static-qris-preview" alt="QRIS statis" class="hidden max-h-36 max-w-full object-contain">
+                      <span id="setting-static-qris-empty" class="text-center text-[10px] text-slate-400">QRIS belum diunggah</span>
+                    </div>
+                  </div>
+
                   <div>
                     <label class="text-[11px] font-semibold text-slate-600 block mb-1">Webhook / Notification Callback URL</label>
                     <div class="flex gap-2">
-                      <input id="setting-gateway-webhook-url" type="text" readonly value="https://bursalimbah.id/api/payment/webhook" class="w-full bg-slate-100 border border-slate-200 text-slate-600 rounded-lg px-3 py-2 text-xs font-mono">
+                      <input id="setting-gateway-webhook-url" type="text" readonly value="https://bursalimbah.com/api/payment/webhook" class="w-full bg-slate-100 border border-slate-200 text-slate-600 rounded-lg px-3 py-2 text-xs font-mono">
                       <button type="button" onclick="navigator.clipboard.writeText(document.getElementById('setting-gateway-webhook-url').value); app.showToast('URL Webhook disalin ke clipboard!', 'success');" class="px-3 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-bold rounded-lg transition shrink-0">
                         <i class="fa-solid fa-copy mr-1"></i>Salin
                       </button>
                     </div>
                   </div>
+
 
                   <!-- Channel Pembayaran Aktif -->
                   <div>
@@ -3066,7 +3084,7 @@
                 <div class="flex items-center justify-between gap-2 pb-2 border-b border-slate-200">
                   <div class="flex items-center gap-2">
                     <i class="fa-solid fa-truck-fast text-indigo-600"></i>
-                    <h4 class="text-xs font-bold uppercase text-slate-700 tracking-wider">Pengaturan API Ekspedisi &amp; Logistik</h4>
+                    <h4 class="text-xs font-bold uppercase text-slate-700 tracking-wider">Pengaturan Ekspedisi &amp; Logistik</h4>
                   </div>
                   <span id="expedition-status-pill" class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-200 text-slate-700">Siap Dikonfigurasi</span>
                 </div>
@@ -3075,7 +3093,7 @@
                   <div class="flex items-center justify-between gap-3">
                     <div>
                       <label class="block text-xs font-bold uppercase text-slate-800">Status Integrasi API Ekspedisi</label>
-                      <p class="text-[11px] text-slate-500 mt-0.5">Aktifkan penghitungan ongkir otomatis, pickup armada kargo, dan pelacakan live resi pihak ketiga.</p>
+                      <p class="text-[11px] text-slate-500 mt-0.5">Atur pilihan kurir, tarif pengantaran, dan pencatatan resi untuk pesanan.</p>
                     </div>
                     <label class="relative inline-flex items-center cursor-pointer">
                       <input type="checkbox" id="setting-expedition-enabled" class="sr-only peer">
@@ -3087,17 +3105,13 @@
                     <div>
                       <label class="text-[11px] font-semibold text-slate-600 block mb-1">Provider Ekspedisi</label>
                       <select id="setting-expedition-provider" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-xs font-medium focus:ring-2 focus:ring-emerald-500 focus:outline-none">
-                        <option value="rajaongkir">RajaOngkir (Pro / Kargo API)</option>
-                        <option value="biteship">Biteship Aggregator Logistics</option>
-                        <option value="kargo">Kargo Technologies (Truk &amp; FTL)</option>
-                        <option value="jne">JNE Online API</option>
-                        <option value="sicepat">SiCepat Ekspres API</option>
+                        <option value="manual">Kurir &amp; Ongkir Manual</option>
                         <option value="custom">Armada Logistik Mandiri / Bursa Limbah</option>
                       </select>
                     </div>
                     <div>
-                      <label class="text-[11px] font-semibold text-slate-600 block mb-1">API Key / Token Rahasia</label>
-                      <input id="setting-expedition-api-key" type="password" placeholder="Masukkan API Key Ekspedisi..." class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-xs font-mono">
+                      <label class="text-[11px] font-semibold text-slate-600 block mb-1">API Key Ekspedisi (opsional)</label>
+                      <input id="setting-expedition-api-key" type="password" placeholder="Token provider (disimpan terenkripsi)" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-xs font-mono">
                     </div>
                     <div>
                       <label class="text-[11px] font-semibold text-slate-600 block mb-1">Kota / Hub Asal Default</label>
@@ -3105,15 +3119,7 @@
                     </div>
                   </div>
 
-                  <div>
-                    <label class="text-[11px] font-semibold text-slate-600 block mb-1">Webhook Resi &amp; Tracking URL</label>
-                    <div class="flex gap-2">
-                      <input id="setting-expedition-webhook-url" type="text" readonly value="https://bursalimbah.id/api/shipping/webhook" class="w-full bg-slate-100 border border-slate-200 text-slate-600 rounded-lg px-3 py-2 text-xs font-mono">
-                      <button type="button" onclick="navigator.clipboard.writeText(document.getElementById('setting-expedition-webhook-url').value); app.showToast('URL Webhook Ekspedisi disalin!', 'success');" class="px-3 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-bold rounded-lg transition shrink-0">
-                        <i class="fa-solid fa-copy mr-1"></i>Salin
-                      </button>
-                    </div>
-                  </div>
+                  <p class="rounded-lg border border-amber-200 bg-amber-50 p-3 text-[11px] text-amber-800">Koneksi API live dan webhook operator ekspedisi belum tersedia. Tarif, pilihan layanan, serta resi saat ini dikelola secara manual.</p>
 
                   <!-- Kurir yang didukung -->
                   <div>
@@ -3154,10 +3160,16 @@
                     </div>
                   </div>
 
+                  <div>
+                    <label class="text-[11px] font-semibold text-slate-600 block mb-1">Opsi ongkir manual (JSON)</label>
+                    <textarea id="setting-manual-shipping-options" rows="3" class="w-full rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-[11px] font-mono" placeholder='[{"id":"pickup","name":"Ambil sendiri","fee":0,"enabled":true}]'></textarea>
+                    <p class="mt-1 text-[10px] text-slate-500">Daftar ini tampil saat checkout. Format: id, name, fee (rupiah), enabled.</p>
+                  </div>
+
                   <div class="flex items-center justify-between pt-2 border-t border-slate-100 flex-wrap gap-2">
                     <p class="text-[10px] text-indigo-800 bg-indigo-50 border border-indigo-200 rounded-lg p-2 flex items-center gap-1.5 flex-1 min-w-[260px]">
                       <i class="fa-solid fa-circle-info text-indigo-600"></i>
-                      <span>API ekspedisi memungkinkan penjual memasukkan nomor resi resmi dan pembeli dapat melacak pengiriman secara real-time.</span>
+                      <span>Opsi kurir/ongkir manual akan muncul pada checkout. Penjual memasukkan resi dan bukti serah terima pada dashboard.</span>
                     </p>
                     <button type="button" onclick="app.testExpeditionConnection()" class="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-xs transition flex items-center gap-1.5 shrink-0">
                       <i class="fa-solid fa-satellite-dish text-indigo-200"></i>
