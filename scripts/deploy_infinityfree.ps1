@@ -12,7 +12,7 @@ if (-not $ftpHost -or -not $ftpUser -or -not $ftpPass) {
 }
 
 $remoteRoot = "ftp://$ftpHost/htdocs"
-$allowedRoots = @('index.html', '.htaccess', 'hero.jpg', 'css', 'assets', 'js', 'api')
+$allowedRoots = @('index.html', '.htaccess', 'hero.jpg', 'css', 'assets', 'js', 'api', 'api/.htaccess')
 $excludedNames = @('config.local.php', 'deploy_infinityfree.local.ps1')
 $failed = [System.Collections.Generic.List[string]]::new()
 

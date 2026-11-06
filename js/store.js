@@ -525,7 +525,7 @@ class BursaLimbahStore {
   // ================= MYSQL BACKEND INTEGRATION (ASYNC) =================
   async loginUserAsync(identifier, password) {
     try {
-      const res = await fetch(`${this.apiBaseUrl}/api/auth/login`, {
+      const res = await fetch(`${this.apiBaseUrl}/api/login.php`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ identifier, password })
@@ -570,11 +570,11 @@ class BursaLimbahStore {
       } else {
         let message = data.message;
         if (!message && res.status === 404) {
-          message = 'Endpoint login /api/auth/login tidak ditemukan. Pastikan api/.htaccess dan api/router.php sudah terunggah.';
+          message = 'Endpoint /api/login.php tidak ditemukan. Pastikan file api/login.php sudah terunggah.';
         } else if (!message && res.status >= 500) {
           message = `Server API login bermasalah (HTTP ${res.status}). Periksa konfigurasi PHP/MySQL dan log error hosting.`;
         } else if (!message && res.ok) {
-          message = 'Endpoint login mengirim respons yang tidak valid. Pastikan versi terbaru api/router.php dan api/login.php sudah terunggah.';
+          message = 'Endpoint login mengirim respons yang tidak valid. Periksa file api/login.php dan konfigurasi PHP.';
         } else if (!message) {
           message = `Login gagal diproses oleh server (HTTP ${res.status}). Silakan coba lagi atau hubungi admin.`;
         }
@@ -602,7 +602,7 @@ class BursaLimbahStore {
 
   async registerSellerAsync(sellerData) {
     try {
-      const res = await fetch(`${this.apiBaseUrl}/api/auth/register`, {
+      const res = await fetch(`${this.apiBaseUrl}/api/register.php`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...sellerData, role: 'seller' })
@@ -640,7 +640,7 @@ class BursaLimbahStore {
 
   async registerBuyerAsync(buyerData) {
     try {
-      const res = await fetch(`${this.apiBaseUrl}/api/auth/register`, {
+      const res = await fetch(`${this.apiBaseUrl}/api/register.php`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...buyerData, role: 'buyer' })
