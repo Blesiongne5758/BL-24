@@ -19,6 +19,7 @@ $phone = trim($input['phone'] ?? '');
 $location = trim($input['location'] ?? 'Indonesia');
 $bankAccount = trim($input['bankAccount'] ?? '-');
 $tierId = trim($input['tierId'] ?? 'tier_starter');
+$termsAccepted = filter_var($input['termsAccepted'] ?? false, FILTER_VALIDATE_BOOLEAN);
 
 if (empty($email) || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
     http_response_code(400);
@@ -33,6 +34,16 @@ if (!in_array($role, ['buyer', 'seller'], true)) {
 if (strlen($password) < 8) {
     http_response_code(400);
     echo json_encode(['success' => false, 'message' => 'Kata sandi harus minimal 8 karakter.']);
+    exit;
+}
+if ($name === '' || $phone === '') {
+    http_response_code(400);
+    echo json_encode(['success' => false, 'message' => 'Nama lengkap dan nomor WhatsApp wajib diisi.']);
+    exit;
+}
+if (!$termsAccepted) {
+    http_response_code(400);
+    echo json_encode(['success' => false, 'message' => 'Persetujuan Syarat dan Ketentuan diperlukan untuk mendaftar.']);
     exit;
 }
 
@@ -54,7 +65,7 @@ try {
 
     // 2. Hash password
     $passwordHash = password_hash($password, PASSWORD_BCRYPT);
-    $newId = 'user_' . $role . '_' . round(microtime(true) * 1000);
+    $newId = 'user_' . $role . '_' . bin2hex(random_bytes(12));
     $defaultPhone = !empty($phone) ? $phone : '+62 812-' . mt_rand(10000000, 99999999);
     $emailPrefix = ucwords(preg_replace('/[^a-zA-Z0-9]/', ' ', explode('@', $email)[0]));
     $finalName = !empty($name) ? $name : ($role === 'seller' ? "{$emailPrefix} (Mitra Penjual)" : "{$emailPrefix} (Pembeli)");
@@ -70,11 +81,22 @@ try {
         bank_account, location, balance
     ) VALUES (?, ?, ?, ?, ?, ?, ?, 'local', ?, 1, ?, 0, 'unverified', ?, ?, ?, 0.00)";
 
+    $pdo->beginTransaction();
     $insertStmt = $pdo->prepare($insertSql);
     $insertStmt->execute([
         $newId, $finalName, $email, $defaultPhone, $finalCompany, $role,
         $passwordHash, $tierId, $expiry, $badge, $bankAccount, $location
     ]);
+
+    $termsVersionStmt = $pdo->prepare("SELECT setting_value FROM system_settings WHERE setting_key = 'terms_version' LIMIT 1");
+    $termsVersionStmt->execute();
+    $acceptedTermsVersion = (string)($termsVersionStmt->fetchColumn() ?: ($input['termsVersion'] ?? '1.0'));
+    $termsTitleStmt = $pdo->prepare("SELECT setting_value FROM system_settings WHERE setting_key = 'terms_title' LIMIT 1");
+    $termsTitleStmt->execute();
+    $acceptedTermsTitle = (string)($termsTitleStmt->fetchColumn() ?: 'Syarat dan Ketentuan Penggunaan Bursa Limbah');
+    $acceptanceStmt = $pdo->prepare('INSERT INTO user_terms_acceptances (id, user_id, terms_version, terms_title) VALUES (?, ?, ?, ?)');
+    $acceptanceStmt->execute(['terms_' . bin2hex(random_bytes(12)), $newId, $acceptedTermsVersion, $acceptedTermsTitle]);
+    $pdo->commit();
 
     // 4. Return data
     $fetchStmt = $pdo->prepare('SELECT * FROM users WHERE id = ?');
@@ -94,6 +116,8 @@ try {
     ]);
 
 } catch (Exception $e) {
+    if ($pdo->inTransaction()) $pdo->rollBack();
+    error_log('[Registration Error] ' . $e->getMessage());
     http_response_code(500);
-    echo json_encode(['success' => false, 'message' => 'Terjadi kesalahan server: ' . $e->getMessage()]);
+    echo json_encode(['success' => false, 'message' => 'Terjadi kesalahan server saat membuat akun. Coba lagi nanti.']);
 }

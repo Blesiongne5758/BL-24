@@ -721,46 +721,41 @@ class BursaLimbahApp {
     const company = name; // Default nama usaha sama dengan nama pengguna
     const location = 'Indonesia';
     const bankAccount = '-';
+    const submitButton = event.currentTarget?.querySelector('button[type="submit"]');
+    const originalButtonHtml = submitButton?.innerHTML;
+    if (submitButton) {
+      submitButton.disabled = true;
+      submitButton.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i><span>Mendaftarkan...</span>';
+    }
 
     try {
-      // 1. Create Auth User
-      const { data: authData, error: authError } = await window.circulinkSupabase.client.auth.signUp({
+      const result = await this.store.registerSellerAsync({
         email,
+        name,
+        phone,
         password,
+        company,
+        location,
+        bankAccount,
+        termsAccepted: true,
+        termsVersion: this.store.getSettings().termsVersion
       });
-
-      if (authError) throw authError;
-
-      const userId = authData.user?.id;
-      if (!userId) throw new Error('Gagal membuat akun autentikasi.');
-
-      // 2. Create User Profile in 'users' table
-      const { error: profileError } = await window.circulinkSupabase.client
-        .from('users')
-        .insert([{
-          id: userId,
-          role: 'seller',
-          name,
-          company,
-          phone,
-          email,
-          location,
-          bankAccount,
-          verified_badge: 'Pemasok Terverifikasi',
-          balance: 0,
-          terms_accepted: true,
-          terms_version: this.store.getSettings().termsVersion
-        }]);
-
-      if (profileError) throw profileError;
+      if (!result.success) throw new Error(result.message || 'Pendaftaran penjual gagal.');
 
       this.closeModals();
       this.termsAcceptedForRegistration = null;
       this.triggerConfetti();
-      this.showToast(`Selamat datang ${name}! Akun Penjual berhasil dibuat. Lengkapi data rekening & lokasi di Menu Pengaturan.`, 'success');
       this.setRole('seller', false);
+      this.showToast(result.source === 'local'
+        ? `Akun Penjual ${name} dibuat di browser ini. Untuk akun yang tersimpan permanen, sambungkan backend.`
+        : `Selamat datang ${name}! Akun Penjual berhasil dibuat. Lengkapi data rekening & lokasi di Menu Pengaturan.`, result.source === 'local' ? 'warning' : 'success');
     } catch (error) {
       this.showToast(error.message || 'Pendaftaran penjual gagal.', 'error');
+    } finally {
+      if (submitButton) {
+        submitButton.disabled = false;
+        submitButton.innerHTML = originalButtonHtml;
+      }
     }
   }
 
@@ -2122,36 +2117,26 @@ class BursaLimbahApp {
 
     const company = name; // Default nama perusahaan sama dengan nama penanggung jawab
     const chosenTierId = this.selectedRegisterTier || 'tier_starter';
+    const submitButton = event.currentTarget?.querySelector('button[type="submit"]');
+    const originalButtonHtml = submitButton?.innerHTML;
+    if (submitButton) {
+      submitButton.disabled = true;
+      submitButton.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i><span>Mendaftarkan...</span>';
+    }
 
     try {
-      // 1. Create Auth User
-      const { data: authData, error: authError } = await window.circulinkSupabase.client.auth.signUp({
+      const result = await this.store.registerBuyerAsync({
         email,
+        name,
+        phone,
         password,
+        company,
+        tierId: chosenTierId,
+        subscriptionActive: true,
+        termsAccepted: true,
+        termsVersion: this.store.getSettings().termsVersion
       });
-
-      if (authError) throw authError;
-
-      const userId = authData.user?.id;
-      if (!userId) throw new Error('Gagal membuat akun autentikasi.');
-
-      // 2. Create User Profile in 'users' table
-      const { error: profileError } = await window.circulinkSupabase.client
-        .from('users')
-        .insert([{
-          id: userId,
-          role: 'buyer',
-          name,
-          company,
-          phone,
-          email,
-          tier_id: chosenTierId,
-          subscription_active: true,
-          terms_accepted: true,
-          terms_version: this.store.getSettings().termsVersion
-        }]);
-
-      if (profileError) throw profileError;
+      if (!result.success) throw new Error(result.message || 'Pendaftaran pembeli gagal.');
 
       const tier = this.store.getSubscriptionTierById(chosenTierId);
 
@@ -2159,9 +2144,16 @@ class BursaLimbahApp {
       this.termsAcceptedForRegistration = null;
       this.setRole('buyer', false);
       this.triggerConfetti();
-      this.showToast(`Selamat datang ${name}! Akun Pembeli aktif dengan ${tier ? tier.name : 'Paket Starter'}. Lengkapi profil di Menu Pengaturan.`, 'success');
+      this.showToast(result.source === 'local'
+        ? `Akun Pembeli ${name} dibuat di browser ini. Untuk akun yang tersimpan permanen, sambungkan backend.`
+        : `Selamat datang ${name}! Akun Pembeli aktif dengan ${tier ? tier.name : 'Paket Starter'}. Lengkapi profil di Menu Pengaturan.`, result.source === 'local' ? 'warning' : 'success');
     } catch (error) {
       this.showToast(error.message || 'Pendaftaran pembeli gagal.', 'error');
+    } finally {
+      if (submitButton) {
+        submitButton.disabled = false;
+        submitButton.innerHTML = originalButtonHtml;
+      }
     }
   }
 
