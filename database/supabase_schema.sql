@@ -184,9 +184,15 @@ END $$;
 
 REVOKE ALL ON public.users, public.categories, public.products, public.orders, public.offers, public.events, public.system_settings FROM anon, authenticated;
 GRANT SELECT ON public.categories, public.events TO anon, authenticated;
+GRANT SELECT (id, code, title, category_id, category_name, seller_name, seller_type, source_type,
+              volume, weight, unit, container_type, condition, grade, description,
+              listing_status, status, evidences, created_at)
+ON public.products TO anon, authenticated;
 
 CREATE POLICY "Public read active categories" ON public.categories FOR SELECT TO anon, authenticated USING (active = true);
-CREATE OR REPLACE VIEW public.marketplace_products WITH (security_barrier=true) AS
+CREATE POLICY "Public read approved marketplace products" ON public.products FOR SELECT TO anon, authenticated
+USING (status = 'approved' AND LOWER(listing_status) = 'tersedia');
+CREATE OR REPLACE VIEW public.marketplace_products WITH (security_barrier=true, security_invoker=true) AS
 SELECT id, code, title, category_id, category_name, seller_name, seller_type, source_type,
        volume, weight, unit, container_type, condition, grade, description,
        listing_status, status, evidences, created_at
