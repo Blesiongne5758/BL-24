@@ -45,6 +45,11 @@ if (!defined('INFERX_ENCRYPTION_KEY')) {
     define('INFERX_ENCRYPTION_KEY', getenv('INFERX_ENCRYPTION_KEY') ?: '');
 }
 
+// AES-256 key (64 hex chars) for payment and logistics secrets at rest.
+if (!defined('PAYMENT_ENCRYPTION_KEY')) {
+    define('PAYMENT_ENCRYPTION_KEY', getenv('PAYMENT_ENCRYPTION_KEY') ?: '');
+}
+
 function getCloudinaryConfig() {
     return [
         'cloud_name' => CLOUDINARY_CLOUD_NAME,

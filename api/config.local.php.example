@@ -17,3 +17,7 @@ define('CLOUDINARY_FOLDER', 'bursalimbah');
 // Kunci acak 32 byte untuk enkripsi API key AI di database (jangan gunakan ulang API key).
 // Buat dengan: php -r "echo bin2hex(random_bytes(32)), PHP_EOL;"
 define('INFERX_ENCRYPTION_KEY', 'GANTI_DENGAN_64_KARAKTER_HEX_RANDOM');
+
+// Kunci acak 32 byte terpisah untuk enkripsi Server Key gateway/API ekspedisi.
+// Buat nilainya dengan: php -r "echo bin2hex(random_bytes(32)), PHP_EOL;"
+define('PAYMENT_ENCRYPTION_KEY', 'GANTI_DENGAN_64_KARAKTER_HEX_RANDOM_YANG_BERBEDA');

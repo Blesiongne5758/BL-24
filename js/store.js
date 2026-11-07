@@ -78,10 +78,19 @@ class BursaLimbahStore {
             downPaymentRate: parseFloat(o.dp_percentage) || 0,
             downPaymentAmount: parseFloat(o.dp_amount) || 0,
             handlingFee: parseFloat(o.handling_fee) || 10000,
-            totalPaidNow: (parseFloat(o.dp_amount) || parseFloat(o.total_amount)) + (parseFloat(o.handling_fee) || 10000),
+            totalPaidNow: (parseFloat(o.dp_amount) || parseFloat(o.total_amount)) + (parseFloat(o.handling_fee) || 0) + (parseFloat(o.service_fee) || 0) + (parseFloat(o.shipping_fee) || 0),
             remainingPayment: parseFloat(o.remaining_amount) || 0,
-            paymentStatus: parseFloat(o.dp_amount) > 0 ? `DP Terbayar (${parseFloat(o.dp_percentage)}%)` : 'Lunas 100%',
-            bookingStatus: o.escrow_status === 'completed' ? 'Selesai & Diterima' : 'Jadwal Pengambilan Armada',
+            paymentStatus: o.status || 'Menunggu Pembayaran',
+            paymentReviewStatus: o.latest_payment_status || localOrder.paymentReviewStatus || '',
+            bookingStatus: o.escrow_status === 'completed' ? 'Selesai & Diterima' : (localOrder.bookingStatus || 'Menunggu Pembayaran'),
+            shippingMethod: o.shipping_method || localOrder.shippingMethod || '',
+            shippingFee: parseFloat(o.shipping_fee) || 0,
+            shippingStatus: o.shipping_status || localOrder.shippingStatus || 'pending_dispatch',
+            deliveryDetails: o.delivery_details || localOrder.deliveryDetails || null,
+            trackingNumber: o.tracking_number || localOrder.trackingNumber || '',
+            dispatchedAt: o.dispatched_at || localOrder.dispatchedAt || null,
+            receivedAt: o.received_at || localOrder.receivedAt || null,
+            actualReceivedWeight: parseFloat(o.actual_received_weight) || localOrder.actualReceivedWeight || 0,
             pickupDate: o.pickup_date ? new Date(o.pickup_date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
             createdAt: o.created_at ? new Date(o.created_at).toISOString().replace('T', ' ').substring(0, 16) : '',
             notes: o.notes || ''
@@ -380,6 +389,10 @@ class BursaLimbahStore {
         this.initStore();
       }
     }
+    if (this.state?.settings) {
+      delete this.state.settings.paymentGatewayServerKey;
+      delete this.state.settings.expeditionApiKey;
+    }
   }
 
   extractCity(addressText = "") {
@@ -402,6 +415,10 @@ class BursaLimbahStore {
   }
 
   save() {
+    if (this.state?.settings) {
+      delete this.state.settings.paymentGatewayServerKey;
+      delete this.state.settings.expeditionApiKey;
+    }
     localStorage.setItem(STORAGE_KEY, JSON.stringify(this.state));
   }
 
@@ -457,6 +474,12 @@ class BursaLimbahStore {
     if (!sellerId) return false;
     const sellerUser = (this.state.users || []).find(u => u.id === sellerId && u.role === "seller");
     return !!sellerUser;
+  }
+
+  getAuthenticatedSellerUser() {
+    const sellerId = this.state.authenticatedSellerId;
+    if (!sellerId) return null;
+    return (this.state.users || []).find(u => u.id === sellerId && u.role === 'seller') || null;
   }
 
   isAdminAuthenticated() {
@@ -525,13 +548,15 @@ class BursaLimbahStore {
   // ================= MYSQL BACKEND INTEGRATION (ASYNC) =================
   async loginUserAsync(identifier, password) {
     try {
-      const res = await fetch(`${this.apiBaseUrl}/api/auth/login`, {
+      const res = await fetch(`${this.apiBaseUrl}/api/login.php`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ identifier, password })
       });
 
-      const data = await res.json().catch(() => ({}));
+      const responseText = await res.text();
+      let data = {};
+      try { data = responseText ? JSON.parse(responseText) : {}; } catch (_) { /* handled below */ }
 
       if (res.ok && data.success && data.user) {
         const user = data.user;
@@ -566,9 +591,19 @@ class BursaLimbahStore {
       } else if (res.status === 404 && this.canUseLocalRegistrationFallback()) {
         // Local standalone preview may authenticate browser-only demo accounts.
       } else {
+        let message = data.message;
+        if (!message && res.status === 404) {
+          message = 'Endpoint /api/login.php tidak ditemukan. Pastikan file api/login.php sudah terunggah.';
+        } else if (!message && res.status >= 500) {
+          message = `Server API login bermasalah (HTTP ${res.status}). Periksa konfigurasi PHP/MySQL dan log error hosting.`;
+        } else if (!message && res.ok) {
+          message = 'Endpoint login mengirim respons yang tidak valid. Periksa file api/login.php dan konfigurasi PHP.';
+        } else if (!message) {
+          message = `Login gagal diproses oleh server (HTTP ${res.status}). Silakan coba lagi atau hubungi admin.`;
+        }
         return {
           success: false,
-          message: data.message || "Server tidak dapat memproses login. Silakan coba lagi atau hubungi admin."
+          message
         };
       }
     } catch (netErr) {
@@ -590,7 +625,7 @@ class BursaLimbahStore {
 
   async registerSellerAsync(sellerData) {
     try {
-      const res = await fetch(`${this.apiBaseUrl}/api/auth/register`, {
+      const res = await fetch(`${this.apiBaseUrl}/api/register.php`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...sellerData, role: 'seller' })
@@ -628,7 +663,7 @@ class BursaLimbahStore {
 
   async registerBuyerAsync(buyerData) {
     try {
-      const res = await fetch(`${this.apiBaseUrl}/api/auth/register`, {
+      const res = await fetch(`${this.apiBaseUrl}/api/register.php`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...buyerData, role: 'buyer' })
@@ -764,7 +799,7 @@ class BursaLimbahStore {
     const formData = new FormData();
     files.forEach(file => formData.append('files', file));
 
-    const response = await fetch(`${this.apiBaseUrl}/api/uploads/product-evidence`, {
+    const response = await fetch(`${this.apiBaseUrl}/api/router.php?path=uploads/product-evidence`, {
       method: 'POST',
       body: formData
     });
@@ -1150,9 +1185,9 @@ class BursaLimbahStore {
     return this.state.products.find(p => p.id === id);
   }
 
-  addProduct(productData) {
-    const id = "PRD-2026-" + String(Math.floor(100 + Math.random() * 900));
-    const code = "CIR-" + (productData.categoryCode || "WST") + "-" + String(Math.floor(10 + Math.random() * 90));
+  async addProduct(productData) {
+    const id = productData.id || `prd_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 10)}`;
+    const code = productData.code || `CIR-${productData.categoryCode || 'WST'}-${Date.now().toString(36).slice(-6).toUpperCase()}`;
     
     const now = new Date();
     const formattedDate = now.toISOString().replace("T", " ").substring(0, 16);
@@ -1204,16 +1239,27 @@ class BursaLimbahStore {
       verifiedBy: null
     };
 
-    this.state.products.unshift(newProduct);
-    this.save();
-
-    if (this.isBackendConnected) {
-      fetch(`${this.apiBaseUrl}/api/products`, {
+    if (!this.canUseLocalRegistrationFallback()) {
+      let response;
+      try {
+        response = await fetch(`${this.apiBaseUrl}/api/router.php?path=products`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newProduct)
-      }).catch(e => console.warn('[Add Product API Error]', e));
+        });
+      } catch (error) {
+        throw new Error('Server pasokan tidak dapat dihubungi. Periksa koneksi lalu coba lagi.');
+      }
+
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok || !result.success) {
+        throw new Error(result.message || `Pasokan gagal disimpan ke server (HTTP ${response.status}).`);
+      }
+      if (result.id) newProduct.id = result.id;
     }
+
+    this.state.products.unshift(newProduct);
+    this.save();
 
     return newProduct;
   }
@@ -1405,13 +1451,16 @@ class BursaLimbahStore {
     return { valid: true };
   }
 
-  createBooking({ productId, buyerId, pickupDate, notes, shippingMethod, shippingFee }) {
+  async createBooking({ productId, buyerId, pickupDate, notes, shippingMethod, shippingFee }) {
     const product = this.getProductById(productId);
     if (!product) throw new Error("Produk limbah tidak ditemukan");
     if (product.status !== "approved") throw new Error("Produk limbah saat ini tidak tersedia untuk dibooking");
 
     const settings = this.getSettings();
     const buyer = this.state.users.find(u => u.id === buyerId) || this.getCurrentUser();
+    if (!buyer || buyer.role !== 'buyer') throw new Error('Akun pembeli tidak valid.');
+    if (!buyer.subscriptionActive) throw new Error('Paket langganan pembeli belum aktif.');
+    if (!this.checkProductAccess(product, buyer, 'buyer').canViewPrice) throw new Error('Produk ini berada di luar batas akses tier pembeli.');
 
     const quantity = product.volume > 0 ? product.volume : product.weight;
 
@@ -1427,8 +1476,8 @@ class BursaLimbahStore {
     const downPaymentAmount = isDp ? Math.round(totalPrice * (dpPercent / 100)) : totalPrice;
     const handlingFee = this.getHandlingFeeForUser(buyer);
     const appFee = settings.appFeePerTransaction || 5000;
-    const isDelivery = shippingMethod === 'BURSA LIMBAH_delivery';
-    const finalShippingFee = isDelivery ? (Number(shippingFee) || settings.shippingFlatFee || 250000) : 0;
+    const finalShippingMethod = String(shippingMethod || 'Armada Mandiri Pembeli');
+    const finalShippingFee = Math.max(0, Number(shippingFee) || 0);
     const totalPaidNow = downPaymentAmount + handlingFee + appFee + finalShippingFee;
     const remainingPayment = isDp ? totalPrice - downPaymentAmount : 0;
 
@@ -1462,20 +1511,32 @@ class BursaLimbahStore {
       downPaymentAmount: isDp ? downPaymentAmount : 0,
       handlingFee,
       appFee,
-      shippingMethod: isDelivery ? 'Jasa Pengiriman Mitra BURSA LIMBAH' : 'Armada Mandiri Pembeli',
+      shippingMethod: finalShippingMethod,
       shippingFee: finalShippingFee,
       totalPaidNow,
       remainingPayment,
       remainingPaymentStatus: remainingPayment > 0 ? 'unpaid' : 'not_applicable',
       remainingPaymentProof: null,
       escrowBankInfo,
-      paymentStatus: isDp ? `DP Terbayar (${dpPercent}%)` : "Lunas via Rekber (100%)",
-      bookingStatus: "Jadwal Pengambilan Armada",
+      paymentStatus: isDp ? `Menunggu Pembayaran DP (${dpPercent}%)` : 'Menunggu Pembayaran Penuh',
+      bookingStatus: 'Menunggu Pembayaran',
       pickupDate: pickupDate || new Date(Date.now() + 3 * 86400000).toISOString().split("T")[0],
       createdAt: now,
       qrCodeTrace: `CIR-TRACE-${bookingCode}-${product.code}`,
       notes: notes || "Booking terkonfirmasi via Rekening Bersama (Escrow) BURSA LIMBAH."
     };
+
+    if (this.isBackendConnected) {
+      const response = await fetch(`${this.apiBaseUrl}/api/orders`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...newOrder, shippingFee: finalShippingFee })
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok || !result.success) {
+        throw new Error(result.message || 'Pesanan gagal tersimpan ke server. Pasokan belum dikunci.');
+      }
+    }
 
     product.status = "booked";
     product.bookedByOrderId = orderId;
@@ -1484,14 +1545,6 @@ class BursaLimbahStore {
     this.createNotification(product.sellerId, 'info', 'Pesanan baru masuk', `${buyer.name} membuat pesanan ${product.title}.`, `/seller/orders/${orderId}`);
     this.createNotification(buyer.id, 'success', 'Pesanan tercatat', `Pesanan ${bookingCode} berhasil dibuat dan menunggu proses pembayaran.`, `/buyer/orders/${orderId}`);
     this.save();
-
-    if (this.isBackendConnected) {
-      fetch(`${this.apiBaseUrl}/api/orders`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newOrder)
-      }).catch(e => console.warn('[Create Order API Error]', e));
-    }
 
     return newOrder;
   }
@@ -1668,10 +1721,19 @@ class BursaLimbahStore {
     return (this.state.offers || []).filter(o => o.buyerId === buyerId && o.status === 'accepted').sort((a, b) => new Date(b.respondedAt || b.createdAt) - new Date(a.respondedAt || a.createdAt));
   }
 
-  dispatchOrder({ orderId, sellerId, dispatchType, courierName, trackingNumber, notes, proofImage, handoverRecipient }) {
+  async dispatchOrder({ orderId, sellerId, dispatchType, courierName, trackingNumber, notes, proofImage, handoverRecipient }) {
     const order = this.getOrderById(orderId);
     if (!order) throw new Error('Transaksi tidak ditemukan.');
     if (order.sellerId !== sellerId) throw new Error('Anda tidak memiliki wewenang untuk memproses pengiriman pesanan ini.');
+
+    if (this.isBackendConnected) {
+      const response = await fetch(`${this.apiBaseUrl}/api/orders/${orderId}/dispatch`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ dispatchType, courierName, trackingNumber, notes, proofImage, handoverRecipient })
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok || !result.success) throw new Error(result.message || 'Status pengiriman gagal disimpan ke server.');
+    }
 
     const isThirdParty = dispatchType === 'third_party';
     order.shippingStatus = isThirdParty ? 'shipped_third_party' : 'handed_over';
@@ -1703,10 +1765,28 @@ class BursaLimbahStore {
     return order;
   }
 
-  validateOrderDelivery({ orderId, buyerId, actualWeight, handoverQrCode, notes, proofImage }) {
+  async validateOrderDelivery({ orderId, buyerId, actualWeight, handoverQrCode, notes, proofImage }) {
     const order = this.getOrderById(orderId);
     if (!order) throw new Error('Data transaksi tidak ditemukan.');
     if (order.buyerId !== buyerId && buyerId !== 'admin') throw new Error('Anda tidak memiliki hak validasi untuk transaksi ini.');
+    if (!['shipped_third_party', 'handed_over'].includes(order.shippingStatus)) {
+      throw new Error('Penjual belum mencatat pengiriman atau serah terima barang.');
+    }
+    if (/^menunggu pembayaran/i.test(String(order.paymentStatus || ''))) {
+      throw new Error('Pembayaran awal belum tercatat dan diverifikasi.');
+    }
+    if (Number(order.remainingPayment) > 0 && !['paid', 'completed', 'verified_by_seller', 'verified_by_admin'].includes(order.remainingPaymentStatus)) {
+      throw new Error('Pelunasan sisa pembayaran harus diverifikasi sebelum transaksi diselesaikan.');
+    }
+
+    if (this.isBackendConnected) {
+      const response = await fetch(`${this.apiBaseUrl}/api/orders/${orderId}/receive`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ actualWeight, handoverQrCode, notes, proofImage })
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok || !result.success) throw new Error(result.message || 'Konfirmasi penerimaan gagal disimpan ke server.');
+    }
 
     // Jika scan QR code diverifikasi
     if (handoverQrCode) {
@@ -1732,6 +1812,7 @@ class BursaLimbahStore {
     }
 
     order.shippingStatus = 'delivered';
+    order.receivedAt = new Date().toISOString();
     order.bookingStatus = 'Selesai (Barang Diterima & Lunas)';
     order.paymentStatus = 'Lunas (Selesai)';
     order.escrowStatus = 'completed';
@@ -2132,10 +2213,12 @@ class BursaLimbahStore {
     return (this.state.offers || []).filter(o => o.sellerId === sellerId).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
   }
 
-  createOffer({ productId, buyerId, offerPrice, quantity, note }) {
+  async createOffer({ productId, buyerId, offerPrice, quantity, note }) {
     const product = this.getProductById(productId);
     const buyer = this.state.users.find(u => u.id === buyerId);
     if (!product || !buyer) throw new Error('Data produk atau pembeli tidak ditemukan.');
+    if (buyer.role !== 'buyer' || !buyer.subscriptionActive) throw new Error('Akun pembeli tidak memiliki paket aktif.');
+    if (!this.checkProductAccess(product, buyer, 'buyer').canViewPrice) throw new Error('Produk ini berada di luar batas akses tier pembeli.');
     if (product.status !== 'approved') throw new Error('Produk ini tidak lagi tersedia untuk ditawar.');
     if (!(Number(offerPrice) > 0)) throw new Error('Masukkan harga penawaran yang valid.');
     const offer = {
@@ -2154,13 +2237,19 @@ class BursaLimbahStore {
       status: 'pending',
       createdAt: new Date().toISOString()
     };
+    if (this.isBackendConnected) {
+      const response = await fetch(`${this.apiBaseUrl}/api/offers`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(offer)
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok || !result.success) throw new Error(result.message || 'Penawaran gagal tersimpan ke server.');
+    }
     this.state.offers.unshift(offer);
     this.createNotification(product.sellerId, 'warning', 'Penawaran harga baru', `${buyer.name} menawar ${product.title} sebesar Rp${offer.offerPrice.toLocaleString('id-ID')}.`, `/seller/offers/${offer.id}`);
     this.createNotification(buyer.id, 'info', 'Penawaran dikirim', `Penawaran Anda untuk ${product.title} sudah diteruskan kepada penjual.`, `/buyer/offers/${offer.id}`);
     this.save();
-    if (this.isBackendConnected) {
-      fetch(`${this.apiBaseUrl}/api/offers`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(offer) }).catch(e => console.warn('[Offer API Error]', e));
-    }
     return offer;
   }
 

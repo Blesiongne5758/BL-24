@@ -54,6 +54,20 @@ Layanan web reverse proxy Nginx akan aktif di port `80`, backend Node.js di port
 
 ---
 
+## Pembayaran & Pengantaran (API PHP/MySQL)
+
+Untuk mengaktifkan checkout di hosting PHP/MySQL:
+
+1. Impor [migrasi pembayaran dan pengantaran](database/migrations/20261107_payment_shipping_integration.sql) satu kali setelah skema utama (`database/infinityfree_setup.sql`) terpasang.
+2. Tambahkan `PAYMENT_ENCRYPTION_KEY` pada `api/config.local.php`. Buat kunci acak 32 byte dengan `php -r "echo bin2hex(random_bytes(32)), PHP_EOL;"`; gunakan nilai berbeda dari `INFERX_ENCRYPTION_KEY` dan simpan cadangan aman. Mengganti kunci ini membuat rahasia gateway yang sudah tersimpan tidak dapat didekripsi.
+3. Di Admin → Pengaturan, masukkan Midtrans Client Key dan Server Key, pilih sandbox atau production, aktifkan kanal pembayaran, lalu simpan. Daftarkan callback Midtrans ke `https://bursalimbah.com/api/payment/webhook`.
+4. Upload QRIS statis merchant dari panel yang sama. Pembayaran manual menahan pesanan sebagai menunggu sampai admin meninjau bukti pembayaran.
+5. Aktifkan kurir/pengantaran dan isi opsi nama + ongkir pada JSON yang tersedia. Rilis ini mendukung pilihan kurir/ongkir manual dan pencatatan resi/serah-terima; API live pihak ekspedisi belum dihubungkan.
+
+Upload QRIS publik dan bukti bayar privat memerlukan kredensial server Cloudinary lengkap di `api/config.local.php`. Bukti bayar disimpan privat; URL tinjau ditandatangani dan hanya diberikan kepada pembeli pemiliknya atau admin.
+
+---
+
 ## ⚙️ Pusat Kontrol Fitur Sistem (Master Feature Toggles)
 
 Seluruh modul dan kapabilitas sistem dapat diaktifkan atau dinonaktifkan secara dinamis langsung melalui panel **Admin Settings** (`#admin-settings-form`), dilengkapi sakelar massal **"Aktifkan Semua"** dan **"Nonaktifkan Semua"**:
@@ -216,6 +230,8 @@ InfinityFree menjalankan file statis dan PHP; backend Express di `server/` tidak
 3. Untuk membuat administrator awal, daftarkan akun biasa melalui aplikasi, lalu ubah `users.role` menjadi `admin` untuk akun itu di phpMyAdmin. Pendaftaran publik hanya mengizinkan buyer/seller.
 4. Atur unsigned upload preset di Cloudinary hanya untuk **foto publik** dan isi Cloud Name/preset pada pengaturan platform. Dokumen KTP/NPWP serta bukti pembayaran memakai signed upload bertipe `authenticated`; isi Cloud Name, API Key, dan API Secret di `api/config.local.php`. Jangan unggah dokumen sensitif melalui preset unsigned.
 5. Unggah file dengan skrip `scripts/deploy_infinityfree.ps1`. Skrip menyertakan folder bersarang dan `hero.jpg`, mengecualikan `config.local.php`, dan berhenti dengan error jika ada file gagal diunggah. Variabel FTP yang dipakai: `INFINITYFREE_FTP_HOST`, `INFINITYFREE_FTP_USER`, dan `INFINITYFREE_FTP_PASS`.
+
+Untuk database yang sudah dibuat sebelum pembaruan form **Mulai Jual**, jalankan sekali `database/migrations/20261107_product_submission_fields.sql` di phpMyAdmin. Migrasi ini menambahkan kolom sumber pasokan, jumlah wadah, NIB, dan izin TPS yang dipakai API produk.
 
 Contoh file konfigurasi lokal `scripts/deploy_infinityfree.local.ps1`:
 ```powershell
