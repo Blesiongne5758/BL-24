@@ -35,7 +35,7 @@ function cloudinary_public_upload($file) {
     if(!defined('CLOUDINARY_CLOUD_NAME')||!CLOUDINARY_CLOUD_NAME||!defined('CLOUDINARY_API_KEY')||!CLOUDINARY_API_KEY||!defined('CLOUDINARY_API_SECRET')||!CLOUDINARY_API_SECRET)api_json(['success'=>false,'message'=>'Konfigurasi server Cloudinary belum lengkap.'],503);
     if(empty($file)||($file['error']??UPLOAD_ERR_NO_FILE)!==UPLOAD_ERR_OK||$file['size']>15*1024*1024)api_json(['success'=>false,'message'=>'Foto tidak valid atau melebihi 15 MB.'],400);
     $mime=(new finfo(FILEINFO_MIME_TYPE))->file($file['tmp_name']);
-    if(!in_array($mime,['image/jpeg','image/png','image/webp'],true))api_json(['success'=>false,'message'=>'Foto harus JPEG, PNG, atau WebP.'],400);
+    if(!in_array($mime,['image/jpeg','image/png','image/webp','image/heic','image/heif'],true))api_json(['success'=>false,'message'=>'Foto harus JPEG, PNG, WebP, atau HEIC.'],400);
     if(!function_exists('curl_init'))api_json(['success'=>false,'message'=>'Ekstensi cURL PHP tidak tersedia di hosting.'],503);
     $timestamp=time();$assetId=bin2hex(random_bytes(16));$params=['folder'=>'bursalimbah/public_listing','public_id'=>$assetId,'timestamp'=>$timestamp,'type'=>'upload'];
     $fields=$params+['api_key'=>CLOUDINARY_API_KEY,'signature'=>cloudinary_signed_params($params,CLOUDINARY_API_SECRET),'file'=>new CURLFile($file['tmp_name'],$mime,$file['name'])];

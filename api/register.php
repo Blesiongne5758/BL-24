@@ -48,6 +48,19 @@ if (!$termsAccepted) {
 }
 
 try {
+    $allowedTiers = ['tier_starter', 'tier_basic', 'tier_pro', 'tier_enterprise'];
+    if (!in_array($tierId, $allowedTiers, true)) $tierId = 'tier_starter';
+    $priceStmt = $pdo->prepare('SELECT setting_value FROM system_settings WHERE setting_key = ? LIMIT 1');
+    $priceStmt->execute([$tierId . '_price']);
+    $configuredPrice = $priceStmt->fetchColumn();
+    $tierPrice = $tierId === 'tier_starter' ? 0 : (is_numeric($configuredPrice) ? max(0, (float)$configuredPrice) : null);
+    if ($role === 'buyer' && $tierPrice === null) {
+        http_response_code(503);
+        echo json_encode(['success' => false, 'message' => 'Harga paket belum dikonfigurasi admin. Silakan pilih Paket Starter atau hubungi admin.']);
+        exit;
+    }
+    // Paid memberships are created pending and cannot unlock features before manual QRIS review.
+    $subscriptionActive = $role !== 'buyer' || $tierPrice === 0;
     // 1. Cek email sudah terdaftar
     $stmt = $pdo->prepare('SELECT id, role FROM users WHERE LOWER(email) = ?');
     $stmt->execute([$email]);
@@ -79,13 +92,13 @@ try {
         subscription_tier, subscription_active, subscription_expiry,
         identity_verified, verification_status, verified_badge,
         bank_account, location, balance
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, 'local', ?, 1, ?, 0, 'unverified', ?, ?, ?, 0.00)";
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, 'local', ?, ?, ?, 0, 'unverified', ?, ?, ?, 0.00)";
 
     $pdo->beginTransaction();
     $insertStmt = $pdo->prepare($insertSql);
     $insertStmt->execute([
         $newId, $finalName, $email, $defaultPhone, $finalCompany, $role,
-        $passwordHash, $tierId, $expiry, $badge, $bankAccount, $location
+        $passwordHash, $tierId, $subscriptionActive ? 1 : 0, $subscriptionActive ? $expiry : null, $badge, $bankAccount, $location
     ]);
 
     $termsVersionStmt = $pdo->prepare("SELECT setting_value FROM system_settings WHERE setting_key = 'terms_version' LIMIT 1");
