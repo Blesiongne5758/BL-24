@@ -462,6 +462,22 @@ class BursaLimbahStore {
     return null;
   }
 
+  getAuthenticatedSession() {
+    const sessions = [
+      { role: 'admin', id: this.state.adminUserId },
+      { role: 'seller', id: this.state.authenticatedSellerId },
+      { role: 'buyer', id: this.state.authenticatedBuyerId }
+    ];
+    const activeRole = this.getCurrentRole();
+    sessions.sort((a, b) => Number(b.role === activeRole) - Number(a.role === activeRole));
+    for (const session of sessions) {
+      if (!session.id) continue;
+      const user = (this.state.users || []).find(item => item.id === session.id && item.role === session.role);
+      if (user) return { role: session.role, user };
+    }
+    return null;
+  }
+
   isBuyerAuthenticated() {
     const buyerId = this.state.authenticatedBuyerId;
     if (!buyerId) return false;

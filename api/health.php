@@ -30,7 +30,19 @@ echo json_encode([
     'php_version' => phpversion(),
     'timestamp' => date('c'),
     'features' => [
-        'cloudinary_storage' => true,
-        'supabase_db' => true
+        'mysql_database' => true,
+        'cloudinary_storage' => defined('CLOUDINARY_CLOUD_NAME')
+            && defined('CLOUDINARY_API_KEY')
+            && defined('CLOUDINARY_API_SECRET')
+            && defined('CLOUDINARY_UPLOAD_PRESET')
+            && function_exists('curl_init')
+            && class_exists('finfo')
+            && CLOUDINARY_CLOUD_NAME !== ''
+            && CLOUDINARY_API_KEY !== ''
+            && CLOUDINARY_API_SECRET !== ''
+            && CLOUDINARY_UPLOAD_PRESET !== '',
+        // This PHP API uses InfinityFree MySQL. Supabase is an optional
+        // browser-side catalog mirror and is not a PHP database connection.
+        'supabase_db' => false
     ]
 ]);

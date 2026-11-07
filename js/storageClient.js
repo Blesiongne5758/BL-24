@@ -91,11 +91,11 @@
         ? (window.bursaLimbahStore.getSettings().cloudinaryConfig || {})
         : {};
       return {
-        enabled: storeConfig.enabled !== false,
-        cloudName: storeConfig.cloudName || window.CLOUDINARY_CLOUD_NAME || 'v1pwadqp',
-        uploadPreset: storeConfig.uploadPreset || window.CLOUDINARY_UPLOAD_PRESET || 'circulink_preset',
+        enabled: storeConfig.enabled === true,
+        cloudName: storeConfig.cloudName || window.CLOUDINARY_CLOUD_NAME || '',
+        uploadPreset: storeConfig.uploadPreset || window.CLOUDINARY_UPLOAD_PRESET || '',
         folder: storeConfig.folder || 'circulink',
-        apiKey: storeConfig.apiKey || '351693688969844'
+        apiKey: storeConfig.apiKey || ''
       };
     }
 
@@ -188,6 +188,9 @@
       // Step 1: Client-Side Validation
       const validation = StorageSchema.validateFile(file, category);
       if (!validation.valid) throw new Error(validation.error);
+      if (category.startsWith('private_')) {
+        throw new Error('Berkas privat wajib diunggah melalui endpoint server yang terautentikasi.');
+      }
 
       const cloudinaryCfg = this.getCloudinaryConfig();
 
@@ -241,14 +244,14 @@
         console.warn('[StorageClient] Backend storage endpoint unavailable:', s3Err.message);
       }
 
-      // Priority 3: Data URL / Local Blob Fallback (Zero Downtime for static demo / offline)
+      // Data URLs are local previews only and must not be reported as persisted uploads.
       return new Promise((resolve) => {
         const reader = new FileReader();
         reader.onload = (e) => {
           const dataUrl = e.target.result;
           if (onProgress) onProgress(100);
           resolve({
-            success: true,
+            success: false,
             provider: 'local_data_url',
             fileKey: `local_${Date.now()}_${file.name}`,
             publicUrl: dataUrl,
