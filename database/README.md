@@ -2,6 +2,14 @@
 
 Database MySQL untuk platform Bursa Limbah. Berisi 20 tabel lengkap untuk mengelola user, produk, transaksi, chat, event, dan konfigurasi sistem.
 
+## Supabase (katalog publik)
+
+InfinityFree PHP memakai MySQL sebagai sumber data utama. Supabase hanya menjadi katalog publik opsional; anon key tidak boleh dipakai untuk menulis data akun atau transaksi.
+
+- Instalasi baru: jalankan `supabase_schema.sql` di Supabase SQL Editor.
+- Instalasi lama: jalankan `migrations/20261108_supabase_rls_hardening.sql` di Supabase SQL Editor. Migrasi ini menghapus kebijakan RLS permisif lama, membatasi tabel sensitif, dan menyediakan `marketplace_products` tanpa harga serta alamat/GPS.
+- Jangan menaruh service-role key di browser atau file frontend.
+
 ## Koneksi Database
 
 

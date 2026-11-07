@@ -28,9 +28,8 @@
       } catch (_) {}
 
       // Fallback to window globals or localStorage or project default
-      cfg.url = cfg.url || window.SUPABASE_URL || localStorage.getItem('supabase_url') || 'https://vnajenbubmglwlsvteed.supabase.co';
-      cfg.anonKey = cfg.anonKey || window.SUPABASE_ANON_KEY || localStorage.getItem('supabase_anon_key') || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZuYWplbmJ1Ym1nbHdsc3Z0ZWVkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI2NDI0MjUsImV4cCI6MjEwODIxODQyNX0.Ft3UjkZa0nqkflx1gG1JaFCAfhFlIYY2Jy3xetLwDRE';
-      if (cfg.url && cfg.anonKey) cfg.enabled = true;
+      cfg.url = cfg.url || window.SUPABASE_URL || localStorage.getItem('supabase_url') || '';
+      cfg.anonKey = cfg.anonKey || window.SUPABASE_ANON_KEY || localStorage.getItem('supabase_anon_key') || '';
       return cfg;
     }
 
@@ -59,6 +58,7 @@
      */
     async _restRequest(table, options = {}) {
       const cfg = this.getConfig();
+      if (!cfg.enabled) throw new Error('Koneksi Supabase dinonaktifkan di pengaturan admin.');
       if (!cfg.url || !cfg.anonKey) throw new Error('Supabase URL atau Anon Key belum dikonfigurasi.');
 
       const cleanUrl = cfg.url.replace(/\/$/, '');
@@ -142,7 +142,7 @@
     async getProducts() {
       if (!this.isConfigured()) return null;
       try {
-        return await this._restRequest('products', { query: 'select=*&order=created_at.desc' });
+        return await this._restRequest('marketplace_products', { query: 'select=*&order=created_at.desc' });
       } catch (err) {
         console.warn('[Supabase] getProducts error:', err.message);
         return null;
@@ -234,47 +234,9 @@
       }
     }
 
-    // --- Sync Store with Supabase ---
-    async syncWithStore(store) {
-      if (!this.isConfigured()) return;
-      try {
-        const remoteProducts = await this.getProducts();
-        if (Array.isArray(remoteProducts) && remoteProducts.length > 0) {
-          const mapped = remoteProducts.map(p => ({
-            id: p.id,
-            code: p.code,
-            title: p.title,
-            categoryId: p.category_id,
-            categoryName: p.category_name,
-            sellerId: p.seller_id,
-            sellerName: p.seller_name,
-            sellerType: p.seller_type,
-            sourceType: p.source_type,
-            volume: Number(p.volume),
-            weight: Number(p.weight),
-            unit: p.unit,
-            offerPrice: Number(p.offer_price),
-            totalPrice: Number(p.total_price),
-            containerType: p.container_type,
-            condition: p.condition,
-            grade: p.grade,
-            description: p.description,
-            address: p.address,
-            location: p.location,
-            origin: p.origin,
-            latitude: p.latitude,
-            longitude: p.longitude,
-            status: p.status,
-            listingStatus: p.listing_status,
-            evidences: p.evidences || []
-          }));
-          store.state.products = mapped;
-          store.save();
-          console.log(`[Supabase] Synced ${mapped.length} products to store`);
-        }
-      } catch (err) {
-        console.warn('[Supabase Sync Warning]', err.message);
-      }
+    // State is owned by the PHP/MySQL API; the browser client is read-only.
+    async syncWithStore() {
+      return false;
     }
   }
 

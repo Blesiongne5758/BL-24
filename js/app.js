@@ -1740,10 +1740,6 @@ class BursaLimbahApp {
 
   // ================= TICKER HARGA LIVE & KURS =================
   async fetchLiveMarketRates() {
-    if (window.circulinkSupabase && this.store.getSettings().supabaseConfig?.enabled) {
-      window.circulinkSupabase.init();
-      window.circulinkSupabase.syncWithStore(this.store).catch(e => console.warn('[Supabase] Sync:', e.message));
-    }
     const tickerSettings = this.store.getSettings();
     if (!tickerSettings.tickerEnabled) return;
     try {

@@ -1,3 +1,4 @@
+(async()=>{
 /**
  * comprehensive_audit.js
  * Comprehensive automated test and audit suite for Bursa Limbah platform.
@@ -325,7 +326,7 @@ try {
     status: 'approved',
     moq: 500
   };
-  const createdProd = store.addProduct(newProductData);
+  const createdProd = await store.addProduct(newProductData);
   if (createdProd && createdProd.id) {
     pass('Add Product / Listing', `Product created with ID: ${createdProd.id} (Initial status: ${createdProd.status})`);
     const foundProd = store.getProductById(createdProd.id);
@@ -349,7 +350,7 @@ try {
   // Test 4.7: Tier Subscription Limits & Escrow DP 30% Booking
   // Step A: Verify starter quota enforcement (1500 Kg exceeds 200 Kg limit)
   try {
-    store.createBooking({
+    await store.createBooking({
       productId: createdProd.id,
       buyerId: newBuyer.id,
       pickupDate: '2026-11-10',
@@ -361,19 +362,21 @@ try {
   }
 
   // Step B: Book with Enterprise Buyer (PT Hijau Lestari Industri)
+  store.state.settings.dpEnabled = true;
+  store.state.settings.downPaymentPercent = 30;
   const enterpriseBuyer = users.find(u => u.email === 'pengadaan@hijaulestari.co.id') || newBuyer;
   // Upgrade buyer or use enterprise buyer
   enterpriseBuyer.subscriptionTier = 'tier_enterprise';
   enterpriseBuyer.subscriptionActive = true;
 
-  const newBooking = store.createBooking({
+  const newBooking = await store.createBooking({
     productId: createdProd.id,
     buyerId: enterpriseBuyer.id,
     pickupDate: '2026-11-10',
     notes: 'Testing pesanan escrow DP 30%'
   });
 
-  if (newBooking && newBooking.id) {
+  if (newBooking && newBooking.id && newBooking.downPaymentRate === 30 && newBooking.downPaymentAmount > 0) {
     pass('Create Order with Escrow DP 30%', `Order ID: ${newBooking.id}, DP 30%: Rp ${newBooking.downPaymentAmount.toLocaleString('id-ID')}, Total: Rp ${newBooking.totalPrice.toLocaleString('id-ID')}`);
     
     // Complete order
@@ -446,3 +449,5 @@ if (results.failed > 0) {
 } else {
   process.exit(0);
 }
+
+})();

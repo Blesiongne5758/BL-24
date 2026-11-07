@@ -20,7 +20,7 @@ if (!defined('CLOUDINARY_API_SECRET')) {
     define('CLOUDINARY_API_SECRET', getenv('CLOUDINARY_API_SECRET') ?: '');
 }
 if (!defined('CLOUDINARY_UPLOAD_PRESET')) {
-    define('CLOUDINARY_UPLOAD_PRESET', getenv('CLOUDINARY_UPLOAD_PRESET') ?: 'circulink_preset');
+    define('CLOUDINARY_UPLOAD_PRESET', getenv('CLOUDINARY_UPLOAD_PRESET') ?: '');
 }
 if (!defined('CLOUDINARY_FOLDER')) {
     define('CLOUDINARY_FOLDER', getenv('CLOUDINARY_FOLDER') ?: 'circulink');
