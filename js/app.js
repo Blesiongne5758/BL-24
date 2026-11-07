@@ -70,7 +70,10 @@ class BursaLimbahApp {
     // Set peran awal dari data store
     const currentRole = this.store.getCurrentRole();
     this.setRole(currentRole, false);
-    this.switchAppTab('home');
+    // Tab konten publik hanya diinisialisasi untuk pengunjung. Jangan langsung
+    // menimpa peran dashboard yang baru dipulihkan dari sesi login.
+    if (currentRole === 'public') this.switchAppTab('home');
+    else this.currentAppTab = 'home';
 
     // Render tampilan modul awal
     try { this.renderBuyerMarketplace(); } catch (e) { console.warn('Init buyer error:', e); }
@@ -302,7 +305,26 @@ class BursaLimbahApp {
     const roleActions = document.getElementById('role-context-actions');
     const roleIcon = document.getElementById('role-badge-icon');
 
-    if (role === 'public' || role === 'login') {
+    const activeSession = this.store.getAuthenticatedSession?.();
+    if (role === 'public' && activeSession) {
+      const { role: sessionRole, user: sessionUser } = activeSession;
+      const roleLabels = { buyer: 'Pembeli', seller: 'Penjual', admin: 'Pengelola' };
+      if (banner) banner.classList.remove('hidden');
+      if (roleIcon) roleIcon.innerHTML = sessionRole === 'seller'
+        ? '<i class="fa-solid fa-store text-emerald-300"></i>'
+        : sessionRole === 'admin'
+          ? '<i class="fa-solid fa-user-shield text-amber-300"></i>'
+          : '<i class="fa-solid fa-crown text-amber-300"></i>';
+      if (roleTitle) roleTitle.textContent = `Anda masuk sebagai ${roleLabels[sessionRole]}: ${sessionUser.name || sessionUser.email || ''}`;
+      if (roleDesc) roleDesc.textContent = 'Sesi akun tetap aktif saat Anda menjelajahi tab Bursa Limbah.';
+      if (roleActions) roleActions.innerHTML = `
+        <button onclick="app.returnToAuthenticatedDashboard()" class="px-2.5 py-1 rounded bg-emerald-700 hover:bg-emerald-600 text-white font-bold transition flex items-center gap-1">
+          <i class="fa-solid fa-table-columns"></i><span>Kembali ke Dashboard</span>
+        </button>
+        <button onclick="app.logout()" class="px-2.5 py-1 rounded bg-slate-800 hover:bg-rose-600 text-white font-semibold transition flex items-center gap-1">
+          <i class="fa-solid fa-right-from-bracket"></i><span>Keluar</span>
+        </button>`;
+    } else if (role === 'public' || role === 'login') {
       if (banner) banner.classList.add('hidden');
     } else {
       if (banner) banner.classList.remove('hidden');
@@ -426,6 +448,7 @@ class BursaLimbahApp {
 
     const role = this.store.getCurrentRole();
     const user = this.store.getCurrentUser();
+    const activeSession = this.store.getAuthenticatedSession?.();
 
     if (role === 'buyer' && user) {
       navContainer.innerHTML = `
@@ -479,6 +502,20 @@ class BursaLimbahApp {
           </button>
         </div>
       `;
+    } else if (activeSession) {
+      const roleLabels = { buyer: 'Pembeli', seller: 'Penjual', admin: 'Admin' };
+      navContainer.innerHTML = `
+        <div class="flex items-center gap-1.5 sm:gap-2">
+          <span class="hidden sm:inline-flex max-w-[150px] items-center gap-1.5 truncate rounded-xl border border-emerald-200 bg-emerald-50 px-2.5 py-2 text-[11px] font-bold text-emerald-800" title="Sesi login aktif">
+            <i class="fa-solid fa-circle-check text-emerald-600"></i><span class="truncate">${esc(activeSession.user.name || roleLabels[activeSession.role])} · ${roleLabels[activeSession.role]}</span>
+          </span>
+          <button onclick="app.returnToAuthenticatedDashboard()" class="rounded-xl bg-slate-900 px-3 py-2 text-[11px] font-bold text-white transition hover:bg-slate-800">
+            <i class="fa-solid fa-table-columns mr-1"></i><span class="hidden sm:inline">Dashboard</span><span class="sm:hidden">${roleLabels[activeSession.role]}</span>
+          </button>
+          <button onclick="app.logout()" title="Keluar dari akun" class="rounded-xl border border-slate-300 p-2 text-xs text-slate-600 transition hover:border-rose-300 hover:bg-rose-50 hover:text-rose-600">
+            <i class="fa-solid fa-right-from-bracket"></i>
+          </button>
+        </div>`;
     } else {
       navContainer.innerHTML = `
         <button onclick="app.showLoginPage()" class="btn-nav-masuk flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3.5 py-1.5 sm:py-2 text-[11px] sm:text-xs font-bold rounded-xl border border-slate-300 hover:border-emerald-400 hover:text-emerald-700 bg-white text-slate-700 shadow-2xs transition active:scale-95 cursor-pointer whitespace-nowrap">
@@ -537,6 +574,12 @@ class BursaLimbahApp {
         mobUserIcon.innerHTML = `<i class="fa-solid fa-user-shield text-amber-600 text-xs"></i>`;
         mobUserLabel.textContent = 'Admin';
         mobUserLabel.className = 'text-[10px] font-bold mt-0.5 tracking-tight text-amber-700';
+      } else if (activeSession) {
+        const labels = { buyer: 'Pembeli', seller: 'Penjual', admin: 'Admin' };
+        const icons = { buyer: 'fa-crown text-amber-500', seller: 'fa-store text-emerald-600', admin: 'fa-user-shield text-amber-600' };
+        mobUserIcon.innerHTML = `<i class="fa-solid ${icons[activeSession.role]} text-xs"></i>`;
+        mobUserLabel.textContent = labels[activeSession.role];
+        mobUserLabel.className = 'text-[10px] font-bold mt-0.5 tracking-tight text-emerald-700';
       } else {
         mobUserIcon.innerHTML = `<i class="fa-solid fa-user text-slate-700 text-xs"></i>`;
         mobUserLabel.textContent = 'Akun';
@@ -547,7 +590,22 @@ class BursaLimbahApp {
 
   // ================= MODUL AUTENTIKASI & HALAMAN LOGIN (PORTAL TERPADU) =================
   showLoginPage(role = null) {
+    const session = this.store.getAuthenticatedSession?.();
+    if (session) {
+      this.setRole(session.role, false);
+      this.showToast('Sesi Anda masih aktif. Gunakan tombol Keluar jika ingin mengakhiri sesi.', 'info');
+      return;
+    }
     this.setRole('login', false);
+  }
+
+  returnToAuthenticatedDashboard() {
+    const session = this.store.getAuthenticatedSession?.();
+    if (!session) {
+      this.showLoginPage();
+      return;
+    }
+    this.setRole(session.role, false);
   }
 
   switchLoginTab(role = null) {
@@ -828,6 +886,12 @@ class BursaLimbahApp {
     };
     const activeTabId = tabMap[key] || 'tab-home';
     const normalizedKey = key === 'subscription' ? 'sub' : (key === 'simulation' ? 'sim' : (key === 'solution' ? 'solutions' : key));
+    // Penjual yang sudah masuk selalu membuka formulir dari dashboard, bukan
+    // dari tab publik yang menghilangkan konteks akunnya.
+    if (normalizedKey === 'sell' && this.store.isSellerAuthenticated()) {
+      this.showUploadModal();
+      return;
+    }
     // Form unggah dipindahkan ke dashboard penjual selama sesi unggah.
     // Kembalikan ke halaman publik sebelum navigasi tab publik.
     this.restorePublicUploadForm();
@@ -901,6 +965,24 @@ class BursaLimbahApp {
 
     // Scroll halus ke puncak halaman
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  setAppTabHighlight(tabKey) {
+    const normalizedKey = tabKey || 'home';
+    this.currentAppTab = normalizedKey;
+    ['home', 'sell', 'sub', 'sim', 'solutions'].forEach(key => {
+      const active = key === normalizedKey;
+      const desktop = document.getElementById(`dnav-${key}`);
+      const mobile = document.getElementById(`bnav-${key}`);
+      if (desktop) desktop.className = active
+        ? 'px-3.5 py-2 rounded-xl text-xs font-bold bg-emerald-50 text-emerald-800 border border-emerald-200 transition shadow-2xs flex items-center gap-1.5 cursor-pointer'
+        : 'px-3.5 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition flex items-center gap-1.5 cursor-pointer';
+      if (mobile) {
+        mobile.className = this.bottomNavClass(key, active);
+        if (active) mobile.setAttribute('aria-current', 'page');
+        else mobile.removeAttribute('aria-current');
+      }
+    });
   }
 
   // Navigasi ke dashboard saat ini saat tab Akun di bottom nav ditekan
@@ -1068,9 +1150,11 @@ class BursaLimbahApp {
     const container = document.getElementById('tab-saya-content');
     if (!container) return;
     const role = this.store.getCurrentRole();
-    const user = this.store.getCurrentUser();
+    const session = this.store.getAuthenticatedSession?.();
+    const effectiveRole = role === 'public' && session ? session.role : role;
+    const user = role === 'public' && session ? session.user : this.store.getCurrentUser();
 
-    if (role === 'buyer' && user) {
+    if (effectiveRole === 'buyer' && user) {
       const tier = this.store.getUserSubscriptionTier ? this.store.getUserSubscriptionTier(user) : { name: '-' };
       container.innerHTML = `
         <div class="rounded-2xl bg-gradient-to-br from-emerald-900 to-emerald-700 p-5 text-white text-center mb-4">
@@ -1105,7 +1189,7 @@ class BursaLimbahApp {
             <span class="text-sm font-bold text-rose-700">Keluar</span>
           </button>
         </div>`;
-    } else if (role === 'seller' && user) {
+    } else if (effectiveRole === 'seller' && user) {
       container.innerHTML = `
         <div class="rounded-2xl bg-gradient-to-br from-slate-900 to-emerald-900 p-5 text-white text-center mb-4">
           <div class="w-16 h-16 rounded-full bg-white/20 flex items-center justify-center mx-auto mb-2">
@@ -1139,7 +1223,7 @@ class BursaLimbahApp {
             <span class="text-sm font-bold text-rose-700">Keluar</span>
           </button>
         </div>`;
-    } else if (role === 'admin') {
+    } else if (effectiveRole === 'admin') {
       container.innerHTML = `
         <div class="rounded-2xl bg-gradient-to-br from-slate-950 to-indigo-950 p-5 text-white text-center mb-4">
           <div class="w-16 h-16 rounded-full bg-white/10 flex items-center justify-center mx-auto mb-2">
@@ -7409,7 +7493,10 @@ class BursaLimbahApp {
     const returnRole = this.uploadReturnRole;
     this.uploadReturnRole = null;
     this.restorePublicUploadForm();
-    if (returnRole === 'seller' && this.store.isSellerAuthenticated()) return this.setRole('seller', false);
+    if (returnRole === 'seller' && this.store.isSellerAuthenticated()) {
+      this.setAppTabHighlight('home');
+      return this.setRole('seller', false);
+    }
     if (returnRole === 'buyer' && this.store.isBuyerAuthenticated()) return this.setRole('buyer', false);
     if (returnRole === 'admin' && this.store.isAdminAuthenticated()) return this.setRole('admin', false);
     this.switchAppTab('home');
@@ -7426,7 +7513,7 @@ class BursaLimbahApp {
       sellerView.insertBefore(form, sellerView.children[1] || null);
       form.classList.remove('hidden');
       form.classList.add('seller-upload-form');
-      this.currentAppTab = 'sell';
+      this.setAppTabHighlight('sell');
       this.populateSelectCategories();
       const source = document.getElementById('up-source-type');
       if (source && !source.value) this.selectSourceTier('source_household');
@@ -7703,6 +7790,7 @@ class BursaLimbahApp {
       this.restorePublicUploadForm();
       this.uploadReturnRole = null;
       if (this.store.isSellerAuthenticated()) {
+        this.setAppTabHighlight('home');
         this.setRole('seller', false);
       } else {
         this.switchAppTab('home');
