@@ -308,10 +308,24 @@ try {
         api_require_role(['buyer']);$orderId=(string)($input['orderId']??'');
         $q=$pdo->prepare('SELECT o.*,COALESCE(f.shipping_fee,0) AS shipping_fee FROM orders o LEFT JOIN order_fulfillments f ON f.order_id=o.id WHERE o.id=? AND o.buyer_id=?');$q->execute([$orderId,$_SESSION['user_id']]);$order=$q->fetch();
         if(!$order)api_json(['success'=>false,'message'=>'Pesanan tidak ditemukan.'],404);
-        $cfg=payment_config_row($pdo);$amount=(int)round((float)$order['dp_amount']+(float)$order['handling_fee']+(float)$order['service_fee']+(float)$order['shipping_fee']);
+        $cfg=payment_config_row($pdo);if(empty($cfg['static_qris_url']))api_json(['success'=>false,'message'=>'Admin belum mengunggah QRIS statis. Pembayaran manual belum tersedia.'],503);$amount=(int)round((float)$order['dp_amount']+(float)$order['handling_fee']+(float)$order['service_fee']+(float)$order['shipping_fee']);
         if($amount<1)api_json(['success'=>false,'message'=>'Nilai tagihan tidak valid.'],400);
         $id='pay_'.bin2hex(random_bytes(10));$save=$pdo->prepare("INSERT INTO order_payment_records (id,order_id,buyer_id,payment_type,amount,method,status) VALUES (?,?,?,'initial',?,'manual','pending')");$save->execute([$id,$orderId,$_SESSION['user_id'],$amount]);
         api_json(['success'=>true,'paymentId'=>$id,'amount'=>$amount,'qrisUrl'=>$cfg['static_qris_url']??'','qrisLabel'=>$cfg['static_qris_label']??'QRIS BURSA LIMBAH']);
+    }
+
+    if ($path==='payments/tier/manual/create' && $method==='POST') {
+        api_require_role(['buyer']);$tierId=(string)($input['tierId']??'');$allowed=['tier_basic','tier_pro','tier_enterprise'];
+        if(!in_array($tierId,$allowed,true))api_json(['success'=>false,'message'=>'Paket berbayar tidak valid.'],400);
+        $price=$pdo->prepare('SELECT setting_value FROM system_settings WHERE setting_key=? LIMIT 1');$price->execute([$tierId.'_price']);$amount=(int)round((float)$price->fetchColumn());
+        if($amount<1)api_json(['success'=>false,'message'=>'Harga tier belum diatur admin atau paket ini gratis.'],400);
+        $cfg=payment_config_row($pdo);if(empty($cfg['static_qris_url']))api_json(['success'=>false,'message'=>'Admin belum mengunggah QRIS statis. Pembelian tier belum tersedia.'],503);
+        $user=$pdo->prepare('SELECT subscription_tier,subscription_active FROM users WHERE id=?');$user->execute([$_SESSION['user_id']]);$current=$user->fetch();
+        if(!$current)api_json(['success'=>false,'message'=>'Akun pembeli tidak ditemukan.'],404);
+        $pending=$pdo->prepare("SELECT id FROM order_payment_records WHERE buyer_id=? AND payment_type='tier_subscription' AND tier_id=? AND status IN ('pending','review') LIMIT 1");$pending->execute([$_SESSION['user_id'],$tierId]);$existing=$pending->fetchColumn();
+        if($existing)api_json(['success'=>false,'message'=>'Masih ada pembayaran tier ini yang menunggu validasi.'],409);
+        $id='pay_'.bin2hex(random_bytes(10));$save=$pdo->prepare("INSERT INTO order_payment_records (id,order_id,buyer_id,payment_type,tier_id,amount,method,status) VALUES (?,NULL,?,'tier_subscription',?,?,'manual','pending')");$save->execute([$id,$_SESSION['user_id'],$tierId,$amount]);
+        api_json(['success'=>true,'paymentId'=>$id,'amount'=>$amount,'tierId'=>$tierId,'qrisUrl'=>$cfg['static_qris_url'],'qrisLabel'=>$cfg['static_qris_label']??'QRIS BURSA LIMBAH']);
     }
 
     if ($path==='payments/manual' && $method==='POST') {
@@ -328,14 +342,15 @@ try {
     }
 
     if ($path==='admin/payment-reviews' && $method==='GET') {
-        api_require_role(['admin']);$q=$pdo->query("SELECT p.*,o.order_code,o.product_id,u.name AS buyer_name,u.email AS buyer_email FROM order_payment_records p JOIN orders o ON o.id=p.order_id JOIN users u ON u.id=p.buyer_id WHERE p.status='review' ORDER BY p.created_at ASC LIMIT 200");api_json(['success'=>true,'payments'=>$q->fetchAll()]);
+        api_require_role(['admin']);$q=$pdo->query("SELECT p.*,COALESCE(o.order_code,CONCAT('Tier: ',p.tier_id)) AS order_code,o.product_id,u.name AS buyer_name,u.email AS buyer_email FROM order_payment_records p LEFT JOIN orders o ON o.id=p.order_id JOIN users u ON u.id=p.buyer_id WHERE p.status='review' ORDER BY p.created_at ASC LIMIT 200");api_json(['success'=>true,'payments'=>$q->fetchAll()]);
     }
     if ($parts[0]==='admin'&&$parts[1]==='payment-reviews'&&count($parts)===3&&$method==='PATCH') {
         api_require_role(['admin']);$decision=(string)($input['decision']??'');if(!in_array($decision,['approve','reject'],true))api_json(['success'=>false,'message'=>'Keputusan validasi tidak dikenal.'],400);
         $q=$pdo->prepare("SELECT * FROM order_payment_records WHERE id=? AND status='review'");$q->execute([$parts[2]]);$payment=$q->fetch();if(!$payment)api_json(['success'=>false,'message'=>'Bukti pembayaran sudah diproses atau tidak ditemukan.'],404);
         $status=$decision==='approve'?'paid':'rejected';$update=$pdo->prepare('UPDATE order_payment_records SET status=?,reviewed_by=?,review_note=?,reviewed_at=NOW(),paid_at=IF(?=\'paid\',NOW(),paid_at) WHERE id=?');$update->execute([$status,$_SESSION['user_id'],substr((string)($input['note']??''),0,500),$status,$parts[2]]);
-        if($decision==='approve'){$o=$pdo->prepare("UPDATE orders SET status='paid',escrow_status='dp_secured',updated_at=NOW() WHERE id=?");$o->execute([$payment['order_id']]);}
-        api_json(['success'=>true,'status'=>$status]);
+        if($decision==='approve'&&$payment['payment_type']==='tier_subscription'){$tier=(string)$payment['tier_id'];if(!in_array($tier,['tier_basic','tier_pro','tier_enterprise'],true))api_json(['success'=>false,'message'=>'Paket pada pembayaran tidak valid.'],400);$u=$pdo->prepare("UPDATE users SET subscription_tier=?,subscription_active=1,subscription_expiry=DATE_ADD(GREATEST(COALESCE(subscription_expiry,CURDATE()),CURDATE()),INTERVAL 1 MONTH),updated_at=NOW() WHERE id=?");$u->execute([$tier,$payment['buyer_id']]);}
+        elseif($decision==='approve'){$o=$pdo->prepare("UPDATE orders SET status='dp_secured',escrow_status='dp_secured',updated_at=NOW() WHERE id=?");$o->execute([$payment['order_id']]);}
+        api_json(['success'=>true,'status'=>$status,'paymentType'=>$payment['payment_type']]);
     }
 
     if ($path==='payment/webhook' && $method==='POST') {
@@ -429,14 +444,19 @@ try {
                 $buyerCheck=$pdo->prepare('SELECT subscription_active FROM users WHERE id=? AND role=\'buyer\'');$buyerCheck->execute([$buyerId]);
                 if (!(int)$buyerCheck->fetchColumn()) api_json(['success'=>false,'message'=>'Paket langganan pembeli belum aktif.'],403);
             }
-            $id=(string)($input['id']??('ord_'.bin2hex(random_bytes(8)))); $total=(float)($input['totalPrice']??0); $dp=(float)($input['downPaymentAmount']??$total); $remaining=(float)($input['remainingPayment']??max(0,$total-$dp));
+            $id=(string)($input['id']??('ord_'.bin2hex(random_bytes(8)))); $total=(float)($input['totalPrice']??0);
+            $dpSettings=$pdo->query("SELECT setting_key,setting_value FROM system_settings WHERE setting_key IN ('dp_enabled','dp_percentage')")->fetchAll(PDO::FETCH_KEY_PAIR);
+            $dpEnabled=($dpSettings['dp_enabled']??'false')==='true';$dpPercent=max(0,min(100,(float)($dpSettings['dp_percentage']??30)));
+            if($dpEnabled&&$dpPercent<=0){api_json(['success'=>false,'message'=>'Persentase DP harus lebih dari 0%. Hubungi admin.'],503);}
+            $dpRate=$dpEnabled?$dpPercent:100;
+            $dp=round($total*$dpRate/100,2);$remaining=max(0,$total-$dp);
             if($total<=0||$dp<0||$remaining<0)api_json(['success'=>false,'message'=>'Nilai pesanan tidak valid.'],400);
             $pdo->beginTransaction();
             $productCheck=$pdo->prepare('SELECT seller_id,status FROM products WHERE id=? FOR UPDATE');$productCheck->execute([$input['productId']??'']);$product=$productCheck->fetch();
             if(!$product||$product['seller_id']!==($input['sellerId']??'')||!in_array($product['status'],['approved','tersedia'],true)){$pdo->rollBack();api_json(['success'=>false,'message'=>'Produk tidak tersedia atau data penjual tidak cocok.'],409);}
             try {
                 $q=$pdo->prepare("INSERT INTO orders (id,order_code,product_id,seller_id,buyer_id,quantity,unit,unit_price,total_amount,dp_percentage,dp_amount,remaining_amount,handling_fee,service_fee,escrow_status,status,pickup_date,shipping_method,notes,remaining_payment_status) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
-                $q->execute([$id,$input['bookingCode']??$id,$input['productId']??'', $input['sellerId']??'', $buyerId,(float)($input['quantity']??1),$input['unit']??'Kg',(float)($input['unitPrice']??0),$total,(float)($input['downPaymentRate']??30),$dp,$remaining,(float)($input['handlingFee']??10000),(float)($input['appFee']??0),$input['bookingStatus']??'dp_secured',$input['paymentStatus']??'dp_pending',$input['pickupDate']??null,$input['shippingMethod']??null,$input['notes']??null,$input['remainingPaymentStatus']??'unpaid']);
+                $q->execute([$id,$input['bookingCode']??$id,$input['productId']??'', $input['sellerId']??'', $buyerId,(float)($input['quantity']??1),$input['unit']??'Kg',(float)($input['unitPrice']??0),$total,$dpRate,$dp,$remaining,(float)($input['handlingFee']??10000),(float)($input['appFee']??0),'dp_pending','dp_pending',$input['pickupDate']??null,$input['shippingMethod']??null,$input['notes']??null,'unpaid']);
                 $lock=$pdo->prepare("UPDATE products SET status='booked',updated_at=NOW() WHERE id=? AND status IN ('approved','tersedia')");$lock->execute([$input['productId']??'']);
                 if($lock->rowCount()!==1)throw new RuntimeException('Pasokan baru saja dipesan pengguna lain.');
                 $fulfillment=$pdo->prepare('INSERT INTO order_fulfillments (order_id,shipping_method,courier_code,courier_name,shipping_fee,shipping_status) VALUES (?,?,?,?,?,\'pending_dispatch\')');

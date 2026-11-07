@@ -126,8 +126,13 @@ class BursaLimbahStore {
         if (Object.keys(remote).length) {
           let tierFees = this.state.settings.handlingFeeByTier;
           try { tierFees = remote.handlingFeeByTier ? JSON.parse(remote.handlingFeeByTier) : tierFees; } catch (_) { /* retain local fallback */ }
+          const subscriptionTiers = (this.state.settings.subscriptionTiers || []).map(tier => {
+            const remotePrice = remote[`${tier.id}_price`];
+            return remotePrice === undefined ? tier : { ...tier, monthlyFee: Math.max(0, Number(remotePrice) || 0) };
+          });
           this.state.settings = {
             ...this.state.settings,
+            subscriptionTiers,
             demoContentEnabled: remote.demoContentEnabled === undefined ? this.state.settings.demoContentEnabled : remote.demoContentEnabled === true || remote.demoContentEnabled === 'true',
             dpEnabled: remote.dp_enabled === undefined ? this.state.settings.dpEnabled : remote.dp_enabled === 'true',
             downPaymentPercent: Number(remote.dp_percentage) || this.state.settings.downPaymentPercent,

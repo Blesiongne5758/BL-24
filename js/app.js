@@ -39,6 +39,7 @@ class BursaLimbahApp {
     this.currentLoginTab = 'buyer';
     this.currentAppTab = 'home'; // 'home', 'sell', 'sub', 'sim'
     this.uploadReturnRole = null;
+    this.selectedEvidenceFiles = {};
     this.currentAdminSubFilter = 'all'; // 'all', 'pending', 'approved'
     this.publicPostingFilter = 'all'; // 'all', 'supply', 'demand'
     this.selectedRegisterTier = 'tier_pro'; // Default dipilih di modal registrasi
@@ -2109,17 +2110,31 @@ class BursaLimbahApp {
           </div>
 
           <div class="mt-8">
-            <button onclick="app.showBuyerRegisterModal('${tier.id}')" class="w-full py-3 rounded-xl text-xs font-bold transition shadow ${
+            <button onclick="app.handleTierAction('${tier.id}')" class="w-full py-3 rounded-xl text-xs font-bold transition shadow ${
               isPopular 
                 ? 'bg-brand-500 hover:bg-brand-400 text-slate-950 font-extrabold shadow-lg shadow-brand-500/30' 
                 : 'border-2 border-brand-600 text-brand-700 hover:bg-brand-50'
             }">
-              Pilih & Daftar ${esc(tier.name)}
+              ${this.store.getCurrentUser()?.role === 'buyer' ? `Pilih ${esc(tier.name)} · QRIS` : `Pilih & Daftar ${esc(tier.name)}`}
             </button>
           </div>
         </div>
       `;
     }).join('');
+  }
+
+  async handleTierAction(tierId) {
+    const user = this.store.getCurrentUser();
+    if (!user || user.role !== 'buyer') return this.showBuyerRegisterModal(tierId);
+    const tier = this.store.getSubscriptionTierById(tierId);
+    if (!tier) return this.showToast('Paket tidak ditemukan.', 'error');
+    if (Number(tier.monthlyFee) <= 0) {
+      try { await this.store.setBuyerTier(user.id, tierId); this.renderPublicSubscriptionTiers(); this.showToast('Paket Starter aktif.', 'success'); }
+      catch (error) { this.showToast(error.message || 'Paket gagal diubah.', 'error'); }
+      return;
+    }
+    try { await this.startTierPayment(tierId); }
+    catch (error) { this.showToast(error.message || 'Tagihan tier gagal dibuat.', 'error'); }
   }
 
   // ================= 3. MODAL PENDAFTARAN PEMBELI & PILIHAN 3-TIER =================
@@ -2214,7 +2229,7 @@ class BursaLimbahApp {
         password,
         company,
         tierId: chosenTierId,
-        subscriptionActive: true,
+        subscriptionActive: Number(this.store.getSubscriptionTierById(chosenTierId)?.monthlyFee || 0) <= 0,
         termsAccepted: true,
         termsVersion: this.store.getSettings().termsVersion
       });
@@ -2228,7 +2243,11 @@ class BursaLimbahApp {
       this.triggerConfetti();
       this.showToast(result.source === 'local'
         ? `Akun Pembeli ${name} dibuat di browser ini. Untuk akun yang tersimpan permanen, sambungkan backend.`
-        : `Selamat datang ${name}! Akun Pembeli aktif dengan ${tier ? tier.name : 'Paket Starter'}. Lengkapi profil di Menu Pengaturan.`, result.source === 'local' ? 'warning' : 'success');
+        : `Selamat datang ${name}! ${Number(tier?.monthlyFee || 0) > 0 ? `${tier.name} menunggu pembayaran QRIS dan validasi admin.` : `Akun aktif dengan ${tier ? tier.name : 'Paket Starter'}. Lengkapi profil di Menu Pengaturan.`}`, result.source === 'local' ? 'warning' : 'success');
+      if (result.source !== 'local' && Number(tier?.monthlyFee || 0) > 0) {
+        try { await this.startTierPayment(chosenTierId); }
+        catch (paymentError) { this.showToast(paymentError.message || 'Akun dibuat, tetapi tagihan tier belum berhasil dibuat. Coba dari tab Berlangganan.', 'warning'); }
+      }
     } catch (error) {
       this.showToast(error.message || 'Pendaftaran pembeli gagal.', 'error');
     } finally {
@@ -3441,7 +3460,8 @@ class BursaLimbahApp {
     });
 
     // Sync updated tiers into settings
-    this.store.updateSettings({ subscriptionTiers: this.store.getSubscriptionTiers() });
+    const savedTiers = this.store.getSubscriptionTiers();
+    this.store.updateSettings({ subscriptionTiers: savedTiers, ...Object.fromEntries(savedTiers.map(t => [`${t.id}_price`, String(Number(t.monthlyFee) || 0)])) });
 
     this.renderPublicSubscriptionTiers();
     this.renderBuyerMarketplace();
@@ -5170,6 +5190,13 @@ class BursaLimbahApp {
       this.publicPaymentConfig = response.ok && data.success ? data.config : { enabled: false, manualShippingOptions: [] };
     } catch (_) { this.publicPaymentConfig = { enabled: false, manualShippingOptions: [] }; }
 
+    const hasGateway = Boolean(this.publicPaymentConfig.enabled && this.publicPaymentConfig.clientKey);
+    const hasStaticQris = Boolean(this.publicPaymentConfig.staticQrisUrl);
+    if (!hasGateway && !hasStaticQris) {
+      this.showToast('Pembayaran belum tersedia. Admin perlu mengaktifkan gateway atau mengunggah QRIS statis.', 'error');
+      return;
+    }
+
     const isDp = this.store.isDpEnabled();
     const settings = this.store.getSettings();
     const totalPrice = p.totalPrice;
@@ -5266,8 +5293,8 @@ class BursaLimbahApp {
           </label>
           <label class="block text-xs font-bold text-slate-700">Metode Pembayaran
             <select id="checkout-payment-method" class="mt-1 w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-xs">
-              ${this.publicPaymentConfig.enabled && this.publicPaymentConfig.clientKey ? '<option value="gateway">Midtrans Snap</option>' : ''}
-              <option value="manual">QRIS / Transfer Manual + Bukti Bayar</option>
+              ${hasGateway ? '<option value="gateway">Midtrans Snap</option>' : ''}
+              ${hasStaticQris ? '<option value="manual">QRIS Statis + Bukti Bayar</option>' : ''}
             </select>
           </label>
         </div>
@@ -5354,18 +5381,34 @@ class BursaLimbahApp {
     const data = await response.json().catch(() => ({}));
     if (!response.ok || !data.success) throw new Error(data.message || 'Tagihan manual gagal dibuat.');
     const qris = data.qrisUrl ? `<img src="${esc(data.qrisUrl)}" alt="QRIS Pembayaran" class="mx-auto max-h-56 rounded-xl border border-slate-200 bg-white p-2 object-contain">` : '';
-    const settings = this.store.getSettings();
     document.getElementById('modal-checkout-content').innerHTML = `
-      <div class="border-b border-slate-100 p-5"><h3 class="text-lg font-bold text-slate-900">Pembayaran Manual</h3><p class="mt-1 text-xs text-slate-500">Pesanan ${esc(order.bookingCode)}. Upload bukti transfer untuk divalidasi admin.</p></div>
+      <div class="border-b border-slate-100 p-5"><h3 class="text-lg font-bold text-slate-900">Pembayaran QRIS</h3><p class="mt-1 text-xs text-slate-500">Pesanan ${esc(order.bookingCode)}. Scan QRIS yang diunggah admin, lalu kirim bukti bayar untuk validasi admin.</p></div>
       <div class="space-y-4 p-5">
         <div class="rounded-xl bg-amber-50 p-4 text-center"><div class="text-xs text-amber-800">Tagihan awal</div><strong class="font-mono text-xl text-amber-900">${this.formatRupiah(data.amount)}</strong></div>
         ${qris ? `<div class="text-center"><p class="mb-2 text-xs font-bold">${esc(data.qrisLabel || 'QRIS Merchant')}</p>${qris}</div>` : ''}
-        <div class="rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs"><div>Transfer ke ${esc(settings.escrowBankName || 'rekening admin')} a.n. ${esc(settings.escrowAccountHolder || 'Bursa Limbah')}.</div><div class="mt-1 font-mono font-bold">${esc(settings.escrowAccountNumber || 'Hubungi admin untuk nomor rekening')}</div></div>
         <label class="block text-xs font-bold text-slate-700">Nomor referensi transfer (opsional)<input id="manual-payment-reference" class="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs"></label>
-        <label class="block text-xs font-bold text-slate-700">Bukti transfer *<input id="manual-payment-proof" type="file" accept="image/jpeg,image/png,image/webp,application/pdf" class="mt-1 block w-full text-xs"></label>
+        <label class="block text-xs font-bold text-slate-700">Bukti pembayaran QRIS *<input id="manual-payment-proof" type="file" accept="image/jpeg,image/png,image/webp,application/pdf" required class="mt-1 block w-full text-xs"></label>
         <div class="flex justify-end gap-2"><button type="button" onclick="app.closeModals()" class="rounded-xl border border-slate-300 px-4 py-2 text-xs font-bold">Nanti</button><button type="button" onclick="app.submitManualPaymentProof('${data.paymentId}')" class="rounded-xl bg-emerald-700 px-4 py-2 text-xs font-bold text-white">Kirim Bukti Bayar</button></div>
       </div>`;
     this.showToast(`Pesanan tercatat. Silakan bayar ${this.formatRupiah(data.amount)} dan unggah bukti pembayaran.`, 'info');
+  }
+
+  async startTierPayment(tierId) {
+    const response = await fetch(`${this.store?.apiBaseUrl || ''}/api/payments/tier/manual/create`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ tierId })
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok || !data.success) throw new Error(data.message || 'Tagihan tier gagal dibuat.');
+    const tier = this.store.getSubscriptionTierById(tierId);
+    const qris = `<img src="${esc(data.qrisUrl)}" alt="QRIS Pembayaran Tier" class="mx-auto max-h-56 rounded-xl border border-slate-200 bg-white p-2 object-contain">`;
+    document.getElementById('modal-checkout-content').innerHTML = `
+      <div class="border-b border-slate-100 p-5"><h3 class="text-lg font-bold text-slate-900">Pembayaran QRIS · ${esc(tier?.name || 'Tier')}</h3><p class="mt-1 text-xs text-slate-500">Scan QRIS yang diunggah admin, lalu kirim bukti bayar. Akses tier aktif setelah validasi admin.</p></div>
+      <div class="space-y-4 p-5"><div class="text-center"><p class="mb-2 text-xs font-bold">${esc(data.qrisLabel || 'QRIS Bursa Limbah')}</p>${qris}</div>
+        <div class="rounded-xl bg-amber-50 p-4 text-center"><div class="text-xs text-amber-800">Total pembayaran</div><strong class="font-mono text-xl text-amber-900">${this.formatRupiah(data.amount)}</strong></div>
+        <label class="block text-xs font-bold text-slate-700">Nomor referensi (opsional)<input id="manual-payment-reference" class="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs"></label>
+        <label class="block text-xs font-bold text-slate-700">Bukti pembayaran QRIS *<input id="manual-payment-proof" type="file" accept="image/jpeg,image/png,image/webp,application/pdf" required class="mt-1 block w-full text-xs"></label>
+        <div class="flex justify-end gap-2"><button type="button" onclick="app.closeModals()" class="rounded-xl border border-slate-300 px-4 py-2 text-xs font-bold">Nanti</button><button type="button" onclick="app.submitManualPaymentProof('${data.paymentId}','tier_subscription')" class="rounded-xl bg-emerald-700 px-4 py-2 text-xs font-bold text-white">Kirim Bukti Bayar</button></div></div>`;
+    const modal = document.getElementById('modal-checkout'); modal.classList.remove('hidden'); modal.classList.add('flex');
   }
 
   async reopenManualPayment(orderId) {
@@ -5376,7 +5419,7 @@ class BursaLimbahApp {
     catch (error) { this.showToast(error.message || 'Form pembayaran tidak dapat dibuka.', 'error'); }
   }
 
-  async submitManualPaymentProof(paymentId) {
+  async submitManualPaymentProof(paymentId, paymentType = 'initial') {
     const file = document.getElementById('manual-payment-proof')?.files?.[0];
     if (!file) { this.showToast('Pilih bukti pembayaran terlebih dahulu.', 'warning'); return; }
     if (file.size > 15 * 1024 * 1024) { this.showToast('Bukti pembayaran maksimal 15 MB.', 'error'); return; }
@@ -5392,7 +5435,7 @@ class BursaLimbahApp {
       const data = await response.json().catch(() => ({}));
       if (!response.ok || !data.success) throw new Error(data.message || 'Bukti pembayaran gagal dikirim.');
       this.closeModals();
-      this.showToast('Bukti pembayaran dikirim. Pesanan aktif setelah admin memvalidasi pembayaran.', 'success');
+      this.showToast(paymentType === 'tier_subscription' ? 'Bukti pembayaran QRIS masuk ke validasi admin. Tier aktif setelah disetujui.' : 'Bukti pembayaran QRIS masuk ke validasi admin. Pesanan diproses setelah disetujui.', 'success');
       this.renderBuyerOrders();
     } catch (error) { this.showToast(error.message || 'Bukti pembayaran gagal dikirim.', 'error'); }
   }
@@ -6635,7 +6678,7 @@ class BursaLimbahApp {
       if (!data.payments?.length) { container.innerHTML = '<p class="text-xs text-slate-500">Tidak ada bukti pembayaran yang menunggu validasi.</p>'; return; }
       container.innerHTML = data.payments.map(payment => `
         <div class="grid gap-3 rounded-xl border border-slate-200 bg-white p-4 sm:grid-cols-[1fr_auto] sm:items-center">
-          <div class="space-y-1 text-xs"><div class="font-bold text-slate-900">${esc(payment.order_code)} · ${esc(payment.buyer_name)}</div>
+          <div class="space-y-1 text-xs"><div class="font-bold text-slate-900">${payment.payment_type === 'tier_subscription' ? `Pembelian ${esc(payment.tier_id || 'tier')}` : esc(payment.order_code)} · ${esc(payment.buyer_name)}</div>
             <div class="text-slate-600">${this.formatRupiah(payment.amount)} · ${esc(payment.payment_reference || 'Tanpa referensi')}</div>
             <div class="text-[10px] text-slate-500">Dikirim ${esc(payment.created_at || '')}</div>
           </div>
@@ -6667,7 +6710,7 @@ class BursaLimbahApp {
       });
       const data = await response.json().catch(() => ({}));
       if (!response.ok || !data.success) throw new Error(data.message || 'Validasi pembayaran gagal.');
-      this.showToast(decision === 'approve' ? 'Pembayaran disetujui dan pesanan diaktifkan.' : 'Bukti pembayaran ditolak.', 'success');
+      this.showToast(decision === 'approve' ? (data.paymentType === 'tier_subscription' ? 'Pembayaran disetujui dan tier diaktifkan.' : 'Pembayaran disetujui dan pesanan diaktifkan.') : 'Bukti pembayaran ditolak.', 'success');
       await this.renderAdminPaymentReviews();
       this.renderAdminOrders();
     } catch (error) { this.showToast(error.message || 'Validasi pembayaran gagal.', 'error'); }
@@ -7425,6 +7468,7 @@ class BursaLimbahApp {
   }
 
   resetUploadForm() {
+    this.selectedEvidenceFiles = {};
     const form = document.getElementById('form-upload-product');
     if (form) form.reset();
 
@@ -7639,15 +7683,16 @@ class BursaLimbahApp {
     const file = input.files && input.files[0];
     if (!file) return;
 
-    const validTypes = ['image/jpeg', 'image/png', 'image/webp'];
+    const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif'];
     if (!validTypes.includes(file.type) || file.size > 5 * 1024 * 1024) {
       input.value = '';
-      this.showToast('Gunakan gambar JPG, PNG, atau WebP dengan ukuran maksimal 5 MB.', 'error');
+      this.showToast('Gunakan foto JPG, PNG, WebP, atau HEIC dengan ukuran maksimal 5 MB.', 'error');
       return;
     }
 
+    this.selectedEvidenceFiles[slot] = file;
     const label = document.getElementById(`up-foto-${slot}-label`);
-    if (label) label.innerHTML = '<i class="fa-solid fa-circle-check"></i> ' + file.name;
+    if (label) label.innerHTML = '<i class="fa-solid fa-circle-check"></i> Galeri';
   }
 
   async handleUploadProduct(event) {
@@ -7715,7 +7760,7 @@ class BursaLimbahApp {
       ? [1]
       : sourceType === 'source_medium_industry' ? [1, 2] : [1, 2, 3];
     const evidenceFiles = requiredEvidenceSlots
-      .map(slot => (document.getElementById(`up-foto-${slot}`) || {}).files?.[0])
+      .map(slot => this.selectedEvidenceFiles[slot] || (document.getElementById(`up-foto-${slot}`) || {}).files?.[0])
       .filter(Boolean);
     if (evidenceFiles.length !== requiredEvidenceSlots.length) {
       this.showToast(sourceType === 'source_household'
