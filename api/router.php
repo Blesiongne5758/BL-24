@@ -194,6 +194,12 @@ if ($path === 'auth/admin/password' && $method === 'POST') {
     $q=$pdo->prepare('UPDATE users SET password_hash=? WHERE id=?');$q->execute([password_hash($next,PASSWORD_DEFAULT),$_SESSION['user_id']]);api_json(['success'=>true,'message'=>'Sandi admin berhasil diperbarui.']);
 }
 if ($path === 'uploads/identity-document' && $method === 'POST') { api_require_role(['buyer','seller','admin']); cloudinary_private_upload($_FILES['file'] ?? null); }
+if ($path === 'uploads/profile-photo' && $method === 'POST') {
+    api_require_role(['buyer','seller','admin']);
+    $uploaded=cloudinary_public_upload($_FILES['file']??null,'bursalimbah/profile_avatars');
+    $q=$pdo->prepare('UPDATE users SET avatar=?,updated_at=NOW() WHERE id=?');$q->execute([$uploaded['url'],$_SESSION['user_id']]);
+    api_json(['success'=>true,'url'=>$uploaded['url'],'thumbnailUrl'=>$uploaded['thumbnailUrl']]);
+}
 if ($path === 'uploads/weighing-proof' && $method === 'POST') { api_require_role(['buyer','seller','admin']); cloudinary_private_upload($_FILES['file'] ?? null, 'private_payment'); }
 if ($path === 'uploads/payment-qris' && $method === 'POST') {
     api_require_role(['admin']);

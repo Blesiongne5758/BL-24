@@ -846,6 +846,15 @@ class BursaLimbahStore {
     return data.file;
   }
 
+  async uploadProfilePhoto(file) {
+    const formData = new FormData();
+    formData.append('file', file);
+    const response = await fetch(`${this.apiBaseUrl}/api/uploads/profile-photo`, { method: 'POST', body: formData });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok || !data.success || !data.url) throw new Error(data.message || 'Gagal mengunggah foto profil.');
+    return data;
+  }
+
   async uploadWeighingProof(file) {
     const formData = new FormData();
     formData.append('file', file);
