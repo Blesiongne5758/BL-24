@@ -1800,16 +1800,6 @@ class BursaLimbahApp {
       return;
     }
 
-    const title = document.getElementById('price-ticker-title');
-    if (title) title.textContent = settings.tickerTitle || 'Harga Pasar Terkini';
-    const updated = document.getElementById('price-ticker-updated');
-    if (updated) {
-      const date = this.marketTickerUpdatedAt ? new Date(this.marketTickerUpdatedAt) : null;
-      updated.textContent = date && !Number.isNaN(date.getTime())
-        ? `Diperbarui ${date.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })} WIB`
-        : 'Memuat harga pasarâ€¦';
-    }
-
     if (!this.marketCurrencies) {
       this.marketCurrencies = {
         usd: {
