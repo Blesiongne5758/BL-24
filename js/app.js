@@ -40,6 +40,9 @@ class BursaLimbahApp {
     this.currentAppTab = 'home'; // 'home', 'sell', 'sub', 'sim'
     this.uploadReturnRole = null;
     this.selectedEvidenceFiles = {};
+    this.evidenceCameraStream = null;
+    this.activeEvidenceCameraSlot = null;
+    this.evidenceCameraRequestId = 0;
     this.currentAdminSubFilter = 'all'; // 'all', 'pending', 'approved'
     this.publicPostingFilter = 'all'; // 'all', 'supply', 'demand'
     this.selectedRegisterTier = 'tier_pro'; // Default dipilih di modal registrasi
@@ -49,6 +52,12 @@ class BursaLimbahApp {
     this.marketCurrencies = null;
     this.tickerRefreshTimer = null;
     this.termsAcceptedForRegistration = null;
+    this.pendingProfilePhoto = null;
+    this.profilePhotoPreviewUrl = null;
+    this.pendingIdentityDocuments = { ktp: null, npwp: null };
+    this.identityCameraStream = null;
+    this.activeIdentityCameraType = null;
+    this.identityCameraRequestId = 0;
   }
 
   init() {
@@ -1789,16 +1798,6 @@ class BursaLimbahApp {
     if (!isEnabled) {
       if (this.tickerRefreshTimer) clearTimeout(this.tickerRefreshTimer);
       return;
-    }
-
-    const title = document.getElementById('price-ticker-title');
-    if (title) title.textContent = settings.tickerTitle || 'Harga Pasar Terkini';
-    const updated = document.getElementById('price-ticker-updated');
-    if (updated) {
-      const date = this.marketTickerUpdatedAt ? new Date(this.marketTickerUpdatedAt) : null;
-      updated.textContent = date && !Number.isNaN(date.getTime())
-        ? `Diperbarui ${date.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })} WIB`
-        : 'Memuat harga pasarâ€¦';
     }
 
     if (!this.marketCurrencies) {
@@ -7506,7 +7505,7 @@ class BursaLimbahApp {
     }
     [1, 2, 3].forEach(slot => {
       const label = document.getElementById(`up-foto-${slot}-label`);
-      if (label) label.innerHTML = '<i class="fa-solid fa-cloud-arrow-up"></i> Pilih gambar';
+      if (label) label.innerHTML = '<i class="fa-regular fa-images"></i> Galeri';
     });
     document.getElementById('up-industry-fields')?.classList.add('hidden');
     document.getElementById('up-nib-box')?.classList.remove('hidden');
@@ -7693,7 +7692,98 @@ class BursaLimbahApp {
 
     this.selectedEvidenceFiles[slot] = file;
     const label = document.getElementById(`up-foto-${slot}-label`);
-    if (label) label.innerHTML = '<i class="fa-solid fa-circle-check"></i> Galeri';
+    if (label) label.innerHTML = '<i class="fa-solid fa-circle-check"></i> Foto siap';
+  }
+
+  async openEvidenceCamera(slot) {
+    const modal = document.getElementById('modal-evidence-camera');
+    const video = document.getElementById('evidence-camera-video');
+    const status = document.getElementById('evidence-camera-status');
+    const capture = document.getElementById('evidence-camera-capture');
+    if (![1, 2, 3].includes(Number(slot)) || !modal || !video) return;
+
+    this.closeEvidenceCamera();
+    this.activeEvidenceCameraSlot = Number(slot);
+    const requestId = ++this.evidenceCameraRequestId;
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    if (status) status.textContent = 'Meminta izin kamera dari perangkat…';
+    if (capture) capture.disabled = true;
+
+    if (!window.isSecureContext || !navigator.mediaDevices?.getUserMedia) {
+      if (status) status.textContent = 'Kamera langsung memerlukan HTTPS dan dukungan browser. Anda dapat memakai kamera bawaan perangkat.';
+      return;
+    }
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: false,
+        video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } }
+      });
+      if (requestId !== this.evidenceCameraRequestId) {
+        stream.getTracks().forEach(track => track.stop());
+        return;
+      }
+      this.evidenceCameraStream = stream;
+      video.srcObject = this.evidenceCameraStream;
+      await video.play();
+      if (status) status.textContent = `Kamera aktif untuk foto eviden ${this.activeEvidenceCameraSlot}.`;
+      if (capture) capture.disabled = false;
+    } catch (error) {
+      if (requestId !== this.evidenceCameraRequestId) return;
+      if (status) status.textContent = error?.name === 'NotAllowedError'
+        ? 'Izin kamera ditolak. Aktifkan izin kamera untuk situs ini, lalu coba lagi.'
+        : 'Kamera tidak dapat dibuka. Periksa izin perangkat atau gunakan kamera bawaan perangkat.';
+      if (capture) capture.disabled = true;
+      this.showToast(error?.name === 'NotAllowedError' ? 'Izinkan kamera pada browser agar dapat mengambil foto eviden.' : 'Kamera gagal dibuka. Coba gunakan kamera bawaan perangkat.', 'warning');
+    }
+  }
+
+  async captureEvidencePhoto() {
+    const video = document.getElementById('evidence-camera-video');
+    const slot = this.activeEvidenceCameraSlot;
+    if (!video || !slot || !video.videoWidth || !video.videoHeight) {
+      this.showToast('Kamera belum siap. Tunggu pratinjau kamera lalu coba lagi.', 'warning');
+      return;
+    }
+
+    const canvas = document.createElement('canvas');
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    canvas.getContext('2d')?.drawImage(video, 0, 0, canvas.width, canvas.height);
+    const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.9));
+    if (!blob) return this.showToast('Foto gagal diproses. Silakan ambil ulang.', 'error');
+    if (blob.size > 5 * 1024 * 1024) return this.showToast('Foto melebihi batas 5 MB. Dekatkan kamera atau pilih foto berukuran lebih kecil.', 'error');
+
+    const file = new File([blob], `eviden-${slot}-${Date.now()}.jpg`, { type: 'image/jpeg', lastModified: Date.now() });
+    this.selectedEvidenceFiles[slot] = file;
+    const galleryInput = document.getElementById(`up-foto-${slot}`);
+    const deviceCameraInput = document.getElementById(`up-foto-${slot}-camera`);
+    if (galleryInput) galleryInput.value = '';
+    if (deviceCameraInput) deviceCameraInput.value = '';
+    const label = document.getElementById(`up-foto-${slot}-label`);
+    if (label) label.innerHTML = '<i class="fa-solid fa-circle-check"></i> Foto dipilih';
+    this.closeEvidenceCamera();
+    this.showToast(`Foto eviden ${slot} berhasil diambil dan siap diunggah.`, 'success');
+  }
+
+  useEvidenceDevicePicker() {
+    const slot = this.activeEvidenceCameraSlot;
+    this.closeEvidenceCamera();
+    if (slot) document.getElementById(`up-foto-${slot}-camera`)?.click();
+  }
+
+  closeEvidenceCamera() {
+    this.evidenceCameraRequestId += 1;
+    this.activeEvidenceCameraSlot = null;
+    this.evidenceCameraStream?.getTracks().forEach(track => track.stop());
+    this.evidenceCameraStream = null;
+    const video = document.getElementById('evidence-camera-video');
+    if (video) video.srcObject = null;
+    const capture = document.getElementById('evidence-camera-capture');
+    if (capture) capture.disabled = true;
+    const modal = document.getElementById('modal-evidence-camera');
+    if (modal) { modal.classList.add('hidden'); modal.classList.remove('flex'); }
   }
 
   async handleUploadProduct(event) {
@@ -7857,6 +7947,8 @@ class BursaLimbahApp {
 
   // ================= 11. MODAL & UTILITAS =================
   closeModals() {
+    this.closeEvidenceCamera();
+    this.closeIdentityDocumentCamera();
     const modals = [
       'modal-product-detail',
       'modal-buyer-register',
@@ -7929,6 +8021,32 @@ class BursaLimbahApp {
     const verifiedIcon = document.getElementById('prof-verified-badge-icon');
     const verifyStatusPill = document.getElementById('prof-verification-status-pill');
     const verifyStatusText = document.getElementById('prof-verification-status-text');
+    const profilePhotoPreview = document.getElementById('prof-photo-preview');
+    const profilePhotoPlaceholder = document.getElementById('prof-photo-placeholder');
+    const profilePhotoInput = document.getElementById('prof-photo-input');
+    const profilePhotoButton = document.getElementById('prof-photo-upload-button');
+
+    this.pendingIdentityDocuments = { ktp: null, npwp: null };
+    ['ktp', 'npwp'].forEach(type => {
+      const input = document.getElementById(`verify-${type}-file-input`);
+      const label = document.getElementById(`verify-${type}-file-name`);
+      if (input) input.value = '';
+      if (label) label.textContent = '';
+    });
+    const ktpRadio = document.querySelector('input[name="verify-doc-type"][value="ktp"]');
+    if (ktpRadio) ktpRadio.checked = true;
+    this.handleVerifyTypeChange('ktp');
+
+    this.pendingProfilePhoto = null;
+    if (this.profilePhotoPreviewUrl) URL.revokeObjectURL(this.profilePhotoPreviewUrl);
+    this.profilePhotoPreviewUrl = null;
+    if (profilePhotoInput) profilePhotoInput.value = '';
+    if (profilePhotoButton) profilePhotoButton.disabled = true;
+    if (profilePhotoPreview) {
+      profilePhotoPreview.src = user.avatar || '';
+      profilePhotoPreview.classList.toggle('hidden', !user.avatar);
+    }
+    if (profilePhotoPlaceholder) profilePhotoPlaceholder.classList.toggle('hidden', Boolean(user.avatar));
 
     if (displayName) displayName.textContent = user.name || 'Pengguna Bursa Limbah';
     if (emailText) emailText.textContent = user.email || '-';
@@ -8065,7 +8183,54 @@ class BursaLimbahApp {
     modal.classList.add('flex');
   }
 
+  handleProfilePhotoSelect(input) {
+    const file = input?.files?.[0];
+    if (!file) return;
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type) || file.size > 5 * 1024 * 1024) {
+      input.value = '';
+      this.showToast('Pilih foto JPG, PNG, atau WebP maksimal 5 MB.', 'error');
+      return;
+    }
+    this.pendingProfilePhoto = file;
+    if (this.profilePhotoPreviewUrl) URL.revokeObjectURL(this.profilePhotoPreviewUrl);
+    this.profilePhotoPreviewUrl = URL.createObjectURL(file);
+    const preview = document.getElementById('prof-photo-preview');
+    const placeholder = document.getElementById('prof-photo-placeholder');
+    const button = document.getElementById('prof-photo-upload-button');
+    if (preview) { preview.src = this.profilePhotoPreviewUrl; preview.classList.remove('hidden'); }
+    if (placeholder) placeholder.classList.add('hidden');
+    if (button) button.disabled = false;
+  }
+
+  async uploadProfilePhoto() {
+    const user = this.store.getCurrentUser();
+    const button = document.getElementById('prof-photo-upload-button');
+    if (!user || !this.pendingProfilePhoto) return this.showToast('Pilih foto profil terlebih dahulu.', 'warning');
+    const originalText = button?.innerHTML;
+    if (button) { button.disabled = true; button.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i>Mengunggah…'; }
+    try {
+      const result = await this.store.uploadProfilePhoto(this.pendingProfilePhoto);
+      const updated = this.store.updateUserProfile(user.id, { avatar: result.url });
+      const avatarWrap = document.getElementById('prof-avatar-wrap');
+      const profilePhotoPreview = document.getElementById('prof-photo-preview');
+      if (avatarWrap) avatarWrap.innerHTML = `<img src="${esc(updated.avatar)}" alt="${esc(updated.name)}" class="h-full w-full object-cover">`;
+      if (profilePhotoPreview) { profilePhotoPreview.src = result.url; profilePhotoPreview.classList.remove('hidden'); }
+      document.getElementById('prof-photo-placeholder')?.classList.add('hidden');
+      this.pendingProfilePhoto = null;
+      if (this.profilePhotoPreviewUrl) URL.revokeObjectURL(this.profilePhotoPreviewUrl);
+      this.profilePhotoPreviewUrl = null;
+      if (document.getElementById('prof-photo-input')) document.getElementById('prof-photo-input').value = '';
+      this.updateNavUI();
+      this.showToast('Foto profil berhasil diunggah.', 'success');
+    } catch (error) {
+      this.showToast(error.message || 'Foto profil gagal diunggah.', 'error');
+    } finally {
+      if (button) { button.disabled = !this.pendingProfilePhoto; button.innerHTML = originalText || '<i class="fa-solid fa-cloud-arrow-up mr-1"></i>Unggah Foto'; }
+    }
+  }
+
   closeUserProfileModal() {
+    this.closeIdentityDocumentCamera();
     const modal = document.getElementById('modal-user-profile');
     if (modal) {
       modal.classList.add('hidden');
@@ -8186,33 +8351,106 @@ class BursaLimbahApp {
   handleVerifyTypeChange(type) {
     const ktpGroup = document.getElementById('verify-ktp-group');
     const npwpGroup = document.getElementById('verify-npwp-group');
+    const ktpFileGroup = document.getElementById('verify-ktp-file-group');
+    const npwpFileGroup = document.getElementById('verify-npwp-file-group');
 
     if (type === 'ktp') {
       if (ktpGroup) ktpGroup.classList.remove('hidden');
       if (npwpGroup) npwpGroup.classList.add('hidden');
+      if (ktpFileGroup) ktpFileGroup.classList.remove('hidden');
+      if (npwpFileGroup) npwpFileGroup.classList.add('hidden');
     } else if (type === 'npwp') {
       if (ktpGroup) ktpGroup.classList.add('hidden');
       if (npwpGroup) npwpGroup.classList.remove('hidden');
+      if (ktpFileGroup) ktpFileGroup.classList.add('hidden');
+      if (npwpFileGroup) npwpFileGroup.classList.remove('hidden');
     } else if (type === 'both') {
       if (ktpGroup) ktpGroup.classList.remove('hidden');
       if (npwpGroup) npwpGroup.classList.remove('hidden');
+      if (ktpFileGroup) ktpFileGroup.classList.remove('hidden');
+      if (npwpFileGroup) npwpFileGroup.classList.remove('hidden');
     }
   }
 
 
-  handleVerifyFileSelect(input) {
-    if (input.files && input.files[0]) {
-      const file = input.files[0];
-      const dropzone = document.getElementById('verify-dropzone-content');
-      const preview = document.getElementById('verify-file-preview');
-      const nameEl = document.getElementById('verify-file-name');
-      if (dropzone) dropzone.classList.add('hidden');
-      if (preview) {
-        preview.classList.remove('hidden');
-        preview.classList.add('flex');
-      }
-      if (nameEl) nameEl.textContent = file.name;
+  handleVerifyFileSelect(inputOrFile, type) {
+    const file = inputOrFile instanceof File ? inputOrFile : inputOrFile?.files?.[0];
+    if (!file || !['ktp', 'npwp'].includes(type)) return;
+    const validImage = ['image/jpeg', 'image/png', 'image/webp'].includes(file.type);
+    if ((!validImage && file.type !== 'application/pdf') || file.size > 5 * 1024 * 1024) {
+      if (!(inputOrFile instanceof File)) inputOrFile.value = '';
+      this.showToast('Dokumen harus berupa JPG, PNG, WebP, atau PDF maksimal 5 MB.', 'error');
+      return;
     }
+    this.pendingIdentityDocuments[type] = file;
+    const nameEl = document.getElementById(`verify-${type}-file-name`);
+    if (nameEl) nameEl.textContent = `Siap diunggah: ${file.name}`;
+  }
+
+  async openIdentityDocumentCamera(type) {
+    const modal = document.getElementById('modal-identity-camera');
+    const video = document.getElementById('identity-camera-video');
+    const status = document.getElementById('identity-camera-status');
+    const capture = document.getElementById('identity-camera-capture');
+    if (!['ktp', 'npwp'].includes(type) || !modal || !video) return;
+    this.closeIdentityDocumentCamera();
+    this.activeIdentityCameraType = type;
+    const requestId = ++this.identityCameraRequestId;
+    const title = document.getElementById('identity-camera-title');
+    if (title) title.textContent = `Ambil Foto ${type.toUpperCase()}`;
+    modal.classList.remove('hidden'); modal.classList.add('flex');
+    if (status) status.textContent = 'Meminta izin kamera dari perangkat…';
+    if (capture) capture.disabled = true;
+    if (!window.isSecureContext || !navigator.mediaDevices?.getUserMedia) {
+      if (status) status.textContent = 'Kamera langsung memerlukan HTTPS dan dukungan browser. Gunakan kamera bawaan perangkat.';
+      return;
+    }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: false, video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } } });
+      if (requestId !== this.identityCameraRequestId) { stream.getTracks().forEach(track => track.stop()); return; }
+      this.identityCameraStream = stream;
+      video.srcObject = stream;
+      await video.play();
+      if (status) status.textContent = `Kamera aktif. Ambil foto ${type.toUpperCase()} dengan jelas.`;
+      if (capture) capture.disabled = false;
+    } catch (error) {
+      if (requestId !== this.identityCameraRequestId) return;
+      if (status) status.textContent = error?.name === 'NotAllowedError' ? 'Izin kamera ditolak. Aktifkan izin kamera untuk situs ini lalu coba lagi.' : 'Kamera tidak dapat dibuka. Periksa izin perangkat atau gunakan kamera bawaan.';
+      this.showToast(error?.name === 'NotAllowedError' ? 'Izinkan kamera di browser untuk memotret dokumen.' : 'Kamera gagal dibuka. Coba kamera bawaan perangkat.', 'warning');
+    }
+  }
+
+  async captureIdentityDocumentPhoto() {
+    const video = document.getElementById('identity-camera-video');
+    const type = this.activeIdentityCameraType;
+    if (!video?.videoWidth || !type) return this.showToast('Kamera belum siap. Tunggu pratinjau lalu coba lagi.', 'warning');
+    const canvas = document.createElement('canvas'); canvas.width = video.videoWidth; canvas.height = video.videoHeight;
+    canvas.getContext('2d')?.drawImage(video, 0, 0, canvas.width, canvas.height);
+    const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.9));
+    if (!blob) return this.showToast('Foto dokumen gagal diproses. Silakan ambil ulang.', 'error');
+    if (blob.size > 5 * 1024 * 1024) return this.showToast('Foto lebih dari 5 MB. Dekatkan kamera atau pilih foto lebih kecil.', 'error');
+    this.handleVerifyFileSelect(new File([blob], `${type}-${Date.now()}.jpg`, { type: 'image/jpeg', lastModified: Date.now() }), type);
+    this.closeIdentityDocumentCamera();
+    this.showToast(`Foto ${type.toUpperCase()} siap diunggah secara privat.`, 'success');
+  }
+
+  useIdentityDevicePicker() {
+    const type = this.activeIdentityCameraType;
+    this.closeIdentityDocumentCamera();
+    document.getElementById(`verify-${type}-file-input`)?.click();
+  }
+
+  closeIdentityDocumentCamera() {
+    this.identityCameraRequestId += 1;
+    this.activeIdentityCameraType = null;
+    this.identityCameraStream?.getTracks().forEach(track => track.stop());
+    this.identityCameraStream = null;
+    const video = document.getElementById('identity-camera-video');
+    if (video) video.srcObject = null;
+    const capture = document.getElementById('identity-camera-capture');
+    if (capture) capture.disabled = true;
+    const modal = document.getElementById('modal-identity-camera');
+    if (modal) { modal.classList.add('hidden'); modal.classList.remove('flex'); }
   }
 
   async handleSubmitVerification(event) {
@@ -8227,16 +8465,15 @@ class BursaLimbahApp {
     const ktpNumber = (document.getElementById('verify-ktp-number') || {}).value || '';
     const npwpNumber = (document.getElementById('verify-npwp-number') || {}).value || '';
 
-    let docUrl = null;
-    const documentFile = (document.getElementById('verify-file-input') || {}).files?.[0];
-    if (documentFile) {
-      try {
-        docUrl = (await this.store.uploadIdentityDocument(documentFile)).storageKey;
-      } catch (error) {
-        this.showToast(error.message, 'error');
-        return;
+    const docs = {};
+    const documentTypes = selectedType === 'both' ? ['ktp', 'npwp'] : [selectedType];
+    try {
+      for (const type of documentTypes) {
+        const file = this.pendingIdentityDocuments[type] || document.getElementById(`verify-${type}-file-input`)?.files?.[0];
+        if (file) docs[type] = (await this.store.uploadIdentityDocument(file)).storageKey;
       }
-    }
+    } catch (error) { this.showToast(error.message, 'error'); return; }
+    const docUrl = Object.keys(docs).length > 1 ? JSON.stringify(docs) : docs.ktp || docs.npwp || null;
 
     try {
       this.store.submitUserVerification(user.id, {
@@ -8245,6 +8482,7 @@ class BursaLimbahApp {
         npwpNumber: npwpNumber.trim(),
         docUrl
       });
+      this.pendingIdentityDocuments = { ktp: null, npwp: null };
 
       this.triggerConfetti();
       this.showToast('Selamat! Akun Anda kini resmi Terverifikasi (KTP/NPWP). Badge hijau telah aktif!', 'success');

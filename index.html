@@ -114,8 +114,7 @@
     <div class="max-w-7xl mx-auto flex items-center min-h-10">
       <div class="shrink-0 self-stretch flex items-center gap-2 px-3 sm:px-6 bg-slate-900 border-r border-slate-700 z-10">
         <span class="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></span>
-        <span id="price-ticker-title" class="text-[10px] sm:text-xs font-bold uppercase tracking-wide text-emerald-300">Harga Pasar Terkini</span>
-        <span id="price-ticker-updated" class="hidden lg:inline text-[10px] text-slate-400">Memuat harga pasar...</span>
+        <span id="price-ticker-title" class="text-[10px] sm:text-xs font-bold uppercase tracking-wide text-emerald-300">HARGA PASAR TERKINI</span>
       </div>
       <div class="min-w-0 overflow-hidden py-1.5">
         <div id="price-ticker-strip" class="animate-ticker items-center gap-3 px-3 text-xs whitespace-nowrap"></div>
@@ -1018,7 +1017,7 @@
               <p class="text-[10px] text-slate-400">Drum/IBC/bal tersegel</p>
               <input type="file" id="up-foto-1" accept="image/jpeg,image/png,image/webp,image/heic,image/heif" class="hidden" onchange="app.handleEvidenceFileSelect(this, 1)">
               <input type="file" id="up-foto-1-camera" accept="image/*" capture="environment" class="hidden" onchange="app.handleEvidenceFileSelect(this, 1)">
-              <div class="flex justify-center gap-2"><button type="button" onclick="document.getElementById('up-foto-1').click()" id="up-foto-1-label" class="text-[10px] text-emerald-700 font-semibold hover:underline"><i class="fa-regular fa-images"></i> Galeri</button><button type="button" onclick="document.getElementById('up-foto-1-camera').click()" class="text-[10px] text-blue-700 font-semibold hover:underline"><i class="fa-solid fa-camera"></i> Ambil foto</button></div>
+              <div class="flex justify-center gap-2"><button type="button" onclick="document.getElementById('up-foto-1').click()" id="up-foto-1-label" class="text-[10px] text-emerald-700 font-semibold hover:underline"><i class="fa-regular fa-images"></i> Galeri</button><button type="button" onclick="app.openEvidenceCamera(1)" class="text-[10px] text-blue-700 font-semibold hover:underline"><i class="fa-solid fa-camera"></i> Ambil foto</button></div>
             </div>
             <div id="up-evidence-slot-2" class="p-2 rounded-xl bg-slate-50 border border-slate-200 text-center space-y-1">
               <i class="fa-solid fa-flask text-blue-600 text-lg"></i>
@@ -1026,7 +1025,7 @@
               <p class="text-[10px] text-slate-400">Detail kebersihan fisik</p>
               <input type="file" id="up-foto-2" accept="image/jpeg,image/png,image/webp,image/heic,image/heif" class="hidden" onchange="app.handleEvidenceFileSelect(this, 2)">
               <input type="file" id="up-foto-2-camera" accept="image/*" capture="environment" class="hidden" onchange="app.handleEvidenceFileSelect(this, 2)">
-              <div class="flex justify-center gap-2"><button type="button" onclick="document.getElementById('up-foto-2').click()" id="up-foto-2-label" class="text-[10px] text-emerald-700 font-semibold hover:underline"><i class="fa-regular fa-images"></i> Galeri</button><button type="button" onclick="document.getElementById('up-foto-2-camera').click()" class="text-[10px] text-blue-700 font-semibold hover:underline"><i class="fa-solid fa-camera"></i> Ambil foto</button></div>
+              <div class="flex justify-center gap-2"><button type="button" onclick="document.getElementById('up-foto-2').click()" id="up-foto-2-label" class="text-[10px] text-emerald-700 font-semibold hover:underline"><i class="fa-regular fa-images"></i> Galeri</button><button type="button" onclick="app.openEvidenceCamera(2)" class="text-[10px] text-blue-700 font-semibold hover:underline"><i class="fa-solid fa-camera"></i> Ambil foto</button></div>
             </div>
             <div id="up-evidence-slot-3" class="p-2 rounded-xl bg-slate-50 border border-slate-200 text-center space-y-1">
               <i class="fa-solid fa-scale-balanced text-amber-600 text-lg"></i>
@@ -1034,7 +1033,7 @@
               <p class="text-[10px] text-slate-400">Bukti tera kalibrasi sah</p>
               <input type="file" id="up-foto-3" accept="image/jpeg,image/png,image/webp,image/heic,image/heif" class="hidden" onchange="app.handleEvidenceFileSelect(this, 3)">
               <input type="file" id="up-foto-3-camera" accept="image/*" capture="environment" class="hidden" onchange="app.handleEvidenceFileSelect(this, 3)">
-              <div class="flex justify-center gap-2"><button type="button" onclick="document.getElementById('up-foto-3').click()" id="up-foto-3-label" class="text-[10px] text-emerald-700 font-semibold hover:underline"><i class="fa-regular fa-images"></i> Galeri</button><button type="button" onclick="document.getElementById('up-foto-3-camera').click()" class="text-[10px] text-blue-700 font-semibold hover:underline"><i class="fa-solid fa-camera"></i> Ambil foto</button></div>
+              <div class="flex justify-center gap-2"><button type="button" onclick="document.getElementById('up-foto-3').click()" id="up-foto-3-label" class="text-[10px] text-emerald-700 font-semibold hover:underline"><i class="fa-regular fa-images"></i> Galeri</button><button type="button" onclick="app.openEvidenceCamera(3)" class="text-[10px] text-blue-700 font-semibold hover:underline"><i class="fa-solid fa-camera"></i> Ambil foto</button></div>
             </div>
           </div>
         </div>
@@ -3916,6 +3915,24 @@
     </div>
   </div>
 
+  <!-- ================= MODAL: AMBIL FOTO EVIDEN DENGAN KAMERA ================= -->
+  <div id="modal-evidence-camera" class="fixed inset-0 z-[80] hidden items-center justify-center bg-slate-950/80 p-4 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="evidence-camera-title" onclick="if(event.target===this) app.closeEvidenceCamera()">
+    <div class="w-full max-w-xl overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
+      <div class="flex items-center justify-between border-b border-slate-100 px-4 py-3">
+        <div><h3 id="evidence-camera-title" class="font-bold text-slate-900">Ambil Foto Eviden</h3><p class="text-xs text-slate-500">Izinkan akses kamera untuk memotret langsung.</p></div>
+        <button type="button" onclick="app.closeEvidenceCamera()" class="rounded-lg p-2 text-slate-500 hover:bg-slate-100" aria-label="Tutup kamera"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="space-y-3 p-4">
+        <video id="evidence-camera-video" autoplay muted playsinline class="aspect-video w-full rounded-xl bg-slate-950 object-cover"></video>
+        <p id="evidence-camera-status" class="text-center text-xs text-slate-600" aria-live="polite">Menunggu izin kamera…</p>
+        <div class="flex flex-wrap justify-center gap-2">
+          <button type="button" onclick="app.captureEvidencePhoto()" id="evidence-camera-capture" disabled class="rounded-xl bg-emerald-700 px-5 py-2.5 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-50"><i class="fa-solid fa-camera mr-1"></i>Ambil Foto</button>
+          <button type="button" onclick="app.useEvidenceDevicePicker()" class="rounded-xl border border-slate-300 px-4 py-2.5 text-xs font-bold text-slate-700">Buka kamera perangkat</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- ================= MODAL 4: CHECKOUT PEMESANAN DP 30% ================= -->
   <div id="modal-checkout" class="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm hidden items-center justify-center p-4 overflow-y-auto">
     <div class="bg-white rounded-3xl max-w-xl w-full shadow-2xl border border-slate-200">
@@ -4000,6 +4017,12 @@
         <!-- TAB 1: DATA PROFIL -->
         <div id="prof-tab-content-info" class="space-y-4">
           <form onsubmit="app.handleSaveProfile(event)" class="space-y-4">
+            <div class="flex flex-wrap items-center gap-4 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+              <img id="prof-photo-preview" src="" alt="Foto profil" class="hidden h-16 w-16 rounded-2xl border border-slate-200 object-cover">
+              <div id="prof-photo-placeholder" class="flex h-16 w-16 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-700"><i class="fa-solid fa-user text-2xl"></i></div>
+              <div class="min-w-0 flex-1"><div class="text-xs font-bold text-slate-800">Foto Profil</div><p class="mt-1 text-[11px] text-slate-500">JPG, PNG, atau WebP. Maksimal 5 MB.</p><input type="file" id="prof-photo-input" accept="image/jpeg,image/png,image/webp" class="mt-2 block w-full text-xs" onchange="app.handleProfilePhotoSelect(this)"></div>
+              <button type="button" id="prof-photo-upload-button" onclick="app.uploadProfilePhoto()" disabled class="rounded-xl bg-emerald-700 px-4 py-2 text-xs font-bold text-white disabled:opacity-50"><i class="fa-solid fa-cloud-arrow-up mr-1"></i>Unggah Foto</button>
+            </div>
             <div class="grid sm:grid-cols-2 gap-4">
               <div>
                 <label class="block text-xs font-bold uppercase text-slate-700 mb-1">Nama Lengkap PIC *</label>
@@ -4233,21 +4256,22 @@
               </div>
             </div>
 
-            <!-- Unggah Foto Dokumen -->
-            <div>
-              <label class="block text-xs font-bold uppercase text-slate-700 mb-1.5">Unggah Foto Dokumen Identitas (KTP/NPWP) <span class="text-slate-400 font-normal lowercase">(opsional)</span></label>
-              <div class="border-2 border-dashed border-slate-300 hover:border-emerald-500 rounded-2xl p-4 text-center bg-slate-50/60 cursor-pointer transition" onclick="document.getElementById('verify-file-input').click()">
-                <input type="file" id="verify-file-input" accept="image/*,.pdf" class="hidden" onchange="app.handleVerifyFileSelect(this)">
-                <div id="verify-dropzone-content" class="space-y-1.5">
-                  <i class="fa-solid fa-cloud-arrow-up text-2xl text-slate-400"></i>
-                  <div class="text-xs font-bold text-slate-700">Klik untuk memilih foto dokumen</div>
-                  <div class="text-[10px] text-slate-400">Format JPG, PNG, atau PDF (Maks. 5 MB)</div>
-                </div>
-                <div id="verify-file-preview" class="hidden items-center justify-center space-x-2 text-xs font-bold text-emerald-700 bg-emerald-50 py-1.5 rounded-lg">
-                  <i class="fa-solid fa-circle-check text-emerald-600"></i>
-                  <span id="verify-file-name">ktp_dokumen.jpg</span>
-                </div>
+            <!-- Unggah atau foto dokumen identitas -->
+            <div class="space-y-3">
+              <label class="block text-xs font-bold uppercase text-slate-700">Foto Dokumen Identitas (Opsional)</label>
+              <div id="verify-ktp-file-group" class="rounded-2xl border border-slate-200 bg-slate-50 p-3">
+                <label for="verify-ktp-file-input" class="text-xs font-bold text-slate-700">Foto KTP</label>
+                <input type="file" id="verify-ktp-file-input" accept="image/jpeg,image/png,image/webp,application/pdf" class="mt-2 block w-full text-xs" onchange="app.handleVerifyFileSelect(this,'ktp')">
+                <button type="button" onclick="app.openIdentityDocumentCamera('ktp')" class="mt-2 rounded-lg border border-emerald-300 bg-white px-3 py-2 text-xs font-bold text-emerald-800"><i class="fa-solid fa-camera mr-1"></i>Ambil foto KTP</button>
+                <span id="verify-ktp-file-name" class="ml-2 text-[11px] text-slate-500"></span>
               </div>
+              <div id="verify-npwp-file-group" class="hidden rounded-2xl border border-slate-200 bg-slate-50 p-3">
+                <label for="verify-npwp-file-input" class="text-xs font-bold text-slate-700">Foto NPWP</label>
+                <input type="file" id="verify-npwp-file-input" accept="image/jpeg,image/png,image/webp,application/pdf" class="mt-2 block w-full text-xs" onchange="app.handleVerifyFileSelect(this,'npwp')">
+                <button type="button" onclick="app.openIdentityDocumentCamera('npwp')" class="mt-2 rounded-lg border border-emerald-300 bg-white px-3 py-2 text-xs font-bold text-emerald-800"><i class="fa-solid fa-camera mr-1"></i>Ambil foto NPWP</button>
+                <span id="verify-npwp-file-name" class="ml-2 text-[11px] text-slate-500"></span>
+              </div>
+              <p class="text-[10px] text-slate-500">Kamera akan meminta izin browser. Dokumen diunggah ke penyimpanan privat.</p>
             </div>
 
             <div class="pt-3 border-t border-slate-100 flex items-center justify-between">
@@ -4413,6 +4437,24 @@
 
     </div>
   </nav>
+
+  <!-- ================= MODAL: AMBIL FOTO DOKUMEN KTP / NPWP ================= -->
+  <div id="modal-identity-camera" class="fixed inset-0 z-[85] hidden items-center justify-center bg-slate-950/80 p-4 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="identity-camera-title" onclick="if(event.target===this) app.closeIdentityDocumentCamera()">
+    <div class="w-full max-w-xl overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
+      <div class="flex items-center justify-between border-b border-slate-100 px-4 py-3">
+        <div><h3 id="identity-camera-title" class="font-bold text-slate-900">Foto Dokumen</h3><p class="text-xs text-slate-500">Izinkan akses kamera untuk memotret dokumen.</p></div>
+        <button type="button" onclick="app.closeIdentityDocumentCamera()" class="rounded-lg p-2 text-slate-500 hover:bg-slate-100" aria-label="Tutup kamera"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="space-y-3 p-4">
+        <video id="identity-camera-video" autoplay muted playsinline class="aspect-video w-full rounded-xl bg-slate-950 object-cover"></video>
+        <p id="identity-camera-status" class="text-center text-xs text-slate-600" aria-live="polite">Menunggu izin kamera…</p>
+        <div class="flex flex-wrap justify-center gap-2">
+          <button type="button" onclick="app.captureIdentityDocumentPhoto()" id="identity-camera-capture" disabled class="rounded-xl bg-emerald-700 px-5 py-2.5 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-50"><i class="fa-solid fa-camera mr-1"></i>Ambil Foto</button>
+          <button type="button" onclick="app.useIdentityDevicePicker()" class="rounded-xl border border-slate-300 px-4 py-2.5 text-xs font-bold text-slate-700">Buka kamera perangkat</button>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <!-- ================= MODAL 8: MOBILE QUICK ACTION BOTTOM SHEET ================= -->
   <div id="modal-mobile-quick-actions" class="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs hidden items-end justify-center p-0 sm:p-4 lg:hidden">
