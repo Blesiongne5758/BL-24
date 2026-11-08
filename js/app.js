@@ -307,6 +307,7 @@ class BursaLimbahApp {
     const roleIcon = document.getElementById('role-badge-icon');
 
     const activeSession = this.store.getAuthenticatedSession?.();
+    document.querySelector('footer')?.classList.toggle('hidden', Boolean(activeSession));
     if (role === 'public' && activeSession) {
       const { role: sessionRole, user: sessionUser } = activeSession;
       const roleLabels = { buyer: 'Pembeli', seller: 'Penjual', admin: 'Pengelola' };
